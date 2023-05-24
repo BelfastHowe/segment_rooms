@@ -43,3 +43,35 @@ std::vector<std::vector<uint8_t>> readMapFile(const char* filename)
     return binaryMatrix;
 
 }
+
+void printBinaryMatrix(const std::vector<std::vector<uint8_t>>& binaryMatrix)
+{
+
+    // 创建二值图像
+    cv::Mat image(binaryMatrix.size(), binaryMatrix[0].size(), CV_8UC1);
+    for (int i = 0; i < binaryMatrix.size(); ++i) 
+    {
+        for (int j = 0; j < binaryMatrix[i].size(); ++j)
+        {
+            image.at<uint8_t>(i, j) = binaryMatrix[i][j] * 255;  // 将01矩阵中的0和1映射到图像的黑白值
+        }
+    }
+    // 显示二值图像
+    cv::imshow("Binary Image", image);
+    cv::waitKey(0);
+    cv::destroyAllWindows();
+}
+
+/*int main()
+{
+    const char* filename = "D:/files/seg_ori_20230509_073109_647.debug";
+
+    // 读取地图文件并转化为01矩阵
+    std::vector<std::vector<uint8_t>> binaryMatrix = readMapFile(filename);
+
+    // 将01矩阵转化为二值图像并打印
+    printBinaryMatrix(binaryMatrix);
+
+    return 0;
+}
+*/
