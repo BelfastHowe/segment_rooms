@@ -133,6 +133,52 @@ std::pair<std::vector<std::vector<int>>, std::vector<Room>> segment_rooms(const 
 }
 
 
+cv::Mat extract_filled_image(const cv::Mat& connected_region) 
+{
+    // 生成示例连通区域的二值图像
+    cv::Mat matrix = connected_region.clone();
+
+    // 查找外边缘轮廓
+    std::vector<std::vector<cv::Point>> contours;
+    cv::findContours(matrix, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+    // 创建空白图像
+    cv::Mat filled_image = cv::Mat::zeros(matrix.size(), CV_8UC1);
+
+    // 绘制外轮廓
+    cv::drawContours(filled_image, contours, -1, cv::Scalar(255), cv::FILLED);
+
+    return filled_image;
+}
+
+cv::Mat extract_edges(const cv::Mat& filled_image) 
+{
+    // 创建01矩阵
+    cv::Mat matrix = filled_image.clone();
+
+    // 在矩阵外围补一圈0
+    cv::Mat padded_matrix;
+    cv::copyMakeBorder(matrix, padded_matrix, 1, 1, 1, 1, cv::BORDER_CONSTANT, 0);
+
+    // 定义3x3的全1卷积核
+    cv::Mat kernel = cv::Mat::ones(3, 3, CV_8U);
+
+    // 对每个像素进行卷积并判断是否为边缘
+    cv::Mat edges = cv::Mat::zeros(matrix.size(), CV_8U);
+    for (int i = 1; i < padded_matrix.rows - 1; i++) 
+    {
+        for (int j = 1; j < padded_matrix.cols - 1; j++) 
+        {
+            if (padded_matrix.at<uchar>(i, j) == 0 && cv::sum(padded_matrix(cv::Rect(j - 1, i - 1, 3, 3)) & kernel)[0] > 0) 
+            {
+                edges.at<uchar>(i - 1, j - 1) = 1;
+            }
+        }
+    }
+
+    return edges;
+}
+
 
 int main() 
 {
