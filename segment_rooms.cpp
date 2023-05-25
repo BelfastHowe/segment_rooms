@@ -1,4 +1,6 @@
 #include <segment_rooms.h>
+#include <generate_connected_region.h>
+
 
 
 Room::Room(int room_id) 
@@ -133,6 +135,7 @@ std::pair<std::vector<std::vector<int>>, std::vector<Room>> segment_rooms(const 
 }
 
 
+/*  以cv::Mat作为输入输出参数的版本
 cv::Mat extract_filled_image(const cv::Mat& connected_region) 
 {
     // 生成示例连通区域的二值图像
@@ -150,7 +153,43 @@ cv::Mat extract_filled_image(const cv::Mat& connected_region)
 
     return filled_image;
 }
+*/
 
+std::vector<std::vector<int>> extract_filled_image(const std::vector<std::vector<int>>& connected_region) 
+{
+    // 生成示例连通区域的二值图像
+    cv::Mat matrix(connected_region.size(), connected_region[0].size(), CV_8UC1);
+    for (size_t i = 0; i < connected_region.size(); i++) 
+    {
+        for (size_t j = 0; j < connected_region[i].size(); j++) 
+        {
+            matrix.at<uchar>(i, j) = connected_region[i][j];
+        }
+    }
+
+    // 查找外边缘轮廓
+    std::vector<std::vector<cv::Point>> contours;
+    cv::findContours(matrix, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+    // 创建空白图像
+    cv::Mat filled_image(matrix.size(), CV_8UC1, cv::Scalar(0));
+
+    // 绘制外轮廓
+    cv::drawContours(filled_image, contours, -1, cv::Scalar(1), cv::FILLED);
+
+    // 将结果转换为二维数组
+    std::vector<std::vector<int>> filled_image_arr(filled_image.rows, std::vector<int>(filled_image.cols));
+    for (int i = 0; i < filled_image.rows; i++) {
+        for (int j = 0; j < filled_image.cols; j++) {
+            filled_image_arr[i][j] = static_cast<int>(filled_image.at<uchar>(i, j));
+        }
+    }
+
+    return filled_image_arr;
+}
+
+
+/*  以cv::Mat结构作为输入输出的版本
 cv::Mat extract_edges(const cv::Mat& filled_image) 
 {
     // 创建01矩阵
@@ -178,8 +217,227 @@ cv::Mat extract_edges(const cv::Mat& filled_image)
 
     return edges;
 }
+*/
+
+std::vector<std::vector<int>> extract_edges(const std::vector<std::vector<int>>& filled_image) 
+{
+    // 创建01矩阵
+    std::vector<std::vector<int>> matrix = filled_image;
+
+    // 在矩阵外围补一圈0
+    std::vector<std::vector<int>> padded_matrix(matrix.size() + 2, std::vector<int>(matrix[0].size() + 2, 0));
+    for (int i = 0; i < matrix.size(); i++) 
+    {
+        for (int j = 0; j < matrix[i].size(); j++) 
+        {
+            padded_matrix[i + 1][j + 1] = matrix[i][j];
+        }
+    }
+
+    // 定义3x3的全1卷积核
+    std::vector<std::vector<int>> kernel(3, std::vector<int>(3, 1));
+
+    // 对每个像素进行卷积并判断是否为边缘
+    std::vector<std::vector<int>> edges(matrix.size(), std::vector<int>(matrix[0].size(), 0));
+    for (int i = 1; i < padded_matrix.size() - 1; i++) 
+    {
+        for (int j = 1; j < padded_matrix[i].size() - 1; j++) 
+        {
+            if (padded_matrix[i][j] == 0 && (padded_matrix[i - 1][j - 1] + padded_matrix[i - 1][j] + padded_matrix[i - 1][j + 1] +
+                padded_matrix[i][j - 1] + padded_matrix[i][j + 1] + padded_matrix[i + 1][j - 1] + padded_matrix[i + 1][j] + padded_matrix[i + 1][j + 1]) > 0) 
+            {
+                edges[i - 1][j - 1] = 1;
+            }
+        }
+    }
+
+    return edges;
+}
 
 
+std::vector<std::vector<int>> customize_dilate(const std::vector<std::vector<int>>& binaryMatrix, const std::vector<std::vector<int>>& kernel) 
+{
+    int rows = binaryMatrix.size();
+    int cols = binaryMatrix[0].size();
+    int kernelRows = kernel.size();
+    int kernelCols = kernel[0].size();
+    int padRows = kernelRows / 2;
+    int padCols = kernelCols / 2;
+
+    std::vector<std::vector<int>> paddedMatrix(rows + 2 * padRows, std::vector<int>(cols + 2 * padCols, 0));
+    for (int i = 0; i < rows; i++) 
+    {
+        for (int j = 0; j < cols; j++) 
+        {
+            paddedMatrix[i + padRows][j + padCols] = binaryMatrix[i][j];
+        }
+    }
+
+    std::vector<std::vector<int>> dilatedMatrix(rows, std::vector<int>(cols, 0));
+    for (int i = padRows; i < rows + padRows; i++) 
+    {
+        for (int j = padCols; j < cols + padCols; j++) 
+        {
+            bool dilate = false;
+            for (int k = 0; k < kernelRows; k++) 
+            {
+                for (int l = 0; l < kernelCols; l++) 
+                {
+                    if (paddedMatrix[i - padRows + k][j - padCols + l] && kernel[k][l]) 
+                    {
+                        dilate = true;
+                        break;
+                    }
+                }
+                if (dilate) 
+                {
+                    break;
+                }
+            }
+            if (dilate) 
+            {
+                dilatedMatrix[i - padRows][j - padCols] = 1;
+            }
+        }
+    }
+
+    return dilatedMatrix;
+}
+
+std::vector<std::vector<int>> customize_erode(const std::vector<std::vector<int>>& binaryMatrix, const std::vector<std::vector<int>>& kernel) 
+{
+    int rows = binaryMatrix.size();
+    int cols = binaryMatrix[0].size();
+    int kernelRows = kernel.size();
+    int kernelCols = kernel[0].size();
+    int padRows = kernelRows / 2;
+    int padCols = kernelCols / 2;
+
+    std::vector<std::vector<int>> paddedMatrix(rows + 2 * padRows, std::vector<int>(cols + 2 * padCols, 1));
+    for (int i = 0; i < rows; i++) 
+    {
+        for (int j = 0; j < cols; j++) 
+        {
+            paddedMatrix[i + padRows][j + padCols] = binaryMatrix[i][j];
+        }
+    }
+
+    std::vector<std::vector<int>> erodedMatrix(rows, std::vector<int>(cols, 1));
+    for (int i = padRows; i < rows + padRows; i++) 
+    {
+        for (int j = padCols; j < cols + padCols; j++) 
+        {
+            bool erode = true;
+            for (int k = 0; k < kernelRows; k++) 
+            {
+                for (int l = 0; l < kernelCols; l++) 
+                {
+                    if (!paddedMatrix[i - padRows + k][j - padCols + l] && kernel[k][l]) 
+                    {
+                        erode = false;
+                        break;
+                    }
+                }
+                if (!erode) 
+                {
+                    break;
+                }
+            }
+            if (erode) 
+            {
+                erodedMatrix[i - padRows][j - padCols] = 0;
+            }
+        }
+    }
+
+    return erodedMatrix;
+}
+
+std::vector<std::vector<int>> customize_closing(const std::vector<std::vector<int>>& binaryMatrix, const std::vector<std::vector<int>>& kernel) 
+{
+    int rows = binaryMatrix.size();
+    int cols = binaryMatrix[0].size();
+    int kernelRows = kernel.size();
+    int kernelCols = kernel[0].size();
+    int padRows = kernelRows / 2;
+    int padCols = kernelCols / 2;
+
+    std::vector<std::vector<int>> paddedMatrix(rows + 2 * padRows, std::vector<int>(cols + 2 * padCols, 0));
+
+    // 在paddedMatrix中将二值矩阵拷贝进去
+    for (int i = 0; i < rows; ++i) 
+    {
+        for (int j = 0; j < cols; ++j) 
+        {
+            paddedMatrix[i + padRows][j + padCols] = binaryMatrix[i][j];
+        }
+    }
+
+    std::vector<std::vector<int>> closedMatrix(rows, std::vector<int>(cols, 0));
+
+    // 膨胀操作
+    for (int i = padRows; i < rows + padRows; ++i)
+    {
+        for (int j = padCols; j < cols + padCols; ++j) 
+        {
+            bool isDilated = false;
+            for (int m = -padRows; m <= padRows; ++m) 
+            {
+                for (int n = -padCols; n <= padCols; ++n) 
+                {
+                    if (kernel[m + padRows][n + padCols] == 1 && paddedMatrix[i + m][j + n] == 1) 
+                    {
+                        isDilated = true;
+                        break;
+                    }
+                }
+                if (isDilated) 
+                {
+                    break;
+                }
+            }
+            if (isDilated) 
+            {
+                closedMatrix[i - padRows][j - padCols] = 1;
+            }
+        }
+    }
+
+    // 腐蚀操作
+    for (int i = padRows; i < rows + padRows; ++i) 
+    {
+        for (int j = padCols; j < cols + padCols; ++j) 
+        {
+            bool isEroded = true;
+            for (int m = -padRows; m <= padRows; ++m)
+            {
+                for (int n = -padCols; n <= padCols; ++n) 
+                {
+                    if (kernel[m + padRows][n + padCols] == 1 && paddedMatrix[i + m][j + n] != 1) 
+                    {
+                        isEroded = false;
+                        break;
+                    }
+                }
+                if (!isEroded) 
+                {
+                    break;
+                }
+            }
+            if (isEroded) 
+            {
+                closedMatrix[i - padRows][j - padCols] = 1;
+            }
+        }
+    }
+
+    return closedMatrix;
+}
+
+
+
+
+/*
 int main() 
 {
     std::vector<std::vector<int>> matrix = 
@@ -234,7 +492,31 @@ int main()
 
     return 0;
 }
+*/
 
 
+int main() 
+{
+    int length, width, desired_area;
+    length = 50;
+    width = 50;
+    desired_area = 1000;
 
+
+    std::vector<std::vector<int>> result = generate_connected_region(length, width, desired_area);
+
+    printBinaryImage(result, 10);
+
+    std::vector<std::vector<int>> kernel=
+    {
+		{0, 1, 0},
+		{1, 1, 1},
+		{0, 1, 0}
+	};
+    
+ 
+    printBinaryImage(result,10);
+
+    return 0;
+}
 

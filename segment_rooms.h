@@ -45,10 +45,21 @@ std::vector<std::pair<int, int>> bresenham_line(int x1, int y1, int x2, int y2);
 std::pair<std::vector<std::vector<int>>, std::vector<Room>> segment_rooms(const std::vector<std::vector<int>>& matrix, const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels);
 
 //多连通区域转化为单连通区域
-cv::Mat extract_filled_image(const cv::Mat& connected_region);
+//cv::Mat extract_filled_image(const cv::Mat& connected_region);
+std::vector<std::vector<int>> extract_filled_image(const std::vector<std::vector<int>>& connected_region);
 
 //全部外轮廓提取函数
-cv::Mat extract_edges(const cv::Mat& filled_image);
+//cv::Mat extract_edges(const cv::Mat& filled_image);
+std::vector<std::vector<int>> extract_edges(const std::vector<std::vector<int>>& filled_image);
+
+//自定义膨胀函数
+std::vector<std::vector<int>> customize_dilate(const std::vector<std::vector<int>>& binaryMatrix, const std::vector<std::vector<int>>& kernel);
+
+//自定义腐蚀函数
+std::vector<std::vector<int>> customize_erode(const std::vector<std::vector<int>>& binaryMatrix, const std::vector<std::vector<int>>& kernel);
+
+//自定义闭运算函数
+std::vector<std::vector<int>> customize_closing(const std::vector<std::vector<int>>& binaryMatrix, const std::vector<std::vector<int>>& kernel);
 
 #endif // !SEGMENT_ROOMS_H
 

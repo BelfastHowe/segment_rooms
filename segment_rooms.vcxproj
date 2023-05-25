@@ -130,10 +130,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="generate_connected_region.cpp" />
     <ClCompile Include="mapFileAnalysis.cpp" />
     <ClCompile Include="segment_rooms.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="generate_connected_region.h" />
     <ClInclude Include="mapFileAnalysis.h" />
     <ClInclude Include="segment_rooms.h" />
   </ItemGroup>
