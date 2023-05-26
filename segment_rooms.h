@@ -58,6 +58,9 @@ std::vector<std::vector<int>> customize_dilate(const std::vector<std::vector<int
 //自定义腐蚀函数
 std::vector<std::vector<int>> customize_erode(const std::vector<std::vector<int>>& binaryMatrix, const std::vector<std::vector<int>>& kernel);
 
+//自定义开运算函数
+std::vector<std::vector<int>> customize_opening(const std::vector<std::vector<int>>& binaryMatrix, const std::vector<std::vector<int>>& kernel);
+
 //自定义闭运算函数
 std::vector<std::vector<int>> customize_closing(const std::vector<std::vector<int>>& binaryMatrix, const std::vector<std::vector<int>>& kernel);
 

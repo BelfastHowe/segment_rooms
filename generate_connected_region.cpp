@@ -62,7 +62,7 @@ std::vector<std::vector<int>> generate_connected_region(int length, int width, i
     return matrix;
 }
 
-void printBinaryImage(const std::vector<std::vector<int>>& matrix, int scale) 
+void printBinaryImage(const std::vector<std::vector<int>>& matrix, int scale, const char* windowName)
 {
     int length = matrix.size();
     int width = matrix[0].size();
@@ -83,8 +83,8 @@ void printBinaryImage(const std::vector<std::vector<int>>& matrix, int scale)
     cv::Mat scaledImage;
     cv::resize(image, scaledImage, cv::Size(length * scale, width * scale));
 
-    cv::imshow("Binary Image", scaledImage);
-    cv::waitKey(0);
+    cv::imshow(windowName, scaledImage);
+    //cv::waitKey(0);
 }
 
 

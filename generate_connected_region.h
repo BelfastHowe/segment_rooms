@@ -13,7 +13,7 @@
 std::vector<std::vector<int>> generate_connected_region(int length, int width, int desired_area);
 
 //´òÓ¡¶þÖµÍ¼Ïñ
-void printBinaryImage(const std::vector<std::vector<int>>& matrix, int scale);
+void printBinaryImage(const std::vector<std::vector<int>>& matrix, int scale, const char* windowName);
 
 
 #endif // !GENERATE_CONNECTED_REGION_H
