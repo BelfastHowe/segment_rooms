@@ -10,30 +10,32 @@
 #include <array>
 #include <cmath>
 #include <stack>
+#include <utility>
 
-class Room 
-{
-    private:
-        int room_id;//房间编号
-        std::vector<std::pair<int, int>> pixels;//储存房间内的像素点列表
+class Room {
+private:
+    int room_id;//房间编号
+    std::vector<std::pair<int, int>> pixels;//房间内的像素点
+    std::vector<std::pair<int, std::pair<std::pair<int, int>, std::pair<int, int>>>> connected_rooms;//房间关于门的连通信息
 
+public:
+    Room(int room_id);//构造函数
 
-    public:
-        Room(int room_id);
-        void add_pixel(std::pair<int, int> pixel);//添加像素点
-        int get_pixel_count();//获取像素点数量
-        std::string to_string();//输出房间信息
+    void add_pixel(std::pair<int, int> pixel);//添加像素点
 
-        int get_room_id() const //获取房间编号
-        {
-            return room_id;
-        }
+    int get_pixel_count() const;//获取像素点数量
 
-        const std::vector<std::pair<int, int>>& get_pixels() const//获取像素点列表
-        {
-            return pixels;
-	    }
+    std::string to_string() const;//输出房间信息
+
+    int get_room_id() const;//获取房间编号
+
+    const std::vector<std::pair<int, int>>& get_pixels() const;//获取房间内的像素点
+
+    void add_connected_room(int room_id, const std::pair<std::pair<int, int>, std::pair<int, int>>& door);//添加房间关于门的连通信息
+
+    void print_connected_rooms() const;//输出房间关于门的连通信息
 };
+
 
 //判断像素点是否有效
 bool is_valid_pixel(int x, int y, int rows, int cols);
@@ -63,6 +65,12 @@ std::vector<std::vector<int>> customize_opening(const std::vector<std::vector<in
 
 //自定义闭运算函数
 std::vector<std::vector<int>> customize_closing(const std::vector<std::vector<int>>& binaryMatrix, const std::vector<std::vector<int>>& kernel);
+
+//将像素点列表转化为01矩阵
+std::vector<std::vector<int>> pixels_to_matrix(const std::vector<std::pair<int, int>>& pixels, int height, int width);
+
+//房间连通性判断函数
+void find_connected_rooms(const std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>& rooms, const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels);
 
 #endif // !SEGMENT_ROOMS_H
 

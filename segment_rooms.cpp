@@ -1,27 +1,51 @@
 #include <segment_rooms.h>
 #include <generate_connected_region.h>
+#include <sstream>
 
-
-
-Room::Room(int room_id) 
-{
-    this->room_id = room_id;
-}
+Room::Room(int room_id) : room_id(room_id) {}
 
 void Room::add_pixel(std::pair<int, int> pixel) 
 {
-    this->pixels.push_back(pixel);
+    pixels.push_back(pixel);
 }
 
-int Room::get_pixel_count() 
+int Room::get_pixel_count() const 
 {
-    return this->pixels.size();
+    return pixels.size();
 }
 
-std::string Room::to_string() 
+std::string Room::to_string() const 
 {
-    return "Room " + std::to_string(this->room_id) + ": " + std::to_string(this->get_pixel_count()) + " pixels";
+    std::stringstream ss;
+    ss << "Room ID: " << room_id << ", Pixel Count: " << get_pixel_count();
+    return ss.str();
 }
+
+int Room::get_room_id() const 
+{
+    return room_id;
+}
+
+const std::vector<std::pair<int, int>>& Room::get_pixels() const 
+{
+    return pixels;
+}
+
+void Room::add_connected_room(int room_id, const std::pair<std::pair<int, int>, std::pair<int, int>>& door) 
+{
+    connected_rooms.push_back(std::make_pair(room_id, door));
+}
+
+void Room::print_connected_rooms() const 
+{
+    for (const auto& connected_room : connected_rooms) 
+    {
+        std::cout << "Room " << room_id << " is connected to Room " << connected_room.first << " through door ("
+            << connected_room.second.first.first << ", " << connected_room.second.first.second << ") to ("
+            << connected_room.second.second.first << ", " << connected_room.second.second.second << ")" << std::endl;
+    }
+}
+
 
 bool is_valid_pixel(int x, int y, int rows, int cols) 
 {
@@ -499,66 +523,70 @@ std::vector<std::vector<int>> customize_closing(const std::vector<std::vector<in
     return closedMatrix;
 }
 
+std::vector<std::vector<int>> pixels_to_matrix(const std::vector<std::pair<int, int>>& pixels, int height, int width)
+{
+    std::vector<std::vector<int>> matrix(height, std::vector<int>(width, 0));
+    for (const auto& pixel : pixels)
+    {
+        matrix[pixel.first][pixel.second] = 1;
+    }
+    return matrix;
+}
+
+void find_connected_rooms(const std::vector<std::vector<int>>& segmented_matrix,
+    std::vector<Room>& rooms,
+    const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels) 
+{
+    int rows = segmented_matrix.size();
+    int cols = segmented_matrix[0].size();
+
+    //对于每一对房间
+    for (size_t i = 0; i < rooms.size(); i++) 
+    {
+        for (size_t j = i + 1; j < rooms.size(); j++) 
+        {
+            Room& room1 = rooms[i];
+            Room& room2 = rooms[j];
+
+            //为每个房间提取填充图像并提取边缘
+            auto room1_filled_image = extract_filled_image(pixels_to_matrix(room1.get_pixels(), rows, cols));
+            auto room2_filled_image = extract_filled_image(pixels_to_matrix(room2.get_pixels(), rows, cols));
+
+            auto room1_edges = extract_edges(room1_filled_image);
+            auto room2_edges = extract_edges(room2_filled_image);
+
+            //检查每个门是否连接两个房间
+            for (const auto& door : door_pixels) 
+            {
+                auto door_segment = bresenham_line(door.first.first, door.first.second, door.second.first, door.second.second);
+
+                bool room1_connected = false;
+                bool room2_connected = false;
+
+                //检查门的每个像素是否连接到房间的边缘
+                for (const auto& pixel : door_segment) 
+                {
+                    if (room1_edges[pixel.first][pixel.second] == 1)
+                        room1_connected = true;
+
+                    if (room2_edges[pixel.first][pixel.second] == 1)
+                        room2_connected = true;
+                }
+
+                //如果两个房间都与门相连，则添加到连接的房间列表
+                if (room1_connected && room2_connected) 
+                {
+                    room1.add_connected_room(room2.get_room_id(), door);
+                    room2.add_connected_room(room1.get_room_id(), door);
+                }
+            }
+        }
+    }
+}
+
 
 
 /*
-int main() 
-{
-    std::vector<std::vector<int>> matrix = 
-    {
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 1, 1, 1, 0, 0, 0, 1, 1, 0},
-        {0, 1, 1, 1, 0, 0, 1, 1, 1, 0},
-        {0, 1, 0, 0, 0, 0, 0, 1, 1, 0},
-        {0, 1, 1, 1, 1, 1, 1, 1, 1, 0},
-        {0, 1, 0, 0, 1, 0, 0, 0, 0, 0},
-        {0, 1, 1, 0, 1, 1, 1, 1, 0, 0},
-        {0, 1, 1, 0, 1, 1, 1, 1, 0, 0},
-        {0, 1, 1, 0, 1, 1, 1, 1, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-    };
-
-    std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>> door_pixels = 
-    {
-        {{3, 0}, {3, 2}},
-        {{5, 0}, {5, 2}},
-        {{3, 6}, {5, 6}},
-        {{5, 3}, {5, 5}}
-    };
-
-    std::vector<std::vector<int>> segmented_matrix;
-    std::vector<Room> rooms;
-
-    std::tie(segmented_matrix, rooms) = segment_rooms(matrix, door_pixels);
-
-    // 将房间单独打印到原来的地图背景
-    for (const Room& room : rooms) 
-    {
-        int room_id = room.get_room_id();
-        for (const std::pair<int, int>& pixel : room.get_pixels()) 
-        {
-            int x = pixel.first;
-            int y = pixel.second;
-            segmented_matrix[x][y] = room_id;
-        }
-    }
-
-    // 输出分割后的矩阵
-    std::cout << "Segmented Matrix:\n";
-    for (const std::vector<int>& row : segmented_matrix) 
-    {
-        for (int pixel : row) 
-        {
-            std::cout << pixel << " ";
-        }
-        std::cout << "\n";
-    }
-
-    return 0;
-}
-*/
-
-
 int main() 
 {
     int length, width, desired_area;
@@ -607,4 +635,65 @@ int main()
 
     return 0;
 }
+*/
+
+
+
+void test_find_connected_rooms() {
+    std::vector<std::vector<int>> matrix = {
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 1, 1, 1, 0, 0, 0, 1, 1, 0},
+        {0, 1, 1, 1, 0, 0, 1, 1, 1, 0},
+        {0, 1, 0, 0, 0, 0, 0, 1, 1, 0},
+        {0, 1, 1, 1, 1, 1, 1, 1, 1, 0},
+        {0, 1, 0, 0, 1, 0, 0, 0, 0, 0},
+        {0, 1, 1, 0, 1, 1, 1, 1, 0, 0},
+        {0, 1, 1, 0, 1, 1, 1, 1, 0, 0},
+        {0, 1, 1, 0, 1, 1, 1, 1, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    };
+
+    std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>> door_pixels = {
+        {{3, 0}, {3, 2}},
+        {{5, 0}, {5, 2}},
+        {{3, 6}, {5, 6}},
+        {{5, 3}, {5, 5}}
+    };
+
+    auto result = segment_rooms(matrix, door_pixels);
+    auto& segmented_matrix = result.first;
+    auto& rooms = result.second;
+
+
+    find_connected_rooms(segmented_matrix, rooms, door_pixels);
+
+    // Replace 1s in the segmented matrix with room id
+    for (Room& room : rooms) {
+        for (const auto& pixel : room.get_pixels()) {
+            int x = pixel.first;
+            int y = pixel.second;
+            segmented_matrix[x][y] = room.get_room_id();
+        }
+    }
+
+    // Print the segmented matrix
+    std::cout << "Segmented Matrix:\n";
+    for (const auto& row : segmented_matrix) {
+        for (int val : row) {
+            std::cout << val << ' ';
+        }
+        std::cout << '\n';
+    }
+
+    // Print the connected rooms
+    for (Room& room : rooms) {
+        room.print_connected_rooms();
+    }
+}
+
+int main() {
+    test_find_connected_rooms();
+    return 0;
+}
+
 
