@@ -5,12 +5,13 @@
 
 #include <mapFileAnalysis.h>
 
-#include <vector>
+
 #include <string>
 #include <array>
 #include <cmath>
 #include <stack>
 #include <utility>
+#include <iterator>
 
 class Room {
 private:
@@ -71,6 +72,9 @@ std::vector<std::vector<int>> pixels_to_matrix(const std::vector<std::pair<int, 
 
 //房间连通性判断函数
 void find_connected_rooms(const std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>& rooms, const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels);
+
+//凹角膨胀函数
+std::pair<std::vector<Room>, std::vector<std::vector<int>>> expand_rooms(std::vector<Room> rooms, std::vector<std::vector<int>> segmented_matrix);
 
 #endif // !SEGMENT_ROOMS_H
 

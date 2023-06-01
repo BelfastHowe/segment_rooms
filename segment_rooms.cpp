@@ -586,6 +586,10 @@ void find_connected_rooms(const std::vector<std::vector<int>>& segmented_matrix,
 
 
 
+
+
+
+
 /*
 int main() 
 {
