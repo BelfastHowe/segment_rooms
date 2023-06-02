@@ -13,11 +13,23 @@
 #include <utility>
 #include <iterator>
 
+
+//多连通区域转化为单连通区域
+//cv::Mat extract_filled_image(const cv::Mat& connected_region);
+std::vector<std::vector<int>> extract_filled_image(const std::vector<std::vector<int>>& connected_region);
+
+//全部外轮廓提取函数
+//cv::Mat extract_edges(const cv::Mat& filled_image);
+std::vector<std::vector<int>> extract_edges(const std::vector<std::vector<int>>& filled_image);
+
+
+
 class Room {
 private:
     int room_id;//房间编号
     std::vector<std::pair<int, int>> pixels;//房间内的像素点
     std::vector<std::pair<int, std::pair<std::pair<int, int>, std::pair<int, int>>>> connected_rooms;//房间关于门的连通信息
+    std::vector<std::pair<int, int>> outline_pixels;//外轮廓像素点列表
 
 public:
     Room(int room_id);//构造函数
@@ -35,6 +47,10 @@ public:
     void add_connected_room(int room_id, const std::pair<std::pair<int, int>, std::pair<int, int>>& door);//添加房间关于门的连通信息
 
     void print_connected_rooms() const;//输出房间关于门的连通信息
+
+    void calculate_outline(const std::vector<std::vector<int>>& matrix);//计算并保存外轮廓像素点
+
+    const std::vector<std::pair<int, int>>& get_outline_pixels() const;//获取外轮廓像素点列表
 };
 
 
@@ -46,14 +62,6 @@ std::vector<std::pair<int, int>> bresenham_line(int x1, int y1, int x2, int y2);
 
 //房间分割函数
 std::pair<std::vector<std::vector<int>>, std::vector<Room>> segment_rooms(const std::vector<std::vector<int>>& matrix, const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels);
-
-//多连通区域转化为单连通区域
-//cv::Mat extract_filled_image(const cv::Mat& connected_region);
-std::vector<std::vector<int>> extract_filled_image(const std::vector<std::vector<int>>& connected_region);
-
-//全部外轮廓提取函数
-//cv::Mat extract_edges(const cv::Mat& filled_image);
-std::vector<std::vector<int>> extract_edges(const std::vector<std::vector<int>>& filled_image);
 
 //自定义膨胀函数
 std::vector<std::vector<int>> customize_dilate(const std::vector<std::vector<int>>& binaryMatrix, const std::vector<std::vector<int>>& kernel);
@@ -71,7 +79,8 @@ std::vector<std::vector<int>> customize_closing(const std::vector<std::vector<in
 std::vector<std::vector<int>> pixels_to_matrix(const std::vector<std::pair<int, int>>& pixels, int height, int width);
 
 //房间连通性判断函数
-void find_connected_rooms(const std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>& rooms, const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels);
+//void find_connected_rooms(const std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>& rooms, const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels);
+void find_connected_rooms(std::vector<Room>& rooms, const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels);
 
 //凹角膨胀函数
 std::pair<std::vector<Room>, std::vector<std::vector<int>>> expand_rooms(std::vector<Room> rooms, std::vector<std::vector<int>> segmented_matrix);

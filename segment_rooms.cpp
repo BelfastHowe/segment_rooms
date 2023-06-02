@@ -46,6 +46,56 @@ void Room::print_connected_rooms() const
     }
 }
 
+void Room::calculate_outline(const std::vector<std::vector<int>>& matrix)
+{
+    // 初始化空房间矩阵
+    std::vector<std::vector<int>> room_matrix(matrix.size(), std::vector<int>(matrix[0].size(), 0));
+
+    // 填充房间矩阵
+    for (std::vector<std::pair<int, int>>::iterator it = pixels.begin(); it != pixels.end(); ++it)
+    {
+        int x = it->first;
+        int y = it->second;
+        room_matrix[x][y] = 1;
+    }
+
+    // 计算轮廓
+    std::vector<std::vector<int>> room_filled = extract_filled_image(room_matrix);
+    std::vector<std::vector<int>> room_outline = extract_edges(room_filled);
+
+    // 在这个步骤中，我们需要使用 OpenCV 的 `cv::findContours` 函数找到轮廓
+    // 将结果转换为 cv::Mat
+    cv::Mat room_outline_mat = cv::Mat(room_outline.size(), room_outline[0].size(), CV_8UC1);
+    for (int i = 0; i < room_outline.size(); i++)
+    {
+        for (int j = 0; j < room_outline[0].size(); j++)
+        {
+            room_outline_mat.at<uchar>(i, j) = room_outline[i][j];
+        }
+    }
+
+    std::vector<std::vector<cv::Point>> contours;
+    cv::findContours(room_outline_mat, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
+
+    // 清空 outline_pixels
+    outline_pixels.clear();
+
+    // 提取第一个轮廓的像素点
+    if (!contours.empty())
+    {
+        for (std::vector<cv::Point>::iterator it = contours[0].begin(); it != contours[0].end(); ++it)
+        {
+            outline_pixels.push_back(std::make_pair(it->x, it->y));
+        }
+    }
+}
+
+const std::vector<std::pair<int, int>>& Room::get_outline_pixels() const
+{
+    return outline_pixels;
+}
+
+
 
 bool is_valid_pixel(int x, int y, int rows, int cols) 
 {
@@ -533,6 +583,8 @@ std::vector<std::vector<int>> pixels_to_matrix(const std::vector<std::pair<int, 
     return matrix;
 }
 
+
+/*
 void find_connected_rooms(const std::vector<std::vector<int>>& segmented_matrix,
     std::vector<Room>& rooms,
     const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels) 
@@ -583,9 +635,50 @@ void find_connected_rooms(const std::vector<std::vector<int>>& segmented_matrix,
         }
     }
 }
+*/
 
+void find_connected_rooms(std::vector<Room>& rooms, const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels)
+{
+    //对于每一对房间
+    for (size_t i = 0; i < rooms.size(); i++)
+    {
+        for (size_t j = i + 1; j < rooms.size(); j++)
+        {
+            Room& room1 = rooms[i];
+            Room& room2 = rooms[j];
 
+            // 获取每个房间的轮廓像素点
+            const auto& room1_outline_pixels = room1.get_outline_pixels();
+            const auto& room2_outline_pixels = room2.get_outline_pixels();
 
+            //检查每个门是否连接两个房间
+            for (const auto& door : door_pixels)
+            {
+                auto door_segment = bresenham_line(door.first.first, door.first.second, door.second.first, door.second.second);
+
+                bool room1_connected = false;
+                bool room2_connected = false;
+
+                //检查门的每个像素是否连接到房间的轮廓
+                for (const auto& pixel : door_segment)
+                {
+                    if (std::find(room1_outline_pixels.begin(), room1_outline_pixels.end(), pixel) != room1_outline_pixels.end())
+                        room1_connected = true;
+
+                    if (std::find(room2_outline_pixels.begin(), room2_outline_pixels.end(), pixel) != room2_outline_pixels.end())
+                        room2_connected = true;
+                }
+
+                //如果两个房间都与门相连，则添加到连接的房间列表
+                if (room1_connected && room2_connected)
+                {
+                    room1.add_connected_room(room2.get_room_id(), door);
+                    room2.add_connected_room(room1.get_room_id(), door);
+                }
+            }
+        }
+    }
+}
 
 
 
@@ -668,8 +761,12 @@ void test_find_connected_rooms() {
     auto& segmented_matrix = result.first;
     auto& rooms = result.second;
 
+    for (Room& room : rooms)
+    {
+        room.calculate_outline(segmented_matrix);
+    }
 
-    find_connected_rooms(segmented_matrix, rooms, door_pixels);
+    find_connected_rooms(rooms, door_pixels);
 
     // Replace 1s in the segmented matrix with room id
     for (Room& room : rooms) {
