@@ -52,10 +52,10 @@ void Room::calculate_outline(const std::vector<std::vector<int>>& matrix)
     std::vector<std::vector<int>> room_matrix(matrix.size(), std::vector<int>(matrix[0].size(), 0));
 
     // 填充房间矩阵
-    for (std::vector<std::pair<int, int>>::iterator it = pixels.begin(); it != pixels.end(); ++it)
+    for (const auto& pixel : pixels)
     {
-        int x = it->first;
-        int y = it->second;
+        int x = pixel.first;
+        int y = pixel.second;
         room_matrix[x][y] = 1;
     }
 
@@ -63,29 +63,52 @@ void Room::calculate_outline(const std::vector<std::vector<int>>& matrix)
     std::vector<std::vector<int>> room_filled = extract_filled_image(room_matrix);
     std::vector<std::vector<int>> room_outline = extract_edges(room_filled);
 
-    // 在这个步骤中，我们需要使用 OpenCV 的 `cv::findContours` 函数找到轮廓
-    // 将结果转换为 cv::Mat
-    cv::Mat room_outline_mat = cv::Mat(room_outline.size(), room_outline[0].size(), CV_8UC1);
-    for (int i = 0; i < room_outline.size(); i++)
+    // 寻找初始点
+    std::pair<int, int> start_pixel = { -1, -1 };
+    for (int i = 0; i < room_outline.size(); ++i)
     {
-        for (int j = 0; j < room_outline[0].size(); j++)
+        for (int j = 0; j < room_outline[i].size(); ++j)
         {
-            room_outline_mat.at<uchar>(i, j) = room_outline[i][j];
+            if (room_outline[i][j] == 1)
+            {
+                start_pixel = { i, j };
+                room_outline[i][j] = 0;  // mark as visited
+                break;
+            }
         }
+        if (start_pixel.first != -1) break;
     }
 
-    std::vector<std::vector<cv::Point>> contours;
-    cv::findContours(room_outline_mat, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
-
-    // 清空 outline_pixels
-    outline_pixels.clear();
-
-    // 提取第一个轮廓的像素点
-    if (!contours.empty())
+    // 如果没有找到轮廓，清空outline_pixels并返回
+    if (start_pixel.first == -1)
     {
-        for (std::vector<cv::Point>::iterator it = contours[0].begin(); it != contours[0].end(); ++it)
+        outline_pixels.clear();
+        return;
+    }
+
+    // 存储初始点并开始深度优先搜索
+    outline_pixels = { start_pixel };
+    std::stack<std::pair<int, int>> stack;
+    stack.push(start_pixel);
+
+    // 四连通方向：左，上，右，下
+    std::vector<std::pair<int, int>> directions = { {0, -1}, {-1, 0}, {0, 1}, {1, 0} };
+
+    while (!stack.empty())
+    {
+        int x = stack.top().first, y = stack.top().second;
+        stack.pop();
+
+        for (const auto& d : directions)
         {
-            outline_pixels.push_back(std::make_pair(it->x, it->y));
+            int nx = x + d.first, ny = y + d.second;
+            if (nx >= 0 && nx < room_outline.size() && ny >= 0 && ny < room_outline[0].size() && room_outline[nx][ny] == 1)
+            {
+                outline_pixels.push_back({ nx, ny });
+                room_outline[nx][ny] = 0;  // mark as visited
+                stack.push({ nx, ny });
+                break;  // 只压入一个邻居到栈中
+            }
         }
     }
 }
@@ -96,6 +119,23 @@ const std::vector<std::pair<int, int>>& Room::get_outline_pixels() const
 }
 
 
+
+std::vector<std::vector<int>> ConvertMatrixToInt(const std::vector<std::vector<uint8_t>>& uint8_matrix) 
+{
+    std::vector<std::vector<int>> int_matrix;
+
+    for (const auto& uint8_row : uint8_matrix) 
+    {
+        std::vector<int> int_row;
+        for (uint8_t value : uint8_row)
+        {
+            int_row.push_back(static_cast<int>(value));
+        }
+        int_matrix.push_back(int_row);
+    }
+
+    return int_matrix;
+}
 
 bool is_valid_pixel(int x, int y, int rows, int cols) 
 {
@@ -681,6 +721,147 @@ void find_connected_rooms(std::vector<Room>& rooms, const std::vector<std::pair<
 }
 
 
+std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const std::vector<std::vector<int>>& segmented_matrix, const std::vector<Room>& rooms) 
+{
+    // 创建一个新的房间列表作为副本
+    std::vector<Room> expanded_rooms = rooms;
+
+    // 创建一个新的矩阵副本
+    std::vector<std::vector<int>> expanded_matrix = segmented_matrix;
+
+    // 获取矩阵的大小
+    int height = segmented_matrix.size();
+    int width = segmented_matrix[0].size();
+
+    // 设置一个标志，用来表示是否还有像素可以进行膨胀
+    bool expansion_occurred = true;
+
+    // 只要还有像素可以膨胀，就继续循环
+    while (expansion_occurred) 
+    {
+        // 在开始新一轮的循环时，首先将标志设置为False
+        expansion_occurred = false;
+
+        // 遍历矩阵
+        for (int i = 0; i < height; i++) 
+        {
+            for (int j = 0; j < width; j++) 
+            {
+                // 当像素点不为0时，即该点位于某个房间内
+                if (expanded_matrix[i][j] != 0) 
+                {
+                    int room_id = expanded_matrix[i][j];
+
+                    // 获取周围8个点的坐标
+                    std::vector<std::pair<int, int>> neighbor_coords;
+                    for (int dx = -1; dx <= 1; dx++) 
+                    {
+                        for (int dy = -1; dy <= 1; dy++) 
+                        {
+                            int nx = i + dx;
+                            int ny = j + dy;
+                            if (0 <= nx && nx < height && 0 <= ny && ny < width) 
+                            {
+                                neighbor_coords.push_back({ nx, ny });
+                            }
+                        }
+                    }
+
+                    // 获取周围8个点的像素值
+                    std::vector<int> neighbor_pixels;
+                    for (const auto& coord : neighbor_coords) 
+                    {
+                        neighbor_pixels.push_back(expanded_matrix[coord.first][coord.second]);
+                    }
+
+                    // 判断周围8个点是否都等于房间号或0
+                    if (std::all_of(neighbor_pixels.begin(), neighbor_pixels.end(), [room_id](int pixel) { return pixel == room_id || pixel == 0; })) 
+                    {
+                        // 计算周围8个点中0的数量
+                        int num_zeros = std::count(neighbor_pixels.begin(), neighbor_pixels.end(), 0);
+
+                        // 如果只有一个0，则将该像素点置为房间号，并记录到副本中
+                        if (num_zeros == 1) 
+                        {
+                            auto zero_it = std::find(neighbor_pixels.begin(), neighbor_pixels.end(), 0);
+                            int zero_index = std::distance(neighbor_pixels.begin(), zero_it);
+                            std::pair<int, int> zero_coord = neighbor_coords[zero_index];
+                            expanded_matrix[zero_coord.first][zero_coord.second] = room_id;
+                            expanded_rooms[room_id - 1].add_pixel(zero_coord);
+
+                            // 因为有像素点被膨胀了，所以将标志设置为True
+                            expansion_occurred = true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 计算扩展后的房间轮廓
+    for (Room& room : expanded_rooms) 
+    {
+        room.calculate_outline(expanded_matrix);
+    }
+
+    return { expanded_matrix, expanded_rooms };
+}
+
+void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>& expanded_rooms, std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels) 
+{
+    int h = segmented_matrix.size();
+    int w = segmented_matrix[0].size();
+
+    // 创建一个RGB画布，白色背景
+    cv::Mat final_map(h, w, CV_8UC3, cv::Scalar(255, 255, 255));
+
+    // 随机生成RGB颜色
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, 255);
+    std::vector<cv::Vec3b> colors;
+    for (int i = 0; i < expanded_rooms.size(); i++) 
+    {
+        colors.push_back(cv::Vec3b(dis(gen), dis(gen), dis(gen)));
+    }
+
+    // 染色每个房间
+    for (int x = 0; x < h; x++) 
+    {
+        for (int y = 0; y < w; y++) 
+        {
+            if (segmented_matrix[x][y] != 0) 
+            {
+                final_map.at<cv::Vec3b>(x, y) = colors[segmented_matrix[x][y] - 1];
+            }
+        }
+    }
+
+    // 输出中间图像
+    cv::imshow("Colored Rooms", final_map);
+    //cv::waitKey(0);
+
+    // 绘制扩展后的房间轮廓
+    for (Room& room : expanded_rooms) 
+    {
+        for (auto& pixel : room.get_outline_pixels()) 
+        {
+            final_map.at<cv::Vec3b>(pixel.first, pixel.second) = cv::Vec3b(128, 128, 128);  // 使用灰色绘制轮廓线
+        }
+    }
+
+    // 绘制门的线段
+    for (auto& door : door_pixels) 
+    {
+        cv::line(final_map, cv::Point(door.first.second, door.first.first), cv::Point(door.second.second, door.second.first), cv::Scalar(0, 0, 255), 3);  // 红色
+    }
+
+    // 显示最终地图
+    cv::imshow("Final Map", final_map);
+    cv::waitKey(0);
+}
+
+
 
 
 /*
@@ -733,8 +914,6 @@ int main()
     return 0;
 }
 */
-
-
 
 void test_find_connected_rooms() {
     std::vector<std::vector<int>> matrix = {
@@ -792,8 +971,83 @@ void test_find_connected_rooms() {
     }
 }
 
+void test_final_map()
+{
+    const char* filename = "D:/files/seg_ori_20230509_073109_647.debug";
+
+    // 读取地图文件并转化为01矩阵
+    std::vector<std::vector<uint8_t>> binaryMatrix = readMapFile(filename);
+
+    std::vector<std::vector<int>> origin_map = ConvertMatrixToInt(binaryMatrix);
+
+    // 将01矩阵转化为二值图像并打印
+    printBinaryImage(origin_map, 2, "origin_map");
+
+    cv::Mat cv_kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
+    std::vector<std::vector<int>> kernel;
+    kernel.reserve(cv_kernel.rows);
+    for (int i = 0; i < cv_kernel.rows; ++i) 
+    {
+        kernel.push_back(std::vector<int>());
+
+        kernel[i].reserve(cv_kernel.cols);
+        for (int j = 0; j < cv_kernel.cols; ++j) 
+        {
+            kernel[i].push_back(cv_kernel.at<int>(i, j));
+        }
+    }
+
+    std::vector<std::vector<int>> optimization_map = customize_closing(customize_dilate(customize_dilate(origin_map, kernel), kernel), kernel);
+    printBinaryImage(optimization_map, 2, "optimization_map");
+
+    std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>> door_pixels = 
+    {
+        {{3, 0}, {3, 2}},
+        {{5, 0}, {5, 2}},
+        {{3, 6}, {5, 6}},
+        {{5, 3}, {5, 5}}
+    };
+
+    auto result = segment_rooms(optimization_map, door_pixels);
+    auto& segmented_matrix = result.first;
+    auto& rooms = result.second;
+
+    for (Room& room : rooms)
+    {
+        room.calculate_outline(segmented_matrix);
+    }
+
+    find_connected_rooms(rooms, door_pixels);
+
+    // Replace 1s in the segmented matrix with room id
+    for (Room& room : rooms) 
+    {
+        for (const auto& pixel : room.get_pixels()) 
+        {
+            int x = pixel.first;
+            int y = pixel.second;
+            segmented_matrix[x][y] = room.get_room_id();
+        }
+    }
+
+
+    // Print the connected rooms
+    for (Room& room : rooms) 
+    {
+        room.print_connected_rooms();
+    }
+
+    auto expanded = expand_rooms(segmented_matrix, rooms);
+    auto& expanded_matrix = expanded.first;
+    auto& expanded_rooms = expanded.second;
+
+    draw_map(segmented_matrix, expanded_rooms, door_pixels);
+
+}
+
+
 int main() {
-    test_find_connected_rooms();
+    test_final_map();
     return 0;
 }
 

@@ -54,6 +54,9 @@ public:
 };
 
 
+//将uint8_t矩阵转化为int矩阵
+std::vector<std::vector<int>> ConvertMatrixToInt(const std::vector<std::vector<uint8_t>>& uint8_matrix);
+
 //判断像素点是否有效
 bool is_valid_pixel(int x, int y, int rows, int cols);
 
@@ -83,7 +86,10 @@ std::vector<std::vector<int>> pixels_to_matrix(const std::vector<std::pair<int, 
 void find_connected_rooms(std::vector<Room>& rooms, const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels);
 
 //凹角膨胀函数
-std::pair<std::vector<Room>, std::vector<std::vector<int>>> expand_rooms(std::vector<Room> rooms, std::vector<std::vector<int>> segmented_matrix);
+std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const std::vector<std::vector<int>>& segmented_matrix, const std::vector<Room>& rooms);
+
+//成品地图绘制
+void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>& expanded_rooms, std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels);
 
 #endif // !SEGMENT_ROOMS_H
 

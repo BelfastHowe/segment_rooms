@@ -58,8 +58,8 @@ void printBinaryMatrix(const std::vector<std::vector<uint8_t>>& binaryMatrix)
     }
     // ÏÔÊ¾¶þÖµÍ¼Ïñ
     cv::imshow("Binary Image", image);
-    cv::waitKey(0);
-    cv::destroyAllWindows();
+    //cv::waitKey(0);
+   // cv::destroyAllWindows();
 }
 
 /*int main()

@@ -81,7 +81,7 @@ void printBinaryImage(const std::vector<std::vector<int>>& matrix, int scale, co
     }
 
     cv::Mat scaledImage;
-    cv::resize(image, scaledImage, cv::Size(length * scale, width * scale));
+    cv::resize(image, scaledImage, cv::Size(length * scale, width * scale),cv::INTER_LINEAR);
 
     cv::imshow(windowName, scaledImage);
     //cv::waitKey(0);
