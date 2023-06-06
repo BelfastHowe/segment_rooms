@@ -846,14 +846,14 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>
     {
         for (auto& pixel : room.get_outline_pixels()) 
         {
-            final_map.at<cv::Vec3b>(pixel.first, pixel.second) = cv::Vec3b(128, 128, 128);  // 使用灰色绘制轮廓线
+            final_map.at<cv::Vec3b>(pixel.first, pixel.second) = cv::Vec3b(0, 0, 0);  // 使用灰色绘制轮廓线
         }
     }
 
     // 绘制门的线段
     for (auto& door : door_pixels) 
     {
-        cv::line(final_map, cv::Point(door.first.second, door.first.first), cv::Point(door.second.second, door.second.first), cv::Scalar(0, 0, 255), 3);  // 红色
+        cv::line(final_map, cv::Point(door.first.second, door.first.first), cv::Point(door.second.second, door.second.first), cv::Scalar(0, 0, 255), 2);  // 红色
     }
 
     // 显示最终地图
@@ -973,7 +973,7 @@ void test_find_connected_rooms() {
 
 void test_final_map()
 {
-    const char* filename = "D:/files/seg_ori_20230509_073109_647.debug";
+    const char* filename = "D:\\files\\mapfile\\dataset_occ\\seg_ori_20230522_035516_445.debug";
 
     // 读取地图文件并转化为01矩阵
     std::vector<std::vector<uint8_t>> binaryMatrix = readMapFile(filename);
@@ -983,7 +983,7 @@ void test_final_map()
     // 将01矩阵转化为二值图像并打印
     printBinaryImage(origin_map, 2, "origin_map");
 
-    cv::Mat cv_kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
+    cv::Mat cv_kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
     std::vector<std::vector<int>> kernel;
     kernel.reserve(cv_kernel.rows);
     for (int i = 0; i < cv_kernel.rows; ++i) 
@@ -993,19 +993,24 @@ void test_final_map()
         kernel[i].reserve(cv_kernel.cols);
         for (int j = 0; j < cv_kernel.cols; ++j) 
         {
-            kernel[i].push_back(cv_kernel.at<int>(i, j));
+            kernel[i].push_back(cv_kernel.at<uint8_t>(i, j));
         }
     }
 
-    std::vector<std::vector<int>> optimization_map = customize_closing(customize_dilate(customize_dilate(origin_map, kernel), kernel), kernel);
+    std::vector<std::vector<int>> optimization_map = customize_closing(origin_map, kernel);
     printBinaryImage(optimization_map, 2, "optimization_map");
 
     std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>> door_pixels = 
     {
-        {{3, 0}, {3, 2}},
-        {{5, 0}, {5, 2}},
-        {{3, 6}, {5, 6}},
-        {{5, 3}, {5, 5}}
+        {{24, 102}, {47, 102}},
+        {{68, 76}, {68, 100}},
+        {{96, 53}, {96, 73}},
+        {{72, 73}, {90, 73}},
+        {{183, 73}, {200, 73}},
+        {{201, 75}, {201, 95}},
+        {{208, 73}, {230, 73}},
+        {{250, 73}, {273, 73}},
+        {{220, 98}, {239, 98}}
     };
 
     auto result = segment_rooms(optimization_map, door_pixels);
