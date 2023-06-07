@@ -780,17 +780,22 @@ std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const s
                         // 计算周围8个点中0的数量
                         int num_zeros = std::count(neighbor_pixels.begin(), neighbor_pixels.end(), 0);
 
-                        // 如果只有一个0，则将该像素点置为房间号，并记录到副本中
-                        if (num_zeros == 1) 
+                        // 如果只有一个或两个0，则将该像素点置为房间号，并记录到副本中
+                        if (num_zeros == 1 || num_zeros == 2)
                         {
-                            auto zero_it = std::find(neighbor_pixels.begin(), neighbor_pixels.end(), 0);
-                            int zero_index = std::distance(neighbor_pixels.begin(), zero_it);
-                            std::pair<int, int> zero_coord = neighbor_coords[zero_index];
-                            expanded_matrix[zero_coord.first][zero_coord.second] = room_id;
-                            expanded_rooms[room_id - 1].add_pixel(zero_coord);
+                            auto zero_it = neighbor_pixels.begin();
+                            while ((zero_it = std::find(zero_it, neighbor_pixels.end(), 0)) != neighbor_pixels.end())
+                            {
+                                int zero_index = std::distance(neighbor_pixels.begin(), zero_it);
+                                std::pair<int, int> zero_coord = neighbor_coords[zero_index];
+                                expanded_matrix[zero_coord.first][zero_coord.second] = room_id;
+                                expanded_rooms[room_id - 1].add_pixel(zero_coord);
 
-                            // 因为有像素点被膨胀了，所以将标志设置为True
-                            expansion_occurred = true;
+                                // 因为有像素点被膨胀了，所以将标志设置为True
+                                expansion_occurred = true;
+
+                                zero_it++;
+                            }
                         }
                     }
                 }
@@ -863,7 +868,6 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>
 
     cv::waitKey(0);
 }
-
 
 
 
