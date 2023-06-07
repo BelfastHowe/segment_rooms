@@ -839,6 +839,7 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>
 
     // 输出中间图像
     cv::imshow("Colored Rooms", final_map);
+    cv::imwrite("C:\\Users\\13012\\Desktop\\result\\Colored Rooms.jpg", final_map);
     //cv::waitKey(0);
 
     // 绘制扩展后的房间轮廓
@@ -858,6 +859,8 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>
 
     // 显示最终地图
     cv::imshow("Final Map", final_map);
+    cv::imwrite("C:\\Users\\13012\\Desktop\\result\\final_map.jpg", final_map);
+
     cv::waitKey(0);
 }
 
@@ -973,7 +976,7 @@ void test_find_connected_rooms() {
 
 void test_final_map()
 {
-    const char* filename = "D:\\files\\mapfile\\dataset_occ\\seg_ori_20230522_035516_445.debug";
+    const char* filename = "D:\\files\\mapfile\\dataset_occ\\seg_ori_20230519_012513_24.debug";
 
     // 读取地图文件并转化为01矩阵
     std::vector<std::vector<uint8_t>> binaryMatrix = readMapFile(filename);
@@ -997,20 +1000,20 @@ void test_final_map()
         }
     }
 
-    std::vector<std::vector<int>> optimization_map = customize_closing(origin_map, kernel);
+    std::vector<std::vector<int>> optimization_map = customize_closing(extract_filled_image(origin_map), kernel);
     printBinaryImage(optimization_map, 2, "optimization_map");
 
-    std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>> door_pixels = 
+    std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>> door_pixels =
     {
-        {{24, 102}, {47, 102}},
-        {{68, 76}, {68, 100}},
-        {{96, 53}, {96, 73}},
-        {{72, 73}, {90, 73}},
-        {{183, 73}, {200, 73}},
-        {{201, 75}, {201, 95}},
-        {{208, 73}, {230, 73}},
-        {{250, 73}, {273, 73}},
-        {{220, 98}, {239, 98}}
+        {{216, 41}, {216,73}},
+        {{111, 161}, {140, 161}},
+        {{110, 175}, {110, 190}},
+        {{110, 244}, {110, 258}},
+        {{136, 244}, {136, 259}},
+        {{115, 263}, {130, 263}},
+        {{83, 315}, {83, 332}},
+        {{178, 324}, {178, 338}},
+        {{111, 42}, {213, 147}}
     };
 
     auto result = segment_rooms(optimization_map, door_pixels);
