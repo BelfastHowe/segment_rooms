@@ -91,5 +91,12 @@ std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const s
 //成品地图绘制
 void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>& expanded_rooms, std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels);
 
+//骨架细化算法具体实现
+void thinningIteration(std::vector<std::vector<int>>& img, int iter);
+
+//Zhange-Suen骨架化算法
+void zhangSuenThinning(std::vector<std::vector<int>>& img);
+
+
 #endif // !SEGMENT_ROOMS_H
 

@@ -847,14 +847,51 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>
     cv::imwrite("C:\\Users\\13012\\Desktop\\result\\Colored Rooms.jpg", final_map);
     //cv::waitKey(0);
 
+
     // 绘制扩展后的房间轮廓
+    std::vector<std::vector<int>> floor_plan_matrix(h, std::vector<int>(w, 0));
+
     for (Room& room : expanded_rooms) 
     {
         for (auto& pixel : room.get_outline_pixels()) 
         {
-            final_map.at<cv::Vec3b>(pixel.first, pixel.second) = cv::Vec3b(0, 0, 0);  // 使用灰色绘制轮廓线
+            //final_map.at<cv::Vec3b>(pixel.first, pixel.second) = cv::Vec3b(0, 0, 0);  // 使用黑色绘制轮廓线
+            int u = pixel.first;
+            int v = pixel.second;
+            floor_plan_matrix[u][v] = 1;
         }
     }
+    cv::Mat floor_plan_img(h, w, CV_8UC3, cv::Scalar(255, 255, 255));
+    for (int x = 0; x < h; x++)
+    {
+        for (int y = 0; y < w; y++)
+        {
+            if (floor_plan_matrix[x][y] != 0)
+            {
+                floor_plan_img.at<cv::Vec3b>(x, y) = cv::Vec3b(0, 0, 0);
+            }
+        }
+    }
+    cv::imshow("floor_plan_img", floor_plan_img);
+    cv::imwrite("C:\\Users\\13012\\Desktop\\result\\floor_plan_img.jpg", floor_plan_img);
+
+    zhangSuenThinning(floor_plan_matrix);
+
+    cv::Mat floor_plan_img_thin(h, w, CV_8UC3, cv::Scalar(255, 255, 255));
+    for (int x = 0; x < h; x++)
+    {
+        for (int y = 0; y < w; y++)
+        {
+            if (floor_plan_matrix[x][y] != 0)
+            {
+                floor_plan_img_thin.at<cv::Vec3b>(x, y) = cv::Vec3b(0, 0, 0);
+            }
+        }
+    }
+    cv::imshow("floor_plan_img_thin", floor_plan_img_thin);
+    cv::imwrite("C:\\Users\\13012\\Desktop\\result\\floor_plan_img_thin.jpg", floor_plan_img_thin);
+
+
 
     // 绘制门的线段
     for (auto& door : door_pixels) 
@@ -868,6 +905,104 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>
 
     cv::waitKey(0);
 }
+
+void thinningIteration(std::vector<std::vector<int>>& img, int iter)
+{
+    int h = img.size();
+    int w = img[0].size();
+
+    // Mark pixels for removal
+    std::vector<std::vector<bool>> marker(h, std::vector<bool>(w, false));
+
+    for (int i = 1; i < h - 1; i++)
+    {
+        for (int j = 1; j < w - 1; j++)
+        {
+            if (img[i][j] != 0)
+            {
+                // Get 3x3 neighbourhood
+                int p[9];
+                p[0] = img[i][j];     // P1
+                p[1] = img[i - 1][j];   // P2
+                p[2] = img[i - 1][j + 1]; // P3
+                p[3] = img[i][j + 1];   // P4
+                p[4] = img[i + 1][j + 1]; // P5
+                p[5] = img[i + 1][j];   // P6
+                p[6] = img[i + 1][j - 1]; // P7
+                p[7] = img[i][j - 1];   // P8
+                p[8] = img[i - 1][j - 1]; // P9
+
+                int np = 0; // Number of non-zero neighbours
+                for (int k = 1; k <= 8; k++)
+                {
+                    np += (p[k] != 0);
+                }
+
+                int sp = 0; // Number of 0-1 transitions
+                for (int k = 1; k <= 8; k++)
+                {
+                    sp += (p[k] == 0 && p[k + 1] != 0);
+                }
+                sp += (p[8] == 0 && p[1] != 0);
+
+                // Condition A: 2 <= np <= 6
+                bool condA = np >= 2 && np <= 6;
+
+                // Condition B: sp == 1
+                bool condB = sp == 1;
+
+                // Condition C and D depend on the iteration (odd or even)
+                bool condC, condD;
+                if (iter == 0)
+                {
+                    condC = (p[1] * p[3] * p[5]) == 0;
+                    condD = (p[3] * p[5] * p[7]) == 0;
+                }
+                else
+                {
+                    condC = (p[1] * p[3] * p[7]) == 0;
+                    condD = (p[1] * p[5] * p[7]) == 0;
+                }
+
+                // If A,B,C and D are all true mark the pixel for deletion
+                if (condA && condB && condC && condD)
+                {
+                    marker[i][j] = true;
+                }
+            }
+        }
+    }
+
+    // Now delete the marked pixels
+    for (int i = 0; i < h; i++)
+    {
+        for (int j = 0; j < w; j++)
+        {
+            if (marker[i][j])
+            {
+                img[i][j] = 0;
+            }
+        }
+    }
+}
+
+void zhangSuenThinning(std::vector<std::vector<int>>& img)
+{
+    int h = img.size();
+    int w = img[0].size();
+    std::vector<std::vector<int>> newImg;
+
+    do
+    {
+        newImg = img;
+        thinningIteration(img, 0);
+        thinningIteration(img, 1);
+    } while (img != newImg);
+}
+
+
+
+
 
 
 
@@ -956,7 +1091,8 @@ void test_find_connected_rooms() {
 
     // Replace 1s in the segmented matrix with room id
     for (Room& room : rooms) {
-        for (const auto& pixel : room.get_pixels()) {
+        for (const auto& pixel : room.get_pixels()) 
+        {
             int x = pixel.first;
             int y = pixel.second;
             segmented_matrix[x][y] = room.get_room_id();
