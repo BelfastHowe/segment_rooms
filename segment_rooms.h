@@ -54,6 +54,18 @@ public:
 };
 
 
+struct Line //各种线的结构体
+{
+    enum Direction { HORIZONTAL, VERTICAL, NONLINEAR };//水平线，垂直线，非线性
+
+    int id; //线的编号
+    Direction direction; //线的方向或者非线性
+    std::vector<std::pair<int, int>> points; //线上的点
+    std::pair<int, int> startPoint; //线的起点
+    std::pair<int, int> endPoint; //线的终点
+};
+
+
 //将uint8_t矩阵转化为int矩阵
 std::vector<std::vector<int>> ConvertMatrixToInt(const std::vector<std::vector<uint8_t>>& uint8_matrix);
 
@@ -96,6 +108,12 @@ void thinningIteration(std::vector<std::vector<int>>& img, int iter);
 
 //Zhange-Suen骨架化算法
 void zhangSuenThinning(std::vector<std::vector<int>>& img);
+
+//去除骨架中的单像素分支
+void removeBranches(std::vector<std::vector<int>>& img);
+
+//提取正交线段，并将提取过的像素点置为0
+std::vector<Line> extractOrthogonalLines(std::vector<std::vector<int>>& img);
 
 
 #endif // !SEGMENT_ROOMS_H

@@ -876,6 +876,7 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>
     cv::imwrite("C:\\Users\\13012\\Desktop\\result\\floor_plan_img.jpg", floor_plan_img);
 
     zhangSuenThinning(floor_plan_matrix);
+    removeBranches(floor_plan_matrix);
 
     cv::Mat floor_plan_img_thin(h, w, CV_8UC3, cv::Scalar(255, 255, 255));
     for (int x = 0; x < h; x++)
@@ -998,6 +999,135 @@ void zhangSuenThinning(std::vector<std::vector<int>>& img)
         thinningIteration(img, 0);
         thinningIteration(img, 1);
     } while (img != newImg);
+}
+
+void removeBranches(std::vector<std::vector<int>>& img)
+{
+    int height = img.size();
+    int width = img[0].size();
+
+    for (int i = 1; i < height - 1; i++)
+    {
+        for (int j = 1; j < width - 1; j++)
+        {
+            if (img[i][j] == 1)
+            {
+                // Get 3x3 neighbourhood
+                int p[9];
+                p[0] = img[i][j];        // P1
+                p[1] = img[i - 1][j];      // P2
+                p[2] = img[i - 1][j + 1];  // P3
+                p[3] = img[i][j + 1];      // P4
+                p[4] = img[i + 1][j + 1];  // P5
+                p[5] = img[i + 1][j];      // P6
+                p[6] = img[i + 1][j - 1];  // P7
+                p[7] = img[i][j - 1];      // P8
+                p[8] = img[i - 1][j - 1];  // P9
+
+                int count = 0;
+                for (int k = 0; k < 9; k++)
+                {
+                    count += p[k];
+                }
+
+                if (count == 3)
+                {
+                    int transitions = 0;
+                    for (int k = 1; k <= 8; k++)
+                    {
+                        transitions += (p[k] == 0 && p[k + 1] == 1);
+                    }
+                    transitions += (p[8] == 0 && p[1] == 1);
+
+                    if (transitions == 1)
+                    {
+                        img[i][j] = 0;
+                    }
+                }
+            }
+        }
+    }
+}
+
+std::vector<Line> extractOrthogonalLines(std::vector<std::vector<int>>& img) 
+{
+    std::vector<Line> lines;
+
+    //第一步，提取水平线
+    for (int i = 0; i < img.size(); ++i) 
+    {
+        for (int j = 0; j < img[i].size(); ) 
+        {
+            if (img[i][j] == 1) 
+            {
+                int start = j;
+                while (j < img[i].size() && img[i][j] == 1) 
+                {
+                    ++j;
+                }
+                int end = j - 1;
+
+                // 只考虑长于5像素的线段
+                if (end - start + 1 > 5) 
+                {
+                    Line line;
+                    line.id = lines.size();
+                    line.direction = Line::HORIZONTAL;
+                    line.startPoint = { i, start };
+                    line.endPoint = { i, end };
+                    for (int k = start; k <= end; ++k) 
+                    {
+                        line.points.push_back({ i, k });
+                        img[i][k] = 0;  // 重置为背景
+                    }
+                    lines.push_back(line);
+                }
+            }
+            else 
+            {
+                ++j;
+            }
+        }
+    }
+
+    //第二步，提取垂直线
+    for (int j = 0; j < img[0].size(); ++j) 
+    {
+        for (int i = 0; i < img.size(); ) 
+        {
+            if (img[i][j] == 1) 
+            {
+                int start = i;
+                while (i < img.size() && img[i][j] == 1) 
+                {
+                    ++i;
+                }
+                int end = i - 1;
+
+                // 只考虑长于5像素的线段
+                if (end - start + 1 > 5) 
+                {
+                    Line line;
+                    line.id = lines.size();
+                    line.direction = Line::VERTICAL;
+                    line.startPoint = { start, j };
+                    line.endPoint = { end, j };
+                    for (int k = start; k <= end; ++k) 
+                    {
+                        line.points.push_back({ k, j });
+                        img[k][j] = 0;  // 重置为背景
+                    }
+                    lines.push_back(line);
+                }
+            }
+            else 
+            {
+                ++i;
+            }
+        }
+    }
+
+    return lines;
 }
 
 
