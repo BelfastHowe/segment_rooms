@@ -115,6 +115,10 @@ void removeBranches(std::vector<std::vector<int>>& img);
 //提取正交线段，并将提取过的像素点置为0
 std::vector<Line> extractOrthogonalLines(std::vector<std::vector<int>>& img);
 
+//提取非线性线条，并将提取过的像素点置为0
+void findNonLinearLines(std::vector<std::vector<int>>& img, std::vector<Line>& lines);
+
+
 
 #endif // !SEGMENT_ROOMS_H
 

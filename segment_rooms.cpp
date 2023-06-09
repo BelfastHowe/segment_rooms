@@ -1130,6 +1130,91 @@ std::vector<Line> extractOrthogonalLines(std::vector<std::vector<int>>& img)
     return lines;
 }
 
+void findNonLinearLines(std::vector<std::vector<int>>& img, std::vector<Line>& lines)
+{
+    int height = img.size();
+    int width = img[0].size();
+    int lineId = lines.size();  //确定line的id
+
+    std::vector<std::pair<int, int>> offsets = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };  //四连通偏移量
+
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
+            if (img[i][j] != 0) {  // 找到一条线的一个点
+                Line line;
+                line.id = lineId++;
+                line.direction = Line::NONLINEAR;
+
+                std::stack<std::pair<int, int>> dfsStack;
+                dfsStack.push({ i, j });
+
+                while (!dfsStack.empty())
+                {
+                    std::pair<int, int> cur = dfsStack.top();
+                    dfsStack.pop();
+
+                    line.points.push_back(cur);
+
+                    for (const auto& offset : offsets)
+                    {
+                        std::pair<int, int> next = { cur.first + offset.first, cur.second + offset.second };
+                        if (next.first >= 0 && next.first < height && next.second >= 0 && next.second < width && img[next.first][next.second] != 0)
+                        {
+                            dfsStack.push(next);
+                            img[next.first][next.second] = 0;  //提取过的像素置为背景
+                        }
+                    }
+                }
+
+                for (auto& point : line.points)
+                {
+                    int connected = 0;
+                    for (auto& p : line.points)
+                    {
+                        if (std::abs(p.first - point.first) + std::abs(p.second - point.second) == 1) //曼哈顿距离为1
+                        {
+                            connected++;
+                        }
+                    }
+
+                    // 根据connected的值，确定线段的起点和终点
+                    switch (connected)
+                    {
+                    case 0:  //如果它是一个孤立的像素
+                        line.startPoint = point;
+                        line.endPoint = point;
+                        break;
+                    case 1:  //如果它是一个端点
+                        if (line.startPoint.first == -1 && line.startPoint.second == -1)
+                        {
+                            line.startPoint = point;
+                        }
+                        else if (line.endPoint.first == -1 && line.endPoint.second == -1)
+                        {
+                            line.endPoint = point;
+                        }
+                        else
+                        {
+                            std::cerr << "Found more than two endpoints in a non-linear." << std::endl;
+                            throw std::runtime_error("Invalid line found.");
+                        }
+                        break;
+                    case 2://如果该点在线的中间，就继续
+                        break;
+                    default:  //如果该点有多于两个邻居，就报错
+                        std::cerr << "Found a point with " << connected << " neighbors in a non-linear." << std::endl;
+                        throw std::runtime_error("Invalid line found.");
+                    }
+                }
+
+                lines.push_back(line);  // Add the line to lines
+            }
+        }
+    }
+}
+
 
 
 
@@ -1221,7 +1306,7 @@ void test_find_connected_rooms() {
 
     // Replace 1s in the segmented matrix with room id
     for (Room& room : rooms) {
-        for (const auto& pixel : room.get_pixels()) 
+        for (const auto& pixel : room.get_pixels())
         {
             int x = pixel.first;
             int y = pixel.second;
