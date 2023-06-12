@@ -940,7 +940,7 @@ void thinningIteration(std::vector<std::vector<int>>& img, int iter)
                 }
 
                 int sp = 0; // Number of 0-1 transitions
-                for (int k = 1; k <= 8; k++)
+                for (int k = 1; k < 8; k++)
                 {
                     sp += (p[k] == 0 && p[k + 1] != 0);
                 }
@@ -1033,7 +1033,7 @@ void removeBranches(std::vector<std::vector<int>>& img)
                 if (count == 3)
                 {
                     int transitions = 0;
-                    for (int k = 1; k <= 8; k++)
+                    for (int k = 1; k < 8; k++)
                     {
                         transitions += (p[k] == 0 && p[k + 1] == 1);
                     }
@@ -1049,10 +1049,48 @@ void removeBranches(std::vector<std::vector<int>>& img)
     }
 }
 
-std::vector<Line> extractOrthogonalLines(std::vector<std::vector<int>>& img) 
+
+std::vector<Line> extractIntersections(std::vector<std::vector<int>>& img) 
 {
     std::vector<Line> lines;
 
+    // offsets for 4-connectivity
+    std::vector<std::pair<int, int>> offsets = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };
+
+    // 遍历矩阵
+    for (int i = 0; i < img.size(); ++i) 
+    {
+        for (int j = 0; j < img[i].size(); ++j) 
+        {
+            // 检测到前景
+            if (img[i][j] != 0) 
+            {
+                int connectedPoints = 0;
+                // 计算四连通点中前景的数量
+                for (const auto& offset : offsets) 
+                {
+                    int ni = i + offset.first, nj = j + offset.second;
+                    if (ni >= 0 && ni < img.size() && nj >= 0 && nj < img[i].size() && img[ni][nj] != 0) 
+                    {
+                        connectedPoints++;
+                    }
+                }
+                // 如果它是连接点
+                if (connectedPoints > 2) 
+                {
+                    std::pair<int, int> intersectionPoint = { i, j };
+                    lines.push_back(Line{ static_cast<int>(lines.size()), Line::INTERSECTION, {intersectionPoint}, intersectionPoint, intersectionPoint });
+                    img[i][j] = 0;  // 将这个点置为背景
+                }
+            }
+        }
+    }
+
+    return lines;
+}
+
+void extractOrthogonalLines(std::vector<std::vector<int>>& img, std::vector<Line>& lines)
+{
     //第一步，提取水平线
     for (int i = 0; i < img.size(); ++i) 
     {
@@ -1126,8 +1164,6 @@ std::vector<Line> extractOrthogonalLines(std::vector<std::vector<int>>& img)
             }
         }
     }
-
-    return lines;
 }
 
 void findNonLinearLines(std::vector<std::vector<int>>& img, std::vector<Line>& lines)
@@ -1215,6 +1251,64 @@ void findNonLinearLines(std::vector<std::vector<int>>& img, std::vector<Line>& l
     }
 }
 
+int getDirection(std::pair<int, int> a, std::pair<int, int> b) 
+{
+    if (a.first == b.first) 
+    {
+        if (b.second > a.second) return 1;  // right
+        else return 3;  // left
+    }
+    else 
+    {
+        if (b.first > a.first) return 2;  // down
+        else return 4;  // up
+    }
+    return 0;  // same point
+}
+
+std::vector<std::pair<int, int>> getLeastTurnPath(const std::pair<int, int>& start, const std::pair<int, int>& end, const std::vector<std::vector<int>>& mask) 
+{
+    // 四连通偏移量
+    std::vector<std::pair<int, int>> offsets = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };
+
+    std::priority_queue<Node> pq;
+    pq.emplace(start, std::vector<std::pair<int, int>>{start}, 0); // 将起始节点添加到队列中
+
+    while (!pq.empty()) {
+        Node curNode = pq.top();
+        pq.pop();
+
+        std::pair<int, int> curPos = curNode.pos;
+        if (curPos == end) 
+        { // 我们已经找到了一条通往终点的道路
+            return curNode.path; // 返回这个路径
+        }
+
+        for (const auto& offset : offsets) 
+        {
+            std::pair<int, int> newPos = { curPos.first + offset.first, curPos.second + offset.second };
+
+            // 边界检查和障碍物检查
+            if (newPos.first < 0 || newPos.first >= mask.size() || newPos.second < 0 || newPos.second >= mask[0].size() || mask[newPos.first][newPos.second] == 0)
+                continue;
+
+            // 计算转折数
+            int newTurns = curNode.turns;
+            if (curNode.path.size() > 1 && getDirection(curNode.path[curNode.path.size() - 2], curPos) != getDirection(curPos, newPos))
+            {
+                newTurns++;
+            }
+
+            // 创建一个新的节点并将其添加到队列中
+            std::vector<std::pair<int, int>> newPath = curNode.path;
+            newPath.push_back(newPos);
+            pq.emplace(newPos, newPath, newTurns);
+        }
+    }
+
+    // 如果没有从起点到终点的路径
+    return std::vector<std::pair<int, int>>{};
+}
 
 
 

@@ -56,14 +56,33 @@ public:
 
 struct Line //各种线的结构体
 {
-    enum Direction { HORIZONTAL, VERTICAL, NONLINEAR };//水平线，垂直线，非线性
+    enum Direction { HORIZONTAL, VERTICAL, NONLINEAR, INTERSECTION };//水平线，垂直线，非线性
 
     int id; //线的编号
     Direction direction; //线的方向或者非线性
     std::vector<std::pair<int, int>> points; //线上的点
     std::pair<int, int> startPoint; //线的起点
     std::pair<int, int> endPoint; //线的终点
+
 };
+
+struct Node 
+{
+    std::pair<int, int> pos; // 当前位置
+    std::vector<std::pair<int, int>> path; // 从起点到当前位置的路径
+    int turns; // 沿途转弯的次数
+
+    // 节点构造函数
+    Node(const std::pair<int, int>& pos, const std::vector<std::pair<int, int>>& path, int turns)
+        : pos(pos), path(path), turns(turns) {}
+
+    // 优先级队列的比较运算符
+    bool operator<(const Node& rhs) const 
+    {
+        return turns > rhs.turns; // 注意：这将使最小的turns获得最高的优先权
+    }
+};
+
 
 
 //将uint8_t矩阵转化为int矩阵
@@ -112,12 +131,20 @@ void zhangSuenThinning(std::vector<std::vector<int>>& img);
 //去除骨架中的单像素分支
 void removeBranches(std::vector<std::vector<int>>& img);
 
+//提取交点并置为背景
+std::vector<Line> extractIntersections(std::vector<std::vector<int>>& img);
+
 //提取正交线段，并将提取过的像素点置为0
-std::vector<Line> extractOrthogonalLines(std::vector<std::vector<int>>& img);
+void extractOrthogonalLines(std::vector<std::vector<int>>& img, std::vector<Line>& lines);
 
 //提取非线性线条，并将提取过的像素点置为0
 void findNonLinearLines(std::vector<std::vector<int>>& img, std::vector<Line>& lines);
 
+//获取方向
+int getDirection(std::pair<int, int> a, std::pair<int, int> b);
+
+//寻找mask限制下两端点之间的最少转折线段
+std::vector<std::pair<int, int>> getLeastTurnPath(const std::pair<int, int>& start, const std::pair<int, int>& end, const std::vector<std::vector<int>>& mask);
 
 
 #endif // !SEGMENT_ROOMS_H
