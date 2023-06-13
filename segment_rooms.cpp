@@ -850,6 +850,8 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>
 
     // 绘制扩展后的房间轮廓
     std::vector<std::vector<int>> floor_plan_matrix(h, std::vector<int>(w, 0));
+    std::vector<std::vector<int>> floor_plan_optimization_matrix(h, std::vector<int>(w, 0));
+    std::vector<std::vector<int>> floor_plan_optimization_matrix1(h, std::vector<int>(w, 0));
 
     for (Room& room : expanded_rooms) 
     {
@@ -861,7 +863,10 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>
             floor_plan_matrix[u][v] = 1;
         }
     }
+
     cv::Mat floor_plan_img(h, w, CV_8UC3, cv::Scalar(255, 255, 255));
+    cv::Mat floor_plan_optimization_img(h, w, CV_8UC3, cv::Scalar(255, 255, 255));
+
     for (int x = 0; x < h; x++)
     {
         for (int y = 0; y < w; y++)
@@ -875,22 +880,28 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>
     cv::imshow("floor_plan_img", floor_plan_img);
     cv::imwrite("C:\\Users\\13012\\Desktop\\result\\floor_plan_img.jpg", floor_plan_img);
 
-    zhangSuenThinning(floor_plan_matrix);
-    removeBranches(floor_plan_matrix);
+    floor_plan_optimization_matrix = floor_plan_matrix;
+    zhangSuenThinning(floor_plan_optimization_matrix);
+    removeBranches(floor_plan_optimization_matrix);
 
-    cv::Mat floor_plan_img_thin(h, w, CV_8UC3, cv::Scalar(255, 255, 255));
+    //printBinaryImage(floor_plan_optimization_matrix, 5, "floor_plan_optimization_matrix");
+    //cv::waitKey(0);
+
+    floor_plan_optimization_matrix1 = floor_plan_outline_Orthogonalization(floor_plan_optimization_matrix, segmented_matrix);
+
+    
     for (int x = 0; x < h; x++)
     {
         for (int y = 0; y < w; y++)
         {
-            if (floor_plan_matrix[x][y] != 0)
+            if (floor_plan_optimization_matrix1[x][y] != 0)
             {
-                floor_plan_img_thin.at<cv::Vec3b>(x, y) = cv::Vec3b(0, 0, 0);
+                floor_plan_optimization_img.at<cv::Vec3b>(x, y) = cv::Vec3b(0, 0, 0);
             }
         }
     }
-    cv::imshow("floor_plan_img_thin", floor_plan_img_thin);
-    cv::imwrite("C:\\Users\\13012\\Desktop\\result\\floor_plan_img_thin.jpg", floor_plan_img_thin);
+    cv::imshow("floor_plan_optimization_img", floor_plan_optimization_img);
+    cv::imwrite("C:\\Users\\13012\\Desktop\\result\\floor_plan_optimization_img.jpg", floor_plan_optimization_img);
 
 
 
@@ -1186,6 +1197,8 @@ void findNonLinearLines(std::vector<std::vector<int>>& img, std::vector<Line>& l
                 std::stack<std::pair<int, int>> dfsStack;
                 dfsStack.push({ i, j });
 
+                img[i][j] = 0;
+
                 while (!dfsStack.empty())
                 {
                     std::pair<int, int> cur = dfsStack.top();
@@ -1310,6 +1323,72 @@ std::vector<std::pair<int, int>> getLeastTurnPath(const std::pair<int, int>& sta
     return std::vector<std::pair<int, int>>{};
 }
 
+std::vector<std::vector<int>> floor_plan_outline_Orthogonalization(std::vector<std::vector<int>>& img, const std::vector<std::vector<int>>& segmented_matrix)
+{
+    std::vector<std::vector<int>> mask(segmented_matrix.size(), std::vector<int>(segmented_matrix[0].size(), 1));
+    std::vector<std::vector<int>> output(img.size(), std::vector<int>(img[0].size(), 0));
+
+    for (int i = 0; i < segmented_matrix.size(); ++i)
+    {
+        for (int j = 0; j < segmented_matrix[0].size(); ++j)
+        {
+            if (segmented_matrix[i][j] != 0) mask[i][j] = 0;
+        }
+    }
+
+    //第1步：提取交叉点
+    std::vector<Line> lines = extractIntersections(img);
+
+    //printBinaryImage(img, 2, "img1");
+    //cv::waitKey(0);
+
+    // 第2步：提取正交线
+    extractOrthogonalLines(img, lines);
+
+    //printBinaryImage(img, 2, "img2");
+    //cv::waitKey(0);
+
+    // 第3步：寻找非线性线条
+    findNonLinearLines(img, lines);
+
+    printBinaryImage(img, 2, "img3");
+    //cv::waitKey(0);
+
+    //第4步：调整非线性线条，使其具有最小的转折点
+    //如果可能的话，用最小转弯的路径来代替非线性的线路
+    
+    for (auto& line : lines)
+    {
+        if (line.direction == Line::NONLINEAR)
+        {
+            //检查该行的所有像素是否都在掩膜中
+            bool allInMask = std::all_of(line.points.begin(), line.points.end(), [&mask](const std::pair<int, int>& p) 
+                {
+                    return mask[p.first][p.second] == 1; 
+                });
+
+            //如果所有的像素都在mask前景中，则尝试替换线条
+            if (allInMask)
+            {
+                auto newPath = getLeastTurnPath(line.startPoint, line.endPoint, mask);
+                if (!newPath.empty()) line.points = std::move(newPath);
+            }
+        }
+    }
+    
+
+    // 第五步：将所有线条输出到一个新的图像上
+    for (const auto& line : lines)
+    {
+        for (const auto& p : line.points)
+        {
+            output[p.first][p.second] = 1;
+        }
+    }
+
+
+    return output;
+}
 
 
 

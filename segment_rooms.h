@@ -13,6 +13,8 @@
 #include <utility>
 #include <iterator>
 
+//using namespace std;
+
 
 //多连通区域转化为单连通区域
 //cv::Mat extract_filled_image(const cv::Mat& connected_region);
@@ -64,6 +66,9 @@ struct Line //各种线的结构体
     std::pair<int, int> startPoint; //线的起点
     std::pair<int, int> endPoint; //线的终点
 
+    //带有默认值的Line结构体构造函数
+    Line(int id = 0, Direction direction = NONLINEAR, std::vector<std::pair<int, int>> points = {}, std::pair<int, int> startPoint = std::make_pair(-1, -1), std::pair<int, int> endPoint = std::make_pair(-1, -1))
+        : id(id), direction(direction), points(points), startPoint(startPoint), endPoint(endPoint) {}
 };
 
 struct Node 
@@ -146,6 +151,8 @@ int getDirection(std::pair<int, int> a, std::pair<int, int> b);
 //寻找mask限制下两端点之间的最少转折线段
 std::vector<std::pair<int, int>> getLeastTurnPath(const std::pair<int, int>& start, const std::pair<int, int>& end, const std::vector<std::vector<int>>& mask);
 
+//户型图轮廓的拆分、找直与重组
+std::vector<std::vector<int>> floor_plan_outline_Orthogonalization(std::vector<std::vector<int>>& img, const std::vector<std::vector<int>>& segmented_matrix);
 
 #endif // !SEGMENT_ROOMS_H
 
