@@ -58,7 +58,7 @@ public:
 
 struct Line //各种线的结构体
 {
-    enum Direction { HORIZONTAL, VERTICAL, NONLINEAR, INTERSECTION };//水平线，垂直线，非线性
+    enum Direction { HORIZONTAL, VERTICAL, NONLINEAR, INTERSECTION };//水平线，垂直线，非线性，交点
 
     int id; //线的编号
     Direction direction; //线的方向或者非线性
@@ -71,7 +71,7 @@ struct Line //各种线的结构体
         : id(id), direction(direction), points(points), startPoint(startPoint), endPoint(endPoint) {}
 };
 
-struct Node 
+struct Node //优化不规则线条时需要用到的节点路径结构体
 {
     std::pair<int, int> pos; // 当前位置
     std::vector<std::pair<int, int>> path; // 从起点到当前位置的路径

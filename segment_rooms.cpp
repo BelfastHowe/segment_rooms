@@ -1405,6 +1405,43 @@ std::vector<std::vector<int>> floor_plan_outline_Orthogonalization(std::vector<s
 }
 
 
+std::pair<double, bool> distanceToSegment(const std::pair<int, int>& point, const std::pair<int, int>& segA, const std::pair<int, int>& segB) {
+    std::pair<int, int> vecAB = { segB.first - segA.first, segB.second - segA.second };
+    std::pair<int, int> vecAP = { point.first - segA.first, point.second - segA.second };
+    std::pair<int, int> vecBP = { point.first - segB.first, point.second - segB.second };
+
+    int dotProduct = vecAB.first * vecAP.first + vecAB.second * vecAP.second;
+    int dotProduct2 = vecAB.first * vecBP.first + vecAB.second * vecBP.second;
+
+    bool isProjectionInside = false;
+
+    if (dotProduct * dotProduct2 < 0) {
+        isProjectionInside = true;
+        int crossProduct = vecAB.first * vecAP.second - vecAB.second * vecAP.first;
+        double lengthAB = sqrt(vecAB.first * vecAB.first + vecAB.second * vecAB.second);
+        return { std::abs(crossProduct / lengthAB), isProjectionInside };
+    }
+
+    return { std::min(sqrt(vecAP.first * vecAP.first + vecAP.second * vecAP.second),
+                    sqrt(vecBP.first * vecBP.first + vecBP.second * vecBP.second)), isProjectionInside };
+}
+
+bool should_not_be_eroded(const std::pair<int, int>& point, const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& doors, double threshold)
+{
+    for (const auto& door : doors)
+    {
+        std::pair<double, bool> result = distanceToSegment(point, door.first, door.second);
+        double distance = result.first;
+        bool isProjectionInside = result.second;
+        if (distance < threshold && isProjectionInside)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+
 
 
 
