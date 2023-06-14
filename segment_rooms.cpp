@@ -884,7 +884,7 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>
     zhangSuenThinning(floor_plan_optimization_matrix);
     removeBranches(floor_plan_optimization_matrix);
 
-    //printBinaryImage(floor_plan_optimization_matrix, 5, "floor_plan_optimization_matrix");
+    printBinaryImage(floor_plan_optimization_matrix, 5, "floor_plan_optimization_matrix");
     //cv::waitKey(0);
 
     floor_plan_optimization_matrix1 = floor_plan_outline_Orthogonalization(floor_plan_optimization_matrix, segmented_matrix);
@@ -903,6 +903,17 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>
     cv::imshow("floor_plan_optimization_img", floor_plan_optimization_img);
     cv::imwrite("C:\\Users\\13012\\Desktop\\result\\floor_plan_optimization_img.jpg", floor_plan_optimization_img);
 
+
+    for (int x = 0; x < h; x++)
+    {
+        for (int y = 0; y < w; y++)
+        {
+            if (floor_plan_optimization_matrix1[x][y] != 0)
+            {
+                final_map.at<cv::Vec3b>(x, y) = cv::Vec3b(0, 0, 0);
+            }
+        }
+    }
 
 
     // 绘制门的线段
@@ -1102,6 +1113,9 @@ std::vector<Line> extractIntersections(std::vector<std::vector<int>>& img)
 
 void extractOrthogonalLines(std::vector<std::vector<int>>& img, std::vector<Line>& lines)
 {
+    int threshold = 15;//设置线段长度阈值
+
+
     //第一步，提取水平线
     for (int i = 0; i < img.size(); ++i) 
     {
@@ -1116,8 +1130,8 @@ void extractOrthogonalLines(std::vector<std::vector<int>>& img, std::vector<Line
                 }
                 int end = j - 1;
 
-                // 只考虑长于5像素的线段
-                if (end - start + 1 > 5) 
+                // 只考虑长于阈值的线段
+                if (end - start + 1 > threshold) 
                 {
                     Line line;
                     line.id = lines.size();
@@ -1153,8 +1167,8 @@ void extractOrthogonalLines(std::vector<std::vector<int>>& img, std::vector<Line
                 }
                 int end = i - 1;
 
-                // 只考虑长于5像素的线段
-                if (end - start + 1 > 5) 
+                // 只考虑长于阈值的线段
+                if (end - start + 1 > threshold) 
                 {
                     Line line;
                     line.id = lines.size();
