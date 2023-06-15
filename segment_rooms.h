@@ -154,5 +154,14 @@ std::vector<std::pair<int, int>> getLeastTurnPath(const std::pair<int, int>& sta
 //户型图轮廓的拆分、找直与重组
 std::vector<std::vector<int>> floor_plan_outline_Orthogonalization(std::vector<std::vector<int>>& img, const std::vector<std::vector<int>>& segmented_matrix);
 
+//规整房间生成中具体腐蚀判定规则
+std::pair<double, bool> distanceToSegment(const std::pair<int, int>& point, const std::pair<int, int>& segA, const std::pair<int, int>& segB);
+
+//规整房间生成中，靠近门的像素不应被腐蚀
+bool should_not_be_eroded(const std::pair<int, int>& point, const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& doors, double threshold);
+
+//户型图轮廓的八连通连接处补全
+void completion_link(std::vector<std::vector<int>>& floor_plan_matrix);
+
 #endif // !SEGMENT_ROOMS_H
 

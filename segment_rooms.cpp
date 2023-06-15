@@ -864,6 +864,8 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>
         }
     }
 
+    printBinaryImage(floor_plan_matrix, 2, "floor_plan_matrix");
+
     cv::Mat floor_plan_img(h, w, CV_8UC3, cv::Scalar(255, 255, 255));
     cv::Mat floor_plan_optimization_img(h, w, CV_8UC3, cv::Scalar(255, 255, 255));
 
@@ -873,6 +875,7 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>
         {
             if (floor_plan_matrix[x][y] != 0)
             {
+
                 floor_plan_img.at<cv::Vec3b>(x, y) = cv::Vec3b(0, 0, 0);
             }
         }
@@ -882,13 +885,17 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>
 
     floor_plan_optimization_matrix = floor_plan_matrix;
     zhangSuenThinning(floor_plan_optimization_matrix);
+
+    printBinaryImage(floor_plan_optimization_matrix, 2, "floor_plan_optimization_matrix0");
+
     removeBranches(floor_plan_optimization_matrix);
 
-    printBinaryImage(floor_plan_optimization_matrix, 5, "floor_plan_optimization_matrix");
+    printBinaryImage(floor_plan_optimization_matrix, 2, "floor_plan_optimization_matrix");
     //cv::waitKey(0);
 
     floor_plan_optimization_matrix1 = floor_plan_outline_Orthogonalization(floor_plan_optimization_matrix, segmented_matrix);
 
+    completion_link(floor_plan_optimization_matrix1);
     
     for (int x = 0; x < h; x++)
     {
@@ -1404,8 +1411,94 @@ std::vector<std::vector<int>> floor_plan_outline_Orthogonalization(std::vector<s
     return output;
 }
 
+void completion_link(std::vector<std::vector<int>>& floor_plan_matrix)
+{
+    int height = floor_plan_matrix.size();
+    int width = floor_plan_matrix[0].size();
 
-std::pair<double, bool> distanceToSegment(const std::pair<int, int>& point, const std::pair<int, int>& segA, const std::pair<int, int>& segB) {
+    for (int i = 1; i < height - 1; i++)
+    {
+        for (int j = 1; j < width - 1; j++)
+        {
+            if (floor_plan_matrix[i][j] == 1)
+            {
+                // Get 3x3 neighbourhood
+                int p[9];
+                p[0] = floor_plan_matrix[i][j];        // P1
+                p[1] = floor_plan_matrix[i - 1][j];      // P2
+                p[2] = floor_plan_matrix[i - 1][j + 1];  // P3
+                p[3] = floor_plan_matrix[i][j + 1];      // P4
+                p[4] = floor_plan_matrix[i + 1][j + 1];  // P5
+                p[5] = floor_plan_matrix[i + 1][j];      // P6
+                p[6] = floor_plan_matrix[i + 1][j - 1];  // P7
+                p[7] = floor_plan_matrix[i][j - 1];      // P8
+                p[8] = floor_plan_matrix[i - 1][j - 1];  // P9
+
+                int four_connected_count = p[1] + p[3] + p[5] + p[7];
+
+                int eight_transition_count = 0;
+                for (int k = 1; k < 8; k++)
+                {
+                    eight_transition_count += (p[k] == 0 && p[k + 1] == 1);
+                }
+                eight_transition_count += (p[8] == 0 && p[1] == 1);
+
+                switch (eight_transition_count - four_connected_count)
+                {
+                case 0:
+                    break;
+                case 1:
+                    if (p[2] == 1 && p[1] == 0 && p[3] == 0)
+                    {
+                        if (p[5] == 1) floor_plan_matrix[i - 1][j] = 1;
+                        else floor_plan_matrix[i][j + 1] = 1;
+                    }
+                    else if (p[4] == 1 && p[3] == 0 && p[5] == 0)
+                    {
+                        if (p[7] == 1) floor_plan_matrix[i][j + 1] = 1;
+                        else floor_plan_matrix[i + 1][j] = 1;
+                    }
+                    else if (p[6] == 1 && p[5] == 0 && p[7] == 0)
+                    {
+                        if (p[3] == 1) floor_plan_matrix[i][j - 1] = 1;
+                        else floor_plan_matrix[i + 1][j] = 1;
+                    }
+                    else if (p[8] == 1 && p[7] == 0 && p[1] == 0)
+                    {
+                        if (p[3] == 1) floor_plan_matrix[i][j - 1] = 1;
+                        else floor_plan_matrix[i - 1][j] = 1;
+                    }
+                    else
+                    {
+                        std::cerr << "case=1时找不到孤立角点" << std::endl;
+                        throw std::runtime_error("Invalid line found.");
+                    }
+                    break;
+                case  2:
+                    if (p[2] == 1 && p[4] == 1 && p[1] == 0 && p[3] == 0 && p[5] == 0) floor_plan_matrix[i][j + 1] = 1;
+                    else if (p[4] == 1 && p[6] == 1 && p[3] == 0 && p[5] == 0 && p[7] == 0) floor_plan_matrix[i + 1][j] = 1;
+                    else if (p[6] == 1 && p[8] == 1 && p[5] == 0 && p[7] == 0 && p[1] == 0) floor_plan_matrix[i][j - 1] = 1;
+                    else if (p[8] == 1 && p[2] == 1 && p[7] == 0 && p[1] == 0 && p[3] == 0) floor_plan_matrix[i - 1][j] = 1;
+                    else
+                    {
+                        std::cerr << "case=2时找不到符合条件的角点对" << std::endl;
+                        throw std::runtime_error("Invalid line found.");
+                    }
+                    break;
+                default:
+                    std::cerr << "void completion_link error" << std::endl;
+                    throw std::runtime_error("Invalid line found.");
+                    break;
+                }
+            }
+        }
+    }
+}
+
+
+
+std::pair<double, bool> distanceToSegment(const std::pair<int, int>& point, const std::pair<int, int>& segA, const std::pair<int, int>& segB) 
+{
     std::pair<int, int> vecAB = { segB.first - segA.first, segB.second - segA.second };
     std::pair<int, int> vecAP = { point.first - segA.first, point.second - segA.second };
     std::pair<int, int> vecBP = { point.first - segB.first, point.second - segB.second };
@@ -1415,7 +1508,8 @@ std::pair<double, bool> distanceToSegment(const std::pair<int, int>& point, cons
 
     bool isProjectionInside = false;
 
-    if (dotProduct * dotProduct2 < 0) {
+    if (dotProduct * dotProduct2 < 0) 
+    {
         isProjectionInside = true;
         int crossProduct = vecAB.first * vecAP.second - vecAB.second * vecAP.first;
         double lengthAB = sqrt(vecAB.first * vecAB.first + vecAB.second * vecAB.second);
@@ -1440,6 +1534,10 @@ bool should_not_be_eroded(const std::pair<int, int>& point, const std::vector<st
     }
     return false;
 }
+
+
+
+
 
 
 
