@@ -163,5 +163,19 @@ bool should_not_be_eroded(const std::pair<int, int>& point, const std::vector<st
 //户型图轮廓的八连通连接处补全
 void completion_link(std::vector<std::vector<int>>& floor_plan_matrix);
 
+//判断单个像素点与单个门位置关系的函数
+std::pair<double, bool> distanceToSegment(const std::pair<int, int>& point, const std::pair<int, int>& segA, const std::pair<int, int>& segB);
+
+//规整房间生成中，判断像素点是否应该被腐蚀
+bool should_not_be_eroded(const std::pair<int, int>& point, const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& doors, double threshold);
+
+//腐蚀后规整房间的id标明
+void tidyRoomDFS(int& x, int& y, int& h, int& w, std::vector<std::vector<int>>& tidy_room, int& id);
+
+//规整房间生成集成函数
+std::vector<std::vector<int>> tidy_room_erode(std::vector<std::vector<int>>& segmented_matrix,
+                                              std::vector<std::vector<int>>& floor_plan,
+                                              const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& doors_pixels);
+
 #endif // !SEGMENT_ROOMS_H
 

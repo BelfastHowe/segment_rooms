@@ -829,7 +829,7 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>
     {
         colors.push_back(cv::Vec3b(dis(gen), dis(gen), dis(gen)));
     }
-
+    /*
     // 染色每个房间
     for (int x = 0; x < h; x++) 
     {
@@ -846,7 +846,7 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>
     cv::imshow("Colored Rooms", final_map);
     cv::imwrite("C:\\Users\\13012\\Desktop\\result\\Colored Rooms.jpg", final_map);
     //cv::waitKey(0);
-
+    */
 
     // 绘制扩展后的房间轮廓
     std::vector<std::vector<int>> floor_plan_matrix(h, std::vector<int>(w, 0));
@@ -895,7 +895,25 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>
 
     floor_plan_optimization_matrix1 = floor_plan_outline_Orthogonalization(floor_plan_optimization_matrix, segmented_matrix);
 
-    completion_link(floor_plan_optimization_matrix1);
+    completion_link(floor_plan_optimization_matrix1);//四连通连接处补全
+
+    std::vector<std::vector<int>> tidy_room = tidy_room_erode(segmented_matrix, floor_plan_optimization_matrix1, door_pixels);
+
+    for (int x = 0; x < h; x++)
+    {
+        for (int y = 0; y < w; y++)
+        {
+            if (tidy_room[x][y] != 0)
+            {
+                final_map.at<cv::Vec3b>(x, y) = colors[tidy_room[x][y] - 1];
+            }
+        }
+    }
+
+    // 输出中间图像
+    cv::imshow("Colored Rooms", final_map);
+    cv::imwrite("C:\\Users\\13012\\Desktop\\result\\Colored Rooms.jpg", final_map);
+
     
     for (int x = 0; x < h; x++)
     {
@@ -1536,7 +1554,151 @@ bool should_not_be_eroded(const std::pair<int, int>& point, const std::vector<st
 }
 
 
+void tidyRoomDFS(int& x, int& y,int& h, int& w, std::vector<std::vector<int>>& tidy_room, int& id)
+{
+    std::vector<std::pair<int, int>> directions = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };
+    std::stack<std::pair<int, int>> stack;
 
+    stack.push(std::make_pair(x, y));
+
+    while (!stack.empty())
+    {
+        std::pair<int, int> p = stack.top();
+        stack.pop();
+
+        int px = p.first;
+        int py = p.second;
+
+        for (const auto& dir : directions)
+        {
+            int nx = px + dir.first;
+            int ny = py + dir.second;
+
+            if (is_valid_pixel(nx, ny, h, w) && tidy_room[nx][ny] == 1)
+            {
+                stack.push(std::make_pair(nx, ny));
+                tidy_room[nx][ny] = id;
+            }
+        }
+    }
+
+}
+
+std::vector<std::vector<int>> tidy_room_erode(std::vector<std::vector<int>>& segmented_matrix, 
+                                              std::vector<std::vector<int>>& floor_plan,
+                                              const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& doors_pixels)
+{
+    int erode_times = 3;
+    double threshold = 5;
+
+    int h = floor_plan.size();
+    int w = floor_plan[0].size();
+
+    std::vector<std::vector<int>> tidy_room(h, std::vector<int>(w, 0));
+
+    for (int x = 0; x < h; x++)
+    {
+        for (int y = 0; y < w; y++)
+        {
+            tidy_room[x][y] = floor_plan[x][y] == 0 ? 1 : 0;
+        }
+    }
+
+    std::vector<std::pair<int, int>> directions = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };
+
+    std::stack<std::pair<int, int>> background_stack;
+    background_stack.push(std::make_pair(0, 0));
+    tidy_room[0][0] = 0;
+
+    while (!background_stack.empty())
+    {
+        std::pair<int, int> background_pixel = background_stack.top();
+        background_stack.pop();
+
+        int bx = background_pixel.first;
+        int by = background_pixel.second;
+
+        for (const auto& direction : directions)
+        {
+            int nx = bx + direction.first;
+            int ny = by + direction.second;
+
+            if (is_valid_pixel(nx, ny, h, w) && tidy_room[nx][ny] == 1)
+            {
+                background_stack.push(std::make_pair(nx, ny));
+                tidy_room[nx][ny] = 0;
+            }
+        }
+    }
+
+    //printBinaryImage(tidy_room, 2, "tidyroom_matrix");
+
+    for (int times = 0; times < erode_times; ++times)
+    {
+        for (int i = 1; i < h - 1; ++i)
+        {
+            for (int j = 1; j < w - 1; ++j)
+            {
+                bool isEroded = false;
+                for (int m = -1; m <= 1; ++m)
+                {
+                    for (int n = -1; n <= 1; ++n)
+                    {
+                        if (m == 0 && n == 0) continue;
+                        if (tidy_room[i + m][j + n] != 1)
+                        {
+                            isEroded = true;
+                            break;
+                        }
+                    }
+                    if (isEroded) break;
+                }
+                if (isEroded && !should_not_be_eroded(std::make_pair(i, j), doors_pixels, threshold))
+                {
+                    tidy_room[i][j]=0;
+                }
+            }
+        }
+    }
+
+    int room_id = 1;
+    bool hasChanged = true;
+
+    while (hasChanged)
+    {
+        hasChanged = false;
+        for (int u = 0; u < h; u++)
+        {
+            for (int v = 0; v < w; v++)
+            {
+                if (segmented_matrix[u][v] == room_id && tidy_room[u][v] == 1)
+                {
+                    tidy_room[u][v] = room_id;
+                    hasChanged = true;
+                    break;
+                }
+            }
+            if (hasChanged) break;
+        }
+        room_id++;
+    }
+
+    for (int id = 2; id < room_id - 1; id++)
+    {
+        for (int i = 0; i < h; i++)
+        {
+            for (int j = 0; j < w; j++)
+            {
+                if (tidy_room[i][j] == id)
+                {
+                    tidyRoomDFS(i, j, h, w, tidy_room, id);
+                }
+            }
+        }
+    }
+
+    return tidy_room;
+}
 
 
 
