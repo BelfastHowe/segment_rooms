@@ -1588,14 +1588,15 @@ std::vector<std::vector<int>> tidy_room_erode(std::vector<std::vector<int>>& seg
                                               std::vector<std::vector<int>>& floor_plan,
                                               const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& doors_pixels)
 {
-    int erode_times = 3;
-    double threshold = 5;
+    int erode_times = 3;//腐蚀几次
+    double threshold = 10;//门框保护的宽度
 
     int h = floor_plan.size();
     int w = floor_plan[0].size();
 
     std::vector<std::vector<int>> tidy_room(h, std::vector<int>(w, 0));
 
+    //户型图轮廓前景背景互换
     for (int x = 0; x < h; x++)
     {
         for (int y = 0; y < w; y++)
@@ -1604,12 +1605,13 @@ std::vector<std::vector<int>> tidy_room_erode(std::vector<std::vector<int>>& seg
         }
     }
 
-    std::vector<std::pair<int, int>> directions = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };
+    std::vector<std::pair<int, int>> directions = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };//四连通
 
     std::stack<std::pair<int, int>> background_stack;
     background_stack.push(std::make_pair(0, 0));
     tidy_room[0][0] = 0;
 
+    //将最外圈设为背景
     while (!background_stack.empty())
     {
         std::pair<int, int> background_pixel = background_stack.top();
@@ -1633,8 +1635,11 @@ std::vector<std::vector<int>> tidy_room_erode(std::vector<std::vector<int>>& seg
 
     //printBinaryImage(tidy_room, 2, "tidyroom_matrix");
 
+    //条件腐蚀
     for (int times = 0; times < erode_times; ++times)
     {
+        std::vector<std::vector<int>> tidy_room_cache = tidy_room;
+
         for (int i = 1; i < h - 1; ++i)
         {
             for (int j = 1; j < w - 1; ++j)
@@ -1645,7 +1650,7 @@ std::vector<std::vector<int>> tidy_room_erode(std::vector<std::vector<int>>& seg
                     for (int n = -1; n <= 1; ++n)
                     {
                         if (m == 0 && n == 0) continue;
-                        if (tidy_room[i + m][j + n] != 1)
+                        if (tidy_room_cache[i + m][j + n] != 1)
                         {
                             isEroded = true;
                             break;
@@ -1661,6 +1666,7 @@ std::vector<std::vector<int>> tidy_room_erode(std::vector<std::vector<int>>& seg
         }
     }
 
+    //房间id继承
     int room_id = 1;
     bool hasChanged = true;
 
@@ -1683,6 +1689,7 @@ std::vector<std::vector<int>> tidy_room_erode(std::vector<std::vector<int>>& seg
         room_id++;
     }
 
+    //房间id扩散
     for (int id = 2; id < room_id - 1; id++)
     {
         for (int i = 0; i < h; i++)
