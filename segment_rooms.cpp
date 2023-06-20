@@ -897,7 +897,9 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>
 
     completion_link(floor_plan_optimization_matrix1);//四连通连接处补全
 
-    std::vector<std::vector<int>> tidy_room = tidy_room_erode(segmented_matrix, floor_plan_optimization_matrix1, door_pixels);
+    //std::vector<std::vector<int>> tidy_room = tidy_room_erode(segmented_matrix, floor_plan_optimization_matrix1, door_pixels);
+
+    std::vector<std::vector<int>> tidy_room = tidy_room_dilate(segmented_matrix, floor_plan_optimization_matrix1, 3);
 
     for (int x = 0; x < h; x++)
     {
@@ -1161,9 +1163,9 @@ void extractOrthogonalLines(std::vector<std::vector<int>>& img, std::vector<Line
                     Line line;
                     line.id = lines.size();
                     line.direction = Line::HORIZONTAL;
-                    line.startPoint = { i, start };
-                    line.endPoint = { i, end };
-                    for (int k = start; k <= end; ++k) 
+                    line.startPoint = { i, start + 1 };
+                    line.endPoint = { i, end - 1 };
+                    for (int k = start + 1; k < end; ++k)
                     {
                         line.points.push_back({ i, k });
                         img[i][k] = 0;  // 重置为背景
@@ -1198,9 +1200,9 @@ void extractOrthogonalLines(std::vector<std::vector<int>>& img, std::vector<Line
                     Line line;
                     line.id = lines.size();
                     line.direction = Line::VERTICAL;
-                    line.startPoint = { start, j };
-                    line.endPoint = { end, j };
-                    for (int k = start; k <= end; ++k) 
+                    line.startPoint = { start + 1, j };
+                    line.endPoint = { end - 1, j };
+                    for (int k = start + 1; k < end; ++k)
                     {
                         line.points.push_back({ k, j });
                         img[k][j] = 0;  // 重置为背景
@@ -1707,6 +1709,63 @@ std::vector<std::vector<int>> tidy_room_erode(std::vector<std::vector<int>>& seg
     return tidy_room;
 }
 
+
+std::vector<std::vector<int>> tidy_room_dilate(std::vector<std::vector<int>>& room_matrix, std::vector<std::vector<int>>& floor_plan_matrix, int rounds) 
+{
+    const int dx[8] = { -1, 0, 1, 0, -1, -1, 1, 1 };
+    const int dy[8] = { 0, 1, 0, -1, -1, 1, -1, 1 };
+
+    std::vector<std::vector<int>> tidy_room_matrix = room_matrix;
+
+    int m = tidy_room_matrix.size();
+    int n = tidy_room_matrix[0].size();
+
+    for (int round = 0; round < rounds; round++) 
+    {
+        // 使用一个队列来存储每轮需要扩展的点
+        std::queue<std::pair<int, int>> points_to_expand;
+        for (int i = 0; i < m; i++) 
+        {
+            for (int j = 0; j < n; j++) 
+            {
+                if (tidy_room_matrix[i][j] > 0)
+                {
+                    for (int k = 0; k < 8; k++)
+                    {
+                        int nx = i + dx[k];
+                        int ny = j + dy[k];
+                        if (is_valid_pixel(nx, ny, m, n) && tidy_room_matrix[nx][ny] == 0)
+                        {
+                            points_to_expand.push({ i, j });
+                            break;
+                        }
+                    } 
+                }
+            }
+        }
+
+        // 对需要扩展的点进行膨胀
+        while (!points_to_expand.empty()) 
+        {
+            std::pair<int, int> point = points_to_expand.front();
+            points_to_expand.pop();
+
+            for (int i = 0; i < 8; i++)
+            {
+                int new_x = point.first + dx[i];
+                int new_y = point.second + dy[i];
+
+                // 判断新点是否在矩阵范围内，以及是否可以被膨胀
+                if (new_x >= 0 && new_x < m && new_y >= 0 && new_y < n && floor_plan_matrix[new_x][new_y] != 1 && tidy_room_matrix[new_x][new_y] == 0)
+                {
+                    tidy_room_matrix[new_x][new_y] = tidy_room_matrix[point.first][point.second];
+                }
+            }
+        }
+    }
+
+    return tidy_room_matrix;
+}
 
 
 

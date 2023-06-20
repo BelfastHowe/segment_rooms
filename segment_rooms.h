@@ -166,10 +166,13 @@ bool should_not_be_eroded(const std::pair<int, int>& point, const std::vector<st
 //腐蚀后规整房间的id标明、扩散
 void tidyRoomDFS(int& x, int& y, int& h, int& w, std::vector<std::vector<int>>& tidy_room, int& id);
 
-//规整房间生成集成函数
+//户型图轮廓腐蚀版，规整房间生成集成函数
 std::vector<std::vector<int>> tidy_room_erode(std::vector<std::vector<int>>& segmented_matrix,
                                               std::vector<std::vector<int>>& floor_plan,
                                               const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& doors_pixels);
+
+//原房间矩阵膨胀版，规整房间生成函数
+std::vector<std::vector<int>> tidy_room_dilate(std::vector<std::vector<int>>& room_matrix, std::vector<std::vector<int>>& floor_plan_matrix, int rounds);
 
 #endif // !SEGMENT_ROOMS_H
 
