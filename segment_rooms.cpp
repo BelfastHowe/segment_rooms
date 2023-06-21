@@ -899,7 +899,7 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>
 
     //std::vector<std::vector<int>> tidy_room = tidy_room_erode(segmented_matrix, floor_plan_optimization_matrix1, door_pixels);
 
-    std::vector<std::vector<int>> tidy_room = tidy_room_dilate(segmented_matrix, floor_plan_optimization_matrix1, 3);
+    std::vector<std::vector<int>> tidy_room = tidy_room_dilate(segmented_matrix, floor_plan_optimization_matrix1, 5);
 
     for (int x = 0; x < h; x++)
     {
@@ -1720,6 +1720,41 @@ std::vector<std::vector<int>> tidy_room_dilate(std::vector<std::vector<int>>& ro
     int m = tidy_room_matrix.size();
     int n = tidy_room_matrix[0].size();
 
+
+    for (int round = 0; round < rounds; round++)
+    {
+        //记录需要腐蚀的点的队列
+        std::queue<std::pair<int, int>> points_to_erode;
+        for (int u = 0; u < m; u++)
+        {
+            for (int v = 0; v < n; v++)
+            {
+                if (tidy_room_matrix[u][v] > 0)
+                {
+                    for (int k = 0; k < 8; k++)
+                    {
+                        int nx = u + dx[k];
+                        int ny = v + dy[k];
+                        if (is_valid_pixel(nx, ny, m, n) && tidy_room_matrix[nx][ny] == 0)
+                        {
+                            points_to_erode.push(std::make_pair(u, v));
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        //对队列中的点进行腐蚀
+        while (!points_to_erode.empty())
+        {
+            std::pair<int, int> point = points_to_erode.front();
+            points_to_erode.pop();
+
+            tidy_room_matrix[point.first][point.second] = 0;
+        }
+    }
+
     for (int round = 0; round < rounds; round++) 
     {
         // 使用一个队列来存储每轮需要扩展的点
@@ -1728,7 +1763,7 @@ std::vector<std::vector<int>> tidy_room_dilate(std::vector<std::vector<int>>& ro
         {
             for (int j = 0; j < n; j++) 
             {
-                if (tidy_room_matrix[i][j] > 0)
+                if (tidy_room_matrix[i][j] > 0 && floor_plan_matrix[i][j] == 0)
                 {
                     for (int k = 0; k < 8; k++)
                     {
