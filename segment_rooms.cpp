@@ -1803,6 +1803,24 @@ std::vector<std::vector<int>> tidy_room_dilate(std::vector<std::vector<int>>& ro
 }
 
 
+std::vector<std::vector<int>> tidy_room_approx(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>& rooms)
+{
+    int h = segmented_matrix.size();
+    int w = segmented_matrix[0].size();
+
+    std::vector<std::vector<int>> tidy_room_matrix(h, std::vector<int>(w, 0));
+
+    for (auto& room : rooms)
+    {
+        int room_id = room.get_room_id();
+        std::vector<std::vector<int>> single_room_matrix(h, std::vector<int>(w, 0));
+
+
+    }
+
+    return tidy_room_matrix;
+}
+
 
 
 
