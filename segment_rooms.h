@@ -125,7 +125,7 @@ void find_connected_rooms(std::vector<Room>& rooms, const std::vector<std::pair<
 std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const std::vector<std::vector<int>>& segmented_matrix, const std::vector<Room>& rooms);
 
 //成品地图绘制
-void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>& expanded_rooms, std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels);
+void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>& rooms, std::vector<Room>& expanded_rooms, std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels);
 
 //骨架细化算法具体实现
 void thinningIteration(std::vector<std::vector<int>>& img, int iter);
@@ -173,6 +173,13 @@ std::vector<std::vector<int>> tidy_room_erode(std::vector<std::vector<int>>& seg
 
 //原房间矩阵膨胀版，规整房间生成函数
 std::vector<std::vector<int>> tidy_room_dilate(std::vector<std::vector<int>>& room_matrix, std::vector<std::vector<int>>& floor_plan_matrix, int rounds);
+
+//单连通区域的多边形拟合
+void polygon_fitting(std::vector<std::vector<int>>& room_matrix, double epsilon);
+
+//规整房间的拟合生成
+std::vector<std::vector<int>> tidy_room_approx(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>& rooms);
+
 
 #endif // !SEGMENT_ROOMS_H
 

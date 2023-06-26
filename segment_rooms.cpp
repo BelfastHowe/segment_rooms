@@ -812,7 +812,10 @@ std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const s
     return { expanded_matrix, expanded_rooms };
 }
 
-void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>& expanded_rooms, std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels) 
+void draw_map(std::vector<std::vector<int>>& segmented_matrix,
+              std::vector<Room>& rooms, 
+              std::vector<Room>& expanded_rooms,
+              std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels) 
 {
     int h = segmented_matrix.size();
     int w = segmented_matrix[0].size();
@@ -899,7 +902,7 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>
 
     //std::vector<std::vector<int>> tidy_room = tidy_room_erode(segmented_matrix, floor_plan_optimization_matrix1, door_pixels);
 
-    std::vector<std::vector<int>> tidy_room = tidy_room_dilate(segmented_matrix, floor_plan_optimization_matrix1, 5);
+    std::vector<std::vector<int>> tidy_room = tidy_room_approx(segmented_matrix, rooms);
 
     for (int x = 0; x < h; x++)
     {
@@ -1803,6 +1806,50 @@ std::vector<std::vector<int>> tidy_room_dilate(std::vector<std::vector<int>>& ro
 }
 
 
+void polygon_fitting(std::vector<std::vector<int>>& room_matrix, double epsilon)
+{
+    //将输入的矩阵转化为opencv的Mat格式
+    cv::Mat binary_image(room_matrix.size(), room_matrix[0].size(), CV_8U);
+    for (size_t i = 0; i < room_matrix.size(); i++)
+    {
+        for (size_t j = 0; j < room_matrix[0].size(); j++)
+        {
+            binary_image.at<uchar>(i, j) = room_matrix[i][j] * 255;
+        }
+    }
+
+    std::vector<std::vector<cv::Point>> contours;
+
+    //使用findContours找出外部轮廓
+    cv::findContours(binary_image, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+    std::vector<cv::Point> approx_contour;
+
+    // 对找到的轮廓进行多边形拟合
+    cv::approxPolyDP(contours[0], approx_contour, epsilon, true);
+
+    // 创建一个空白图像，用于绘制拟合后的图像
+    cv::Mat result = cv::Mat::zeros(binary_image.size(), CV_8U);
+
+    // 使用drawContours绘制拟合后的图像
+    cv::drawContours(result, std::vector<std::vector<cv::Point>>{approx_contour}, -1, cv::Scalar(255), cv::FILLED);
+
+    // 将原矩阵全部置0
+    for (auto& row : room_matrix)
+    {
+        fill(row.begin(), row.end(), 0);
+    }
+
+    // 将结果转换回二值矩阵，并直接修改原矩阵
+    for (int i = 0; i < result.rows; i++)
+    {
+        for (int j = 0; j < result.cols; j++)
+        {
+            room_matrix[i][j] = static_cast<int>(result.at<uchar>(i, j) / 255);
+        }
+    }
+}
+
 std::vector<std::vector<int>> tidy_room_approx(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>& rooms)
 {
     int h = segmented_matrix.size();
@@ -1815,6 +1862,23 @@ std::vector<std::vector<int>> tidy_room_approx(std::vector<std::vector<int>>& se
         int room_id = room.get_room_id();
         std::vector<std::vector<int>> single_room_matrix(h, std::vector<int>(w, 0));
 
+        for (const auto& pixel : room.get_pixels())
+        {
+            single_room_matrix[pixel.first][pixel.second] = 1;
+        }
+
+        polygon_fitting(single_room_matrix, 5);
+
+        for (int i = 0; i < h; i++)
+        {
+            for (int j = 0; j < w; j++)
+            {
+                if (single_room_matrix[i][j] != 0)
+                {
+                    tidy_room_matrix[i][j] = room_id;
+                }
+            }
+        }
 
     }
 
@@ -2007,7 +2071,7 @@ void test_final_map()
     auto& expanded_matrix = expanded.first;
     auto& expanded_rooms = expanded.second;
 
-    draw_map(segmented_matrix, expanded_rooms, door_pixels);
+    draw_map(segmented_matrix, rooms, expanded_rooms, door_pixels);
 
 }
 
