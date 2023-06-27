@@ -1867,7 +1867,7 @@ std::vector<std::vector<int>> tidy_room_approx(std::vector<std::vector<int>>& se
             single_room_matrix[pixel.first][pixel.second] = 1;
         }
 
-        polygon_fitting(single_room_matrix, 5);
+        polygon_fitting(single_room_matrix, 0);
 
         for (int i = 0; i < h; i++)
         {
@@ -1884,6 +1884,107 @@ std::vector<std::vector<int>> tidy_room_approx(std::vector<std::vector<int>>& se
 
     return tidy_room_matrix;
 }
+
+
+void delete_jut(std::vector<std::vector<int>>& src, std::vector<std::vector<int>>& dst, int uthreshold, int vthreshold)
+{
+    int height = src.size();
+    int width = src[0].size();
+    int k;
+    dst = src;
+
+    for (int i = 0; i < height - 1; i++)
+    {
+        for (int j = 0; j < width - 1; j++)
+        {
+            //行消除
+            if (dst[i][j] == 0 && dst[i][j + 1] == 1)
+            {
+                if (j + uthreshold >= width)
+                {
+                    for (int k = j + 1; k < width; k++)
+                    {
+                        dst[i][k] = 0;
+                    }
+                }
+                else
+                {
+                    for (k = j + 2; k <= j + uthreshold; k++)
+                    {
+                        if (dst[i][k] == 0) break;
+                    }
+                    if (dst[i][k] == 0)
+                    {
+                        for (int h = j + 1; h < k; h++)
+                            dst[i][h] = 0;
+                    }
+                }
+            }
+            //列消除
+            if (dst[i][j] == 0 && dst[i + 1][j] == 1)
+            {
+                if (i + vthreshold >= height)
+                {
+                    for (int k = i + 1; k < height; k++)
+                        dst[k][j] = 0;
+                }
+                else
+                {
+                    for (k = i + 2; k <= i + vthreshold; k++)
+                    {
+                        if (dst[k][j] == 0) break;
+                    }
+                    if (dst[k][j] == 0)
+                    {
+                        for (int h = i + 1; h < k; h++)
+                            dst[h][j] = 0;
+                    }
+                }
+            }
+        }
+    }
+
+}
+
+void customize_blur(std::vector<std::vector<int>>& src, std::vector<std::vector<int>>& dst, int windowSize, int threshold)
+{
+    int height = src.size();
+    int width = src[0].size();
+    int padSize = windowSize / 2;
+
+    // Padding
+    std::vector<std::vector<int>> paddedSrc(height + 2 * padSize, std::vector<int>(width + 2 * padSize, 0));
+    for (int i = 0; i < height; ++i) 
+    {
+        for (int j = 0; j < width; ++j) 
+        {
+            paddedSrc[i + padSize][j + padSize] = src[i][j];
+        }
+    }
+
+    dst = src; // copy original matrix to destination
+
+    for (int i = padSize; i < height + padSize; ++i)
+    {
+        for (int j = padSize; j < width + padSize; ++j)
+        {
+            int sum = 0;
+
+            // Create window and compute the sum
+            for (int k = i - padSize; k <= i + padSize; ++k)
+            {
+                for (int l = j - padSize; l <= j + padSize; ++l)
+                {
+                    sum += paddedSrc[k][l];
+                }
+            }
+
+            // 根据阈值设置新值
+            dst[i - padSize][j - padSize] = sum > threshold ? 1 : 0;
+        }
+    }
+}
+
 
 
 

@@ -180,6 +180,12 @@ void polygon_fitting(std::vector<std::vector<int>>& room_matrix, double epsilon)
 //规整房间的拟合生成
 std::vector<std::vector<int>> tidy_room_approx(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>& rooms);
 
+//去除二值图像边缘的突出部，对宽度小于阈值的正交方向上的部分予以删除
+void delete_jut(std::vector<std::vector<int>>& src, std::vector<std::vector<int>>& dst, int uthreshold, int vthreshold);
+
+//自定义均值滤波，二值图像
+void customize_blur(std::vector<std::vector<int>>& src, std::vector<std::vector<int>>& dst, int windowSize, int threshold);
+
 
 #endif // !SEGMENT_ROOMS_H
 
