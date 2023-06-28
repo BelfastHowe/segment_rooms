@@ -902,7 +902,11 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix,
 
     //std::vector<std::vector<int>> tidy_room = tidy_room_erode(segmented_matrix, floor_plan_optimization_matrix1, door_pixels);
 
-    std::vector<std::vector<int>> tidy_room = tidy_room_approx(segmented_matrix, rooms);
+    //std::vector<std::vector<int>> tidy_room = tidy_room_approx(segmented_matrix, rooms);
+
+    std::vector<std::vector<int>> tidy_room(h, std::vector<int>(w, 0));
+    tidy_room_binary(tidy_room, rooms);
+
 
     for (int x = 0; x < h; x++)
     {
@@ -1946,6 +1950,65 @@ void delete_jut(std::vector<std::vector<int>>& src, std::vector<std::vector<int>
 
 }
 
+void fill_hollow(std::vector<std::vector<int>>& src, std::vector<std::vector<int>>& dst, int uthreshold, int vthreshold)
+{
+    int height = src.size();
+    int width = src[0].size();
+    int k;
+    dst = src;
+
+    for (int i = 0; i < height - 1; i++)
+    {
+        for (int j = 0; j < width - 1; j++)
+        {
+            //ÐÐÌî²¹
+            if (dst[i][j] == 1 && dst[i][j + 1] == 0)
+            {
+                if (j + uthreshold >= width)
+                {
+                    for (int k = j + 1; k < width; k++)
+                    {
+                        dst[i][k] = 1;
+                    }
+                }
+                else
+                {
+                    for (k = j + 2; k <= j + uthreshold; k++)
+                    {
+                        if (dst[i][k] == 1) break;
+                    }
+                    if (dst[i][k] == 1)
+                    {
+                        for (int h = j + 1; h < k; h++)
+                            dst[i][h] = 1;
+                    }
+                }
+            }
+            //ÁÐÌî²¹
+            if (dst[i][j] == 1 && dst[i + 1][j] == 0)
+            {
+                if (i + vthreshold >= height)
+                {
+                    for (int k = i + 1; k < height; k++)
+                        dst[k][j] = 1;
+                }
+                else
+                {
+                    for (k = i + 2; k <= i + vthreshold; k++)
+                    {
+                        if (dst[k][j] == 1) break;
+                    }
+                    if (dst[k][j] == 1)
+                    {
+                        for (int h = i + 1; h < k; h++)
+                            dst[h][j] = 1;
+                    }
+                }
+            }
+        }
+    }
+}
+
 void customize_blur(std::vector<std::vector<int>>& src, std::vector<std::vector<int>>& dst, int windowSize, int threshold)
 {
     int height = src.size();
@@ -1985,6 +2048,67 @@ void customize_blur(std::vector<std::vector<int>>& src, std::vector<std::vector<
     }
 }
 
+void tidy_room_binary(std::vector<std::vector<int>>& src, std::vector<Room>& rooms)
+{
+    int h = src.size();
+    int w = src[0].size();
+
+    for (auto& row : src)
+    {
+        for (auto& element : row)
+        {
+            element = 0;
+        }
+    }
+
+    for (auto& room : rooms)
+    {
+        int room_id = room.get_room_id();
+        std::vector<std::vector<int>> cache1(h, std::vector<int>(w, 0));
+        std::vector<std::vector<int>> cache2(h, std::vector<int>(w, 0));
+
+        for (const auto& pixel : room.get_pixels())
+        {
+            cache1[pixel.first][pixel.second] = 1;
+        }
+
+        //customize_blur(cache1, cache2, 5, 12);
+
+        cache2 = cache1;
+
+        do
+        {
+            cache1 = cache2;
+            delete_jut(cache1, cache2, 6, 6);
+        } while (cache2 != cache1);
+
+        do
+        {
+            cache1 = cache2;
+            fill_hollow(cache1, cache2, 5, 5);
+        } while (cache2 != cache1);
+
+        for (auto& row : cache1)
+        {
+            for (auto& element : row)
+            {
+                element = 0;
+            }
+        }
+
+        //customize_blur(cache2, cache1, 5, 12);
+
+        for (int i = 0; i < h; i++)
+        {
+            for (int j = 0; j < w; j++)
+            {
+                if (cache2[i][j] == 1) src[i][j] = room_id;
+            }
+        }
+    }
+
+
+}
 
 
 

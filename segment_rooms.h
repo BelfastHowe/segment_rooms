@@ -183,9 +183,14 @@ std::vector<std::vector<int>> tidy_room_approx(std::vector<std::vector<int>>& se
 //去除二值图像边缘的突出部，对宽度小于阈值的正交方向上的部分予以删除
 void delete_jut(std::vector<std::vector<int>>& src, std::vector<std::vector<int>>& dst, int uthreshold, int vthreshold);
 
+//填补二值图像边缘的凹陷，对宽度小于阈值的正交方向上的空缺予以填补
+void fill_hollow(std::vector<std::vector<int>>& src, std::vector<std::vector<int>>& dst, int uthreshold, int vthreshold);
+
 //自定义均值滤波，二值图像
 void customize_blur(std::vector<std::vector<int>>& src, std::vector<std::vector<int>>& dst, int windowSize, int threshold);
 
+//全房间二值图像处理函数
+void tidy_room_binary(std::vector<std::vector<int>>& src, std::vector<Room>& rooms);
 
 #endif // !SEGMENT_ROOMS_H
 
