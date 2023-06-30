@@ -720,7 +720,7 @@ void find_connected_rooms(std::vector<Room>& rooms, const std::vector<std::pair<
     }
 }
 
-
+/*
 std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const std::vector<std::vector<int>>& segmented_matrix, const std::vector<Room>& rooms) 
 {
     // 创建一个新的房间列表作为副本
@@ -735,6 +735,7 @@ std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const s
 
     // 设置一个标志，用来表示是否还有像素可以进行膨胀
     bool expansion_occurred = true;
+    //std::stack<std::pair<int, int>> expansion;
 
     // 只要还有像素可以膨胀，就继续循环
     while (expansion_occurred) 
@@ -811,6 +812,119 @@ std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const s
 
     return { expanded_matrix, expanded_rooms };
 }
+*/
+
+std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const std::vector<std::vector<int>>& segmented_matrix, const std::vector<Room>& rooms)
+{
+    // 创建一个新的房间列表作为副本
+    std::vector<Room> expanded_rooms = rooms;
+
+    // 创建一个新的矩阵副本
+    std::vector<std::vector<int>> expanded_matrix = segmented_matrix;
+
+    // 获取矩阵的大小
+    int height = segmented_matrix.size();
+    int width = segmented_matrix[0].size();
+
+    std::stack<std::pair<std::pair<int, int>, int>> expansion;
+    bool expansion_occurred = true;
+
+    while (expansion_occurred)
+    {
+        //标志位置0
+        expansion_occurred = false;
+
+        // 遍历矩阵
+        for (int i = 0; i < height; i++)
+        {
+            for (int j = 0; j < width; j++)
+            {
+                // 当像素点不为0时，即该点位于某个房间内
+                if (expanded_matrix[i][j] != 0)
+                {
+                    int room_id = expanded_matrix[i][j];
+
+                    // 获取周围8个点的坐标
+                    std::vector<std::pair<int, int>> neighbor_coords;
+                    for (int dx = -1; dx <= 1; dx++)
+                    {
+                        for (int dy = -1; dy <= 1; dy++)
+                        {
+                            int nx = i + dx;
+                            int ny = j + dy;
+                            if (0 <= nx && nx < height && 0 <= ny && ny < width)
+                            {
+                                neighbor_coords.push_back({ nx, ny });
+                            }
+                        }
+                    }
+
+                    // 获取周围8个点的像素值
+                    std::vector<int> neighbor_pixels;
+                    for (const auto& coord : neighbor_coords)
+                    {
+                        neighbor_pixels.push_back(expanded_matrix[coord.first][coord.second]);
+                    }
+
+                    // 判断周围8个点是否都等于房间号或0
+                    if (std::all_of(neighbor_pixels.begin(), neighbor_pixels.end(), [room_id](int pixel) { return pixel == room_id || pixel == 0; }))
+                    {
+                        // 计算周围8个点中0的数量
+                        int num_zeros = std::count(neighbor_pixels.begin(), neighbor_pixels.end(), 0);
+
+                        // 如果只有一个或两个0，则将该像素点置为房间号，并记录到副本中
+                        if (num_zeros == 1 || num_zeros == 2)
+                        {
+                            auto zero_it = neighbor_pixels.begin();
+                            while ((zero_it = std::find(zero_it, neighbor_pixels.end(), 0)) != neighbor_pixels.end())
+                            {
+                                int zero_index = std::distance(neighbor_pixels.begin(), zero_it);
+                                std::pair<int, int> zero_coord = neighbor_coords[zero_index];
+                                //expanded_matrix[zero_coord.first][zero_coord.second] = room_id;
+                                //expanded_rooms[room_id - 1].add_pixel(zero_coord);
+
+                                expansion.push(std::make_pair(zero_coord, room_id));
+
+                                // 因为有像素点被膨胀了，所以将标志设置为True
+                                expansion_occurred = true;
+
+                                zero_it++;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        while (!expansion.empty())
+        {
+            std::pair<std::pair<int, int>, int> pending = expansion.top();
+            expansion.pop();
+
+            std::pair<int, int> p = pending.first;
+            int id = pending.second;
+
+            if (expanded_matrix[p.first][p.second] == 0)
+            {
+                expanded_matrix[p.first][p.second] = id;
+                expanded_rooms[id - 1].add_pixel(p);
+            }
+
+            //expanded_matrix[p.first][p.second] = id;
+            //expanded_rooms[id - 1].add_pixel(p);
+        }
+    }
+
+    // 计算扩展后的房间轮廓
+    for (Room& room : expanded_rooms)
+    {
+        room.calculate_outline(expanded_matrix);
+    }
+
+    return { expanded_matrix, expanded_rooms };
+
+}
+
 
 void draw_map(std::vector<std::vector<int>>& segmented_matrix,
               std::vector<Room>& rooms, 
@@ -887,6 +1001,18 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix,
     cv::imwrite("C:\\Users\\13012\\Desktop\\result\\floor_plan_img.jpg", floor_plan_img);
 
     floor_plan_optimization_matrix = floor_plan_matrix;
+
+    for (int d = 0; d < h; d++)
+    {
+        for (int f = 0; f < w; f++)
+        {
+            if (floor_plan_optimization_matrix[d][f] == 1 && segmented_matrix[d][f] != 0)
+            {
+                floor_plan_optimization_matrix[d][f] = 0;
+            }
+        }
+    }
+
     zhangSuenThinning(floor_plan_optimization_matrix);
 
     printBinaryImage(floor_plan_optimization_matrix, 2, "floor_plan_optimization_matrix0");
@@ -900,12 +1026,23 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix,
 
     completion_link(floor_plan_optimization_matrix1);//四连通连接处补全
 
+
+
+
     //std::vector<std::vector<int>> tidy_room = tidy_room_erode(segmented_matrix, floor_plan_optimization_matrix1, door_pixels);
 
     //std::vector<std::vector<int>> tidy_room = tidy_room_approx(segmented_matrix, rooms);
 
+    //std::vector<std::vector<int>> tidy_room_cache(h, std::vector<int>(w, 0));
     std::vector<std::vector<int>> tidy_room(h, std::vector<int>(w, 0));
-    tidy_room_binary(tidy_room, rooms);
+    //tidy_room_binary(tidy_room, rooms);
+
+    tidy_room_Conditional_Morphological_Transformation(tidy_room, floor_plan_optimization_matrix1, rooms, door_pixels);
+    //tidy_room_binary(tidy_room, rooms);
+    //tidy_room = segmented_matrix;
+
+
+
 
 
     for (int x = 0; x < h; x++)
@@ -1968,7 +2105,7 @@ void fill_hollow(std::vector<std::vector<int>>& src, std::vector<std::vector<int
                 {
                     for (int k = j + 1; k < width; k++)
                     {
-                        dst[i][k] = 1;
+                        dst[i][k] = dst[i][k];
                     }
                 }
                 else
@@ -1990,7 +2127,7 @@ void fill_hollow(std::vector<std::vector<int>>& src, std::vector<std::vector<int
                 if (i + vthreshold >= height)
                 {
                     for (int k = i + 1; k < height; k++)
-                        dst[k][j] = 1;
+                        dst[k][j] = dst[k][j];
                 }
                 else
                 {
@@ -2085,7 +2222,7 @@ void tidy_room_binary(std::vector<std::vector<int>>& src, std::vector<Room>& roo
         do
         {
             cache1 = cache2;
-            fill_hollow(cache1, cache2, 5, 5);
+            fill_hollow(cache1, cache2, 10, 10);
         } while (cache2 != cache1);
 
         for (auto& row : cache1)
@@ -2110,6 +2247,203 @@ void tidy_room_binary(std::vector<std::vector<int>>& src, std::vector<Room>& roo
 
 }
 
+
+void tidy_room_Conditional_Morphological_Transformation(std::vector<std::vector<int>>& src,
+                                                        std::vector<std::vector<int>>& mask,
+                                                        std::vector<Room>& rooms,
+                                                        const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& doors_pixels)
+{
+    int h = src.size();
+    int w = src[0].size();
+
+    for (auto& row : src)
+    {
+        for (auto& element : row)
+        {
+            element = 0;
+        }
+    }
+
+    for (auto& room : rooms)
+    {
+        int room_id = room.get_room_id();
+        std::vector<std::vector<int>> cache1(h, std::vector<int>(w, 0));
+        std::vector<std::vector<int>> cache2(h, std::vector<int>(w, 0));
+
+        for (const auto& pixel : room.get_pixels())
+        {
+            cache1[pixel.first][pixel.second] = 1;
+        }
+        cache2 = cache1;
+
+        /*
+        do
+        {
+            cache1 = cache2;
+            tidy_room_Conditional_Erosion_Transformation(cache1, cache2, doors_pixels);
+        } while (cache1 != cache2);
+        */
+
+        do
+        {
+            /* code */
+            cache1 = cache2;
+            tidy_room_Conditional_Dilation_Transformation(cache1, cache2, mask);
+        } while (cache1 != cache2);
+
+
+        for (int i = 0; i < h; i++)
+        {
+            for (int j = 0; j < w; j++)
+            {
+                if (cache2[i][j] == 1)
+                {
+                    src[i][j] = room_id;
+                }
+            }
+        }
+
+    }
+}
+
+void tidy_room_Conditional_Erosion_Transformation(std::vector<std::vector<int>>& src,
+                                                  std::vector<std::vector<int>>& dst,
+                                                  const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& doors_pixels)
+{
+    int threshold = 3;
+
+    int h = src.size();
+    int w = src[0].size();
+
+    dst = src;
+
+    bool erode_flag = true;
+    std::queue<std::pair<int, int>> erode_points;
+
+    while (erode_flag)
+    {
+        erode_flag = false;
+
+        for (int i = 1; i < h - 1; i++)
+        {
+            for (int j = 1; j < w - 1; j++)
+            {
+                if (dst[i][j] == 1 && !should_not_be_eroded(std::make_pair(i, j), doors_pixels, threshold))
+                {
+                    //创建3*3邻域列表
+                    int p[9];
+                    p[0] = dst[i][j];          // P1
+                    p[1] = dst[i - 1][j];      // P2
+                    p[2] = dst[i - 1][j + 1];  // P3
+                    p[3] = dst[i][j + 1];      // P4
+                    p[4] = dst[i + 1][j + 1];  // P5
+                    p[5] = dst[i + 1][j];      // P6
+                    p[6] = dst[i + 1][j - 1];  // P7
+                    p[7] = dst[i][j - 1];      // P8
+                    p[8] = dst[i - 1][j - 1];  // P9
+
+                    int eight_transition_count = 0;
+                    for (int k = 1; k < 8; k++)
+                    {
+                        eight_transition_count += (p[k] == 0 && p[k + 1] == 1);
+                    }
+                    eight_transition_count += (p[8] == 0 && p[1] == 1);
+
+                    int four_connected_count = p[1] + p[3] + p[5] + p[7];
+
+                    int eight_connected_count = four_connected_count + p[2] + p[4] + p[6] + p[8];
+
+                    if (eight_transition_count == 1 && eight_connected_count == 5 && four_connected_count == 2)
+                    {
+                        erode_points.push(std::make_pair(i, j));
+                        erode_flag = true;
+                    }
+
+
+                }
+            }
+        }
+
+        while (!erode_points.empty())
+        {
+            std::pair<int, int> p = erode_points.front();
+            erode_points.pop();
+
+            dst[p.first][p.second] = 0;
+        }
+    }
+
+}
+
+void tidy_room_Conditional_Dilation_Transformation(std::vector<std::vector<int>>& src,
+                                                   std::vector<std::vector<int>>& dst,
+                                                   std::vector<std::vector<int>>& mask)
+{
+    int h = src.size();
+    int w = src[0].size();
+
+    dst = src;
+
+    bool dilate_flag = true;
+    std::queue<std::pair<int, int>> dilate_points;
+
+    while (dilate_flag)
+    {
+        dilate_flag = false;
+
+        for (int i = 1; i < h - 1; i++)
+        {
+            for (int j = 1; j < w - 1; j++)
+            {
+                if (dst[i][j] == 0 && mask[i][j] == 0)
+                {
+                    //创建3*3邻域列表
+                    int p[9];
+                    p[0] = dst[i][j];          // P1
+                    p[1] = dst[i - 1][j];      // P2
+                    p[2] = dst[i - 1][j + 1];  // P3
+                    p[3] = dst[i][j + 1];      // P4
+                    p[4] = dst[i + 1][j + 1];  // P5
+                    p[5] = dst[i + 1][j];      // P6
+                    p[6] = dst[i + 1][j - 1];  // P7
+                    p[7] = dst[i][j - 1];      // P8
+                    p[8] = dst[i - 1][j - 1];  // P9
+
+                    int eight_transition_count = 0;
+                    for (int k = 1; k < 8; k++)
+                    {
+                        eight_transition_count += (p[k] == 0 && p[k + 1] == 1);
+                    }
+                    eight_transition_count += (p[8] == 0 && p[1] == 1);
+
+                    int eight_connected_count = p[1] + p[2] + p[3] + p[4] + p[5] + p[6] + p[7] + p[8];
+
+                    int four_connected_count = p[1] + p[3] + p[5] + p[7];
+
+                    if (eight_transition_count == 1 && eight_connected_count == 4)
+                    {
+                        dilate_points.push(std::make_pair(i, j));
+                        dilate_flag = true;
+                    }
+
+                    if (eight_transition_count == 1 && eight_connected_count == 3 && four_connected_count == 2)
+                    {
+                        dilate_points.push(std::make_pair(i, j));
+                        dilate_flag = true;
+                    }
+                }
+            }
+        }
+
+        while (!dilate_points.empty())
+        {
+            std::pair<int, int> p = dilate_points.front();
+            dilate_points.pop();
+
+            dst[p.first][p.second] = 1;
+        }
+    }
+}
 
 
 

@@ -192,5 +192,24 @@ void customize_blur(std::vector<std::vector<int>>& src, std::vector<std::vector<
 //全房间二值图像处理函数
 void tidy_room_binary(std::vector<std::vector<int>>& src, std::vector<Room>& rooms);
 
+
+/*
+@brief 规整房间生成，条件形态学变换
+*/
+void tidy_room_Conditional_Morphological_Transformation(std::vector<std::vector<int>>& src,
+                                                        std::vector<std::vector<int>>& mask,
+                                                        std::vector<Room>& rooms,
+                                                        const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& doors_pixels);
+
+//条件腐蚀，只腐蚀经典锯齿边上的单个像素凸起
+void tidy_room_Conditional_Erosion_Transformation(std::vector<std::vector<int>>& src,
+                                                  std::vector<std::vector<int>>& dst,
+                                                  const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& doors_pixels);
+
+//条件膨胀，主要是填补单排像素凸出
+void tidy_room_Conditional_Dilation_Transformation(std::vector<std::vector<int>>& src,
+                                                   std::vector<std::vector<int>>& dst,
+                                                   std::vector<std::vector<int>>& mask);
+
 #endif // !SEGMENT_ROOMS_H
 
