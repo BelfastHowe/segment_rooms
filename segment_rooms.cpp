@@ -883,11 +883,30 @@ std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const s
                                 //expanded_matrix[zero_coord.first][zero_coord.second] = room_id;
                                 //expanded_rooms[room_id - 1].add_pixel(zero_coord);
 
-                                expansion.push(std::make_pair(zero_coord, room_id));
+                                //对于符合条件的0点，当它的八领域内都没有别的房间像素时，才添加进待膨胀栈
+                                std::vector<int> judgment = {};
+                                for (int xx = -1; xx <= 1; xx++)
+                                {
+                                    for (int yy = -1; yy <= 1; yy++)
+                                    {
+                                        int u = zero_coord.first + xx;
+                                        int v = zero_coord.second + yy;
+                                        if (is_valid_pixel(u, v, height, width))
+                                        {
+                                            judgment.push_back(expanded_matrix[u][v]);
+                                        }
+                                    }
+                                }
 
-                                // 因为有像素点被膨胀了，所以将标志设置为True
-                                expansion_occurred = true;
+                                if (std::all_of(judgment.begin(), judgment.end(), [room_id](int pixel) {return pixel == room_id || pixel == 0; }))
+                                {
+                                    expansion.push(std::make_pair(zero_coord, room_id));
 
+                                    // 因为有像素点被膨胀了，所以将标志设置为True
+                                    expansion_occurred = true;
+
+                                    //zero_it++;
+                                }
                                 zero_it++;
                             }
                         }
@@ -904,11 +923,34 @@ std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const s
             std::pair<int, int> p = pending.first;
             int id = pending.second;
 
+            //二次判定待膨胀点，防止不同房间的两个点同时膨胀让房间相连通
+            std::vector<int> judgment2 = {};
+            for (int d = -1; d <= 1; d++)
+            {
+                for (int f = -1; f <= 1; f++)
+                {
+                    int u = p.first + d;
+                    int v = p.second + f;
+                    if (is_valid_pixel(u, v, height, width))
+                    {
+                        judgment2.push_back(expanded_matrix[u][v]);
+                    }
+                }
+            }
+
+            if (std::all_of(judgment2.begin(), judgment2.end(), [id](int pixel) {return pixel == id || pixel == 0; }))
+            {
+                expanded_matrix[p.first][p.second] = id;
+                expanded_rooms[id - 1].add_pixel(p);
+            }
+
+            /*
             if (expanded_matrix[p.first][p.second] == 0)
             {
                 expanded_matrix[p.first][p.second] = id;
                 expanded_rooms[id - 1].add_pixel(p);
             }
+            */
 
             //expanded_matrix[p.first][p.second] = id;
             //expanded_rooms[id - 1].add_pixel(p);
@@ -1002,6 +1044,7 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix,
 
     floor_plan_optimization_matrix = floor_plan_matrix;
 
+    /*
     for (int d = 0; d < h; d++)
     {
         for (int f = 0; f < w; f++)
@@ -1012,22 +1055,24 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix,
             }
         }
     }
+    */
 
-    zhangSuenThinning(floor_plan_optimization_matrix);
+    //zhangSuenThinning(floor_plan_optimization_matrix);
 
-    printBinaryImage(floor_plan_optimization_matrix, 2, "floor_plan_optimization_matrix0");
+   // printBinaryImage(floor_plan_optimization_matrix, 2, "floor_plan_optimization_matrix0");
 
-    removeBranches(floor_plan_optimization_matrix);
+    //removeBranches(floor_plan_optimization_matrix);
 
-    printBinaryImage(floor_plan_optimization_matrix, 2, "floor_plan_optimization_matrix");
+    //printBinaryImage(floor_plan_optimization_matrix, 2, "floor_plan_optimization_matrix");
     //cv::waitKey(0);
 
     floor_plan_optimization_matrix1 = floor_plan_outline_Orthogonalization(floor_plan_optimization_matrix, segmented_matrix);
 
-    completion_link(floor_plan_optimization_matrix1);//四连通连接处补全
+    //floor_plan_optimization_matrix1 = floor_plan_optimization_matrix;
 
+    //completion_link(floor_plan_optimization_matrix1);//四连通连接处补全
 
-
+    
 
     //std::vector<std::vector<int>> tidy_room = tidy_room_erode(segmented_matrix, floor_plan_optimization_matrix1, door_pixels);
 
@@ -1037,11 +1082,12 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix,
     std::vector<std::vector<int>> tidy_room(h, std::vector<int>(w, 0));
     //tidy_room_binary(tidy_room, rooms);
 
-    tidy_room_Conditional_Morphological_Transformation(tidy_room, floor_plan_optimization_matrix1, rooms, door_pixels);
+    //tidy_room_Conditional_Morphological_Transformation(tidy_room, floor_plan_optimization_matrix1, rooms, door_pixels);
+    
     //tidy_room_binary(tidy_room, rooms);
-    //tidy_room = segmented_matrix;
+    tidy_room = segmented_matrix;
 
-
+    
 
 
 
@@ -1374,7 +1420,8 @@ void findNonLinearLines(std::vector<std::vector<int>>& img, std::vector<Line>& l
     {
         for (int j = 0; j < width; j++)
         {
-            if (img[i][j] != 0) {  // 找到一条线的一个点
+            if (img[i][j] != 0) 
+            {  // 找到一条线的一个点
                 Line line;
                 line.id = lineId++;
                 line.direction = Line::NONLINEAR;
@@ -1472,7 +1519,8 @@ std::vector<std::pair<int, int>> getLeastTurnPath(const std::pair<int, int>& sta
     std::priority_queue<Node> pq;
     pq.emplace(start, std::vector<std::pair<int, int>>{start}, 0); // 将起始节点添加到队列中
 
-    while (!pq.empty()) {
+    while (!pq.empty()) 
+    {
         Node curNode = pq.top();
         pq.pop();
 
@@ -2269,6 +2317,7 @@ void tidy_room_Conditional_Morphological_Transformation(std::vector<std::vector<
         int room_id = room.get_room_id();
         std::vector<std::vector<int>> cache1(h, std::vector<int>(w, 0));
         std::vector<std::vector<int>> cache2(h, std::vector<int>(w, 0));
+        std::vector<std::vector<int>> cache3(h, std::vector<int>(w, 0));
 
         for (const auto& pixel : room.get_pixels())
         {
@@ -2286,11 +2335,28 @@ void tidy_room_Conditional_Morphological_Transformation(std::vector<std::vector<
 
         do
         {
-            /* code */
-            cache1 = cache2;
-            tidy_room_Conditional_Dilation_Transformation(cache1, cache2, mask);
-        } while (cache1 != cache2);
+            cache3 = cache1;
 
+            do
+            {
+                /* code */
+                cache1 = cache2;
+                tidy_room_Conditional_Dilation_Transformation(cache1, cache2, mask);
+            } while (cache1 != cache2);
+
+            do
+            {
+                cache1 = cache2;
+                fill_hollow(cache1, cache2, 10, 10);
+            } while (cache2 != cache1);
+
+            do
+            {
+                cache1 = cache2;
+                delete_jut(cache1, cache2, 6, 6);
+            } while (cache2 != cache1);
+
+        } while (cache3 != cache1);
 
         for (int i = 0; i < h; i++)
         {
@@ -2557,7 +2623,7 @@ void test_find_connected_rooms() {
 
 void test_final_map()
 {
-    const char* filename = "D:\\files\\mapfile\\dataset_occ\\seg_ori_20230519_012513_24.debug";
+    const char* filename = "D:\\files\\mapfile\\dataset_occ\\seg_ori_20230518_151431_442_.debug";
 
     // 读取地图文件并转化为01矩阵
     std::vector<std::vector<uint8_t>> binaryMatrix = readMapFile(filename);
@@ -2586,15 +2652,22 @@ void test_final_map()
 
     std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>> door_pixels =
     {
-        {{216, 41}, {216,73}},
-        {{111, 161}, {140, 161}},
-        {{110, 175}, {110, 190}},
-        {{110, 244}, {110, 258}},
-        {{136, 244}, {136, 259}},
-        {{115, 263}, {130, 263}},
-        {{83, 315}, {83, 332}},
-        {{178, 324}, {178, 338}},
-        {{111, 42}, {213, 147}}
+        {{119,  45}, {144,  45}},
+        {{228,  53}, {228,  77}},
+        {{301,  31}, {301,  42}},
+        {{116, 168}, {143, 168}},
+        {{112, 183}, {112, 196}},
+        {{148, 173}, {148, 184}},
+        {{113, 205}, {136, 205}},
+        {{112, 252}, {112, 268}},
+        {{139, 251}, {139, 265}},
+        {{116, 269}, {133, 269}},
+        {{155, 272}, {178, 272}},
+        {{180, 277}, {180, 288}},
+        {{ 75, 323}, { 75, 341}},
+        {{139, 319}, {139, 348}},
+        {{178, 332}, {178, 347}},
+        {{139, 351}, {175, 351}}
     };
 
     auto result = segment_rooms(optimization_map, door_pixels);
