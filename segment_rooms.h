@@ -82,9 +82,18 @@ struct Node //优化不规则线条时需要用到的节点路径结构体
         : pos(pos), path(path), turns(turns) {}
 
     // 优先级队列的比较运算符
-    bool operator<(const Node& rhs) const 
+    bool operator<(const Node& rhs) const
     {
-        return turns > rhs.turns; // 注意：这将使最小的turns获得最高的优先权
+        if (turns == rhs.turns)
+        {
+            // 当转弯次数相等时，路径较短的节点有更高的优先级
+            return path.size() > rhs.path.size();
+        }
+        else
+        {
+            // 否则，转弯次数少的节点有更高的优先级
+            return turns > rhs.turns;
+        }
     }
 };
 

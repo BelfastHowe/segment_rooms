@@ -1082,10 +1082,10 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix,
     std::vector<std::vector<int>> tidy_room(h, std::vector<int>(w, 0));
     //tidy_room_binary(tidy_room, rooms);
 
-    //tidy_room_Conditional_Morphological_Transformation(tidy_room, floor_plan_optimization_matrix1, rooms, door_pixels);
+    tidy_room_Conditional_Morphological_Transformation(tidy_room, floor_plan_optimization_matrix1, rooms, door_pixels);
     
     //tidy_room_binary(tidy_room, rooms);
-    tidy_room = segmented_matrix;
+    //tidy_room = segmented_matrix;
 
     
 
@@ -1138,6 +1138,7 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix,
     {
         cv::line(final_map, cv::Point(door.first.second, door.first.first), cv::Point(door.second.second, door.second.first), cv::Scalar(0, 0, 255), 2);  // 红色
     }
+    
 
     // 显示最终地图
     cv::imshow("Final Map", final_map);
@@ -1330,7 +1331,7 @@ std::vector<Line> extractIntersections(std::vector<std::vector<int>>& img)
 
 void extractOrthogonalLines(std::vector<std::vector<int>>& img, std::vector<Line>& lines)
 {
-    int threshold = 15;//设置线段长度阈值
+    int threshold = 10;//设置线段长度阈值
 
 
     //第一步，提取水平线
@@ -1519,6 +1520,9 @@ std::vector<std::pair<int, int>> getLeastTurnPath(const std::pair<int, int>& sta
     std::priority_queue<Node> pq;
     pq.emplace(start, std::vector<std::pair<int, int>>{start}, 0); // 将起始节点添加到队列中
 
+    std::vector<std::vector<bool>> visited(mask.size(), std::vector<bool>(mask[0].size(), false)); // 记录已经访问过的点
+    visited[start.first][start.second] = true;
+
     while (!pq.empty()) 
     {
         Node curNode = pq.top();
@@ -1535,7 +1539,7 @@ std::vector<std::pair<int, int>> getLeastTurnPath(const std::pair<int, int>& sta
             std::pair<int, int> newPos = { curPos.first + offset.first, curPos.second + offset.second };
 
             // 边界检查和障碍物检查
-            if (newPos.first < 0 || newPos.first >= mask.size() || newPos.second < 0 || newPos.second >= mask[0].size() || mask[newPos.first][newPos.second] == 0)
+            if (newPos.first < 0 || newPos.first >= mask.size() || newPos.second < 0 || newPos.second >= mask[0].size() || mask[newPos.first][newPos.second] == 0 || visited[newPos.first][newPos.second])
                 continue;
 
             // 计算转折数
@@ -1548,6 +1552,10 @@ std::vector<std::pair<int, int>> getLeastTurnPath(const std::pair<int, int>& sta
             // 创建一个新的节点并将其添加到队列中
             std::vector<std::pair<int, int>> newPath = curNode.path;
             newPath.push_back(newPos);
+
+            // 标记新节点为已访问
+            visited[newPos.first][newPos.second] = true;
+
             pq.emplace(newPos, newPath, newTurns);
         }
     }
@@ -1590,6 +1598,7 @@ std::vector<std::vector<int>> floor_plan_outline_Orthogonalization(std::vector<s
     //第4步：调整非线性线条，使其具有最小的转折点
     //如果可能的话，用最小转弯的路径来代替非线性的线路
     
+    
     for (auto& line : lines)
     {
         if (line.direction == Line::NONLINEAR)
@@ -1599,6 +1608,15 @@ std::vector<std::vector<int>> floor_plan_outline_Orthogonalization(std::vector<s
                 {
                     return mask[p.first][p.second] == 1; 
                 });
+
+            /*
+            if (!allInMask)
+            {
+                std::cerr << "有非线性线条在房间像素上" << std::endl;
+                throw std::runtime_error("Invalid line found.");
+            }
+            //continue;
+            */
 
             //如果所有的像素都在mask前景中，则尝试替换线条
             if (allInMask)
@@ -1615,7 +1633,8 @@ std::vector<std::vector<int>> floor_plan_outline_Orthogonalization(std::vector<s
     {
         for (const auto& p : line.points)
         {
-            output[p.first][p.second] = 1;
+            //if (line.direction == Line::NONLINEAR)
+                output[p.first][p.second] = 1;
         }
     }
 
@@ -2102,6 +2121,8 @@ void delete_jut(std::vector<std::vector<int>>& src, std::vector<std::vector<int>
                     {
                         if (dst[i][k] == 0) break;
                     }
+
+                    k = std::min(k, width - 1); // 确保 k 不会越界
                     if (dst[i][k] == 0)
                     {
                         for (int h = j + 1; h < k; h++)
@@ -2123,6 +2144,8 @@ void delete_jut(std::vector<std::vector<int>>& src, std::vector<std::vector<int>
                     {
                         if (dst[k][j] == 0) break;
                     }
+
+                    k = std::min(k, height - 1); // 确保 k 不会越界
                     if (dst[k][j] == 0)
                     {
                         for (int h = i + 1; h < k; h++)
@@ -2151,10 +2174,12 @@ void fill_hollow(std::vector<std::vector<int>>& src, std::vector<std::vector<int
             {
                 if (j + uthreshold >= width)
                 {
+                    /*
                     for (int k = j + 1; k < width; k++)
                     {
                         dst[i][k] = dst[i][k];
                     }
+                    */
                 }
                 else
                 {
@@ -2162,6 +2187,8 @@ void fill_hollow(std::vector<std::vector<int>>& src, std::vector<std::vector<int
                     {
                         if (dst[i][k] == 1) break;
                     }
+
+                    k = std::min(k, width - 1); // 确保 k 不会越界
                     if (dst[i][k] == 1)
                     {
                         for (int h = j + 1; h < k; h++)
@@ -2174,8 +2201,10 @@ void fill_hollow(std::vector<std::vector<int>>& src, std::vector<std::vector<int
             {
                 if (i + vthreshold >= height)
                 {
+                    /*
                     for (int k = i + 1; k < height; k++)
                         dst[k][j] = dst[k][j];
+                    */
                 }
                 else
                 {
@@ -2183,6 +2212,8 @@ void fill_hollow(std::vector<std::vector<int>>& src, std::vector<std::vector<int
                     {
                         if (dst[k][j] == 1) break;
                     }
+
+                    k = std::min(k, height - 1); // 确保 k 不会越界
                     if (dst[k][j] == 1)
                     {
                         for (int h = i + 1; h < k; h++)
@@ -2353,7 +2384,7 @@ void tidy_room_Conditional_Morphological_Transformation(std::vector<std::vector<
             do
             {
                 cache1 = cache2;
-                delete_jut(cache1, cache2, 6, 6);
+                delete_jut(cache1, cache2, 3, 3);
             } while (cache2 != cache1);
 
         } while (cache3 != cache1);
