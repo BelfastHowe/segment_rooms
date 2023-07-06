@@ -420,7 +420,7 @@ std::vector<std::vector<int>> customize_dilate(const std::vector<std::vector<int
     return dilatedMatrix;
 }
 
-std::vector<std::vector<int>> customize_erode(const std::vector<std::vector<int>>& binaryMatrix, const std::vector<std::vector<int>>& kernel) 
+std::vector<std::vector<int>> customize_erode(const std::vector<std::vector<int>>& binaryMatrix, const std::vector<std::vector<int>>& kernel)
 {
     int rows = binaryMatrix.size();
     int cols = binaryMatrix[0].size();
@@ -429,39 +429,39 @@ std::vector<std::vector<int>> customize_erode(const std::vector<std::vector<int>
     int padRows = kernelRows / 2;
     int padCols = kernelCols / 2;
 
-    std::vector<std::vector<int>> paddedMatrix(rows + 2 * padRows, std::vector<int>(cols + 2 * padCols, 1));
-    for (int i = 0; i < rows; i++) 
+    std::vector<std::vector<int>> paddedMatrix(rows + 2 * padRows, std::vector<int>(cols + 2 * padCols, 0));
+    for (int i = 0; i < rows; i++)
     {
-        for (int j = 0; j < cols; j++) 
+        for (int j = 0; j < cols; j++)
         {
             paddedMatrix[i + padRows][j + padCols] = binaryMatrix[i][j];
         }
     }
 
-    std::vector<std::vector<int>> erodedMatrix(rows, std::vector<int>(cols, 1));
-    for (int i = padRows; i < rows + padRows; i++) 
+    std::vector<std::vector<int>> erodedMatrix(rows, std::vector<int>(cols, 0));
+    for (int i = padRows; i < rows + padRows; i++)
     {
-        for (int j = padCols; j < cols + padCols; j++) 
+        for (int j = padCols; j < cols + padCols; j++)
         {
             bool erode = true;
-            for (int k = 0; k < kernelRows; k++) 
+            for (int k = 0; k < kernelRows; k++)
             {
-                for (int l = 0; l < kernelCols; l++) 
+                for (int l = 0; l < kernelCols; l++)
                 {
-                    if (!paddedMatrix[i - padRows + k][j - padCols + l] && kernel[k][l]) 
+                    if (kernel[k][l] && !paddedMatrix[i - padRows + k][j - padCols + l])
                     {
                         erode = false;
                         break;
                     }
                 }
-                if (!erode) 
+                if (!erode)
                 {
                     break;
                 }
             }
-            if (erode) 
+            if (erode)
             {
-                erodedMatrix[i - padRows][j - padCols] = 0;
+                erodedMatrix[i - padRows][j - padCols] = 1;
             }
         }
     }
@@ -2541,6 +2541,187 @@ void tidy_room_Conditional_Dilation_Transformation(std::vector<std::vector<int>>
         }
     }
 }
+
+
+void floor_plan_optimizer(std::vector<std::vector<int>>& expanded_matrix,
+                          std::vector<Room>& expanded_rooms,
+                          const std::vector<std::vector<int>>& segmented_matrix)
+{
+    int h = segmented_matrix.size();
+    int w = segmented_matrix[0].size();
+
+    std::vector<std::vector<int>> floor_plan_matrix(h, std::vector<int>(w, 0));
+    std::vector<std::vector<int>> floor_plan_optimization_matrix(h, std::vector<int>(w, 0));
+
+    for (Room& room : expanded_rooms)
+    {
+        for (auto& pixel : room.get_outline_pixels())
+        {
+            //final_map.at<cv::Vec3b>(pixel.first, pixel.second) = cv::Vec3b(0, 0, 0);  // 使用黑色绘制轮廓线
+            int u = pixel.first;
+            int v = pixel.second;
+            floor_plan_matrix[u][v] = 1;
+        }
+    }
+
+    /*优化前的户型图轮廓绘制
+    cv::Mat floor_plan_img(h, w, CV_8UC3, cv::Scalar(255, 255, 255));
+    for (int x = 0; x < h; x++)
+    {
+        for (int y = 0; y < w; y++)
+        {
+            if (floor_plan_matrix[x][y] != 0)
+            {
+
+                floor_plan_img.at<cv::Vec3b>(x, y) = cv::Vec3b(0, 0, 0);
+            }
+        }
+    }
+    cv::imshow("floor_plan_img", floor_plan_img);
+    cv::imwrite("C:\\Users\\13012\\Desktop\\result\\floor_plan_img.jpg", floor_plan_img);
+    */
+
+    //户型图正交化
+    floor_plan_optimization_matrix = floor_plan_outline_Orthogonalization(floor_plan_matrix, segmented_matrix);
+
+    /*优化后的户型图轮廓绘制
+    cv::Mat floor_plan_optimization_img(h, w, CV_8UC3, cv::Scalar(255, 255, 255));
+    for (int x = 0; x < h; x++)
+     {
+         for (int y = 0; y < w; y++)
+         {
+             if (floor_plan_optimization_matrix[x][y] != 0)
+             {
+                 floor_plan_optimization_img.at<cv::Vec3b>(x, y) = cv::Vec3b(0, 0, 0);
+             }
+         }
+     }
+     cv::imshow("floor_plan_optimization_img", floor_plan_optimization_img);
+     cv::imwrite("C:\\Users\\13012\\Desktop\\result\\floor_plan_optimization_img.jpg", floor_plan_optimization_img);
+    */
+
+
+
+}
+
+std::vector<std::vector<int>> orthogonal_polygon_fitting(const std::vector<std::vector<int>>& floor_plan_matrix)
+{
+    size_t h = floor_plan_matrix.size();
+    size_t w = floor_plan_matrix[0].size();
+
+    std::vector<std::vector<int>> kernel(3, std::vector<int>(3, 1));
+    std::vector<std::vector<int>> mask = customize_erode(floor_plan_matrix, kernel);
+
+    std::vector<std::vector<int>> floor_plan_polygon_matrix(h, std::vector<int>(w, 0));
+
+    cv::Mat floor_plan_mat(h, w, CV_8UC1);
+    cv::Mat result_mat(h, w, CV_8UC1);
+
+    for (size_t i = 0; i < h; i++)
+    {
+        for (size_t j = 0; j < w; j++)
+        {
+            floor_plan_mat.at<uchar>(i, j) = floor_plan_matrix[i][i] * 255;
+        }
+    }
+
+    cv::Point p0 = find_centroid(floor_plan_mat);
+
+    std::vector<std::vector<cv::Point>> contours;
+
+    cv::findContours(floor_plan_mat, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+    std::vector<cv::Point> approx_contour;
+    std::vector<cv::Point> result;
+
+    //设置多边形近似阈值
+    double epsilon = 0.01 * cv::arcLength(contours[0], true);
+    cv::approxPolyDP(contours[0], approx_contour, epsilon, true);
+
+    int n = approx_contour.size();
+    for (int i = 0; i < n; i++)
+    {
+        cv::Point p1 = approx_contour[i];
+        cv::Point p2 = approx_contour[(i + 1) % n]; // 循环访问点对，最后一对为最后一个点和第一个点
+
+        if (p1.x == p2.x || p1.y == p2.y)
+        {
+            // 如果两点可以直接相连，则添加到结果中
+            result.push_back(p1);
+        }
+        else
+        {
+            // 如果两点不能直接相连，则需要计算拐点并添加到结果中
+
+            // 找出两个可能的拐点，并判断哪个与p0在同一侧并且在floor_plan_matrix中对应的值为0
+            cv::Point bend_point_1(p1.x, p2.y);
+            cv::Point bend_point_2(p2.x, p1.y);
+
+            if (isAboveLine(p0, p1, p2) == isAboveLine(bend_point_1, p1, p2) && mask[bend_point_1.y][bend_point_1.x] == 0)
+            {
+                result.push_back(p1);
+                result.push_back(bend_point_1);
+            }
+            else if (isAboveLine(p0, p1, p2) == isAboveLine(bend_point_2, p1, p2) && mask[bend_point_2.y][bend_point_2.x] == 0)
+            {
+                result.push_back(p1);
+                result.push_back(bend_point_2);
+            }
+        }
+    }
+
+    cv::drawContours(result_mat, std::vector<std::vector<cv::Point>>{result}, -1, cv::Scalar(255), 1);
+
+    for (int i = 0; i < h; i++)
+    {
+        for (int j = 0; j < w; j++)
+        {
+            floor_plan_polygon_matrix[i][j] = static_cast<int>(result_mat.at<uchar>(i, j) / 255);
+        }
+    }
+
+    return floor_plan_polygon_matrix;
+}
+
+bool isAboveLine(const cv::Point& point_to_check, const cv::Point& line_point_1, const cv::Point& line_point_2) 
+{
+
+    double slope = (line_point_2.y - line_point_1.y) / static_cast<double>(line_point_2.x - line_point_1.x);
+    double y_intercept = line_point_1.y - slope * line_point_1.x;  // y = mx + c -> c = y - mx
+    double line_y = slope * point_to_check.x + y_intercept;
+    return point_to_check.y <= line_y;
+}
+
+cv::Point find_centroid(const cv::Mat& mat)
+{
+    int total = 0;
+    int sum_x = 0;
+    int sum_y = 0;
+
+    for (int i = 0; i < mat.rows; i++)
+    {
+        for (int j = 0; j < mat.cols; j++)
+        {
+            if (mat.at<uchar>(i, j) > 0)  // Check if the pixel is part of the object
+            {
+                sum_y += i;
+                sum_x += j;
+                total++;
+            }
+        }
+    }
+
+    // Make sure you are not dividing by zero
+    if (total == 0)
+    {
+        throw std::invalid_argument("The matrix does not contain any non-zero pixels");
+    }
+
+    return cv::Point(sum_x / total, sum_y / total);
+}
+
+
+
 
 
 

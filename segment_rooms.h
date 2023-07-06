@@ -220,5 +220,26 @@ void tidy_room_Conditional_Dilation_Transformation(std::vector<std::vector<int>>
                                                    std::vector<std::vector<int>>& dst,
                                                    std::vector<std::vector<int>>& mask);
 
+/*
+@brief 户型图总体优化模块函数
+*/
+void floor_plan_optimizer(std::vector<std::vector<int>>& expanded_matrix,
+                          std::vector<Room>& expanded_rooms,
+                          const std::vector<std::vector<int>>& segmented_matrix);
+
+//简单的正交多边形近似函数，主要用于确定户型图变形边界
+std::vector<std::vector<int>> orthogonal_polygon_fitting(const std::vector<std::vector<int>>& floor_plan_matrix);
+
+//点在直线上还是直线下的相对位置判断函数，在上输出true
+bool isAboveLine(const cv::Point& point_to_check, const cv::Point& line_point_1, const cv::Point& line_point_2);
+
+//单连通域重心计算函数
+cv::Point find_centroid(const cv::Mat& mat);
+
+
+
+
+
+
 #endif // !SEGMENT_ROOMS_H
 
