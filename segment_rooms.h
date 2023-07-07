@@ -40,6 +40,8 @@ public:
 
     int get_pixel_count() const;//获取像素点数量
 
+    void clear_pixels();// 清空房间内的像素点
+
     std::string to_string() const;//输出房间信息
 
     int get_room_id() const;//获取房间编号

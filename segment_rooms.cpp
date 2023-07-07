@@ -14,6 +14,11 @@ int Room::get_pixel_count() const
     return pixels.size();
 }
 
+void Room::clear_pixels() 
+{
+    pixels.clear();
+}
+
 std::string Room::to_string() const 
 {
     std::stringstream ss;
@@ -1044,6 +1049,8 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix,
 
     floor_plan_optimization_matrix = floor_plan_matrix;
 
+
+
     /*
     for (int d = 0; d < h; d++)
     {
@@ -1066,6 +1073,9 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix,
     //printBinaryImage(floor_plan_optimization_matrix, 2, "floor_plan_optimization_matrix");
     //cv::waitKey(0);
 
+    
+    //floor_plan_optimization_matrix1 = orthogonal_polygon_fitting(floor_plan_optimization_matrix);
+    
     floor_plan_optimization_matrix1 = floor_plan_outline_Orthogonalization(floor_plan_optimization_matrix, segmented_matrix);
 
     //floor_plan_optimization_matrix1 = floor_plan_optimization_matrix;
@@ -2609,34 +2619,68 @@ std::vector<std::vector<int>> orthogonal_polygon_fitting(const std::vector<std::
     size_t h = floor_plan_matrix.size();
     size_t w = floor_plan_matrix[0].size();
 
-    std::vector<std::vector<int>> kernel(3, std::vector<int>(3, 1));
-    std::vector<std::vector<int>> mask = customize_erode(floor_plan_matrix, kernel);
+    //std::vector<std::vector<int>> kernel(3, std::vector<int>(3, 1));
 
+    //设置正交变形的障碍物
+    std::vector<std::vector<int>> mask(h, std::vector<int>(w, 0));
+
+    //输出的结果
     std::vector<std::vector<int>> floor_plan_polygon_matrix(h, std::vector<int>(w, 0));
 
     cv::Mat floor_plan_mat(h, w, CV_8UC1);
-    cv::Mat result_mat(h, w, CV_8UC1);
+    cv::Mat result_mat = cv::Mat::zeros(h, w, CV_8UC1);
 
+    //转化为Mat
     for (size_t i = 0; i < h; i++)
     {
         for (size_t j = 0; j < w; j++)
         {
-            floor_plan_mat.at<uchar>(i, j) = floor_plan_matrix[i][i] * 255;
+            floor_plan_mat.at<uchar>(i, j) = floor_plan_matrix[i][j] * 255;
         }
     }
 
-    cv::Point p0 = find_centroid(floor_plan_mat);
+    //cv::Point p0 = find_centroid(floor_plan_mat);
 
+    //找最外部轮廓
     std::vector<std::vector<cv::Point>> contours;
-
     cv::findContours(floor_plan_mat, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+    //绘制实心轮廓
+    cv::Mat centroid_mat = cv::Mat::zeros(h, w, CV_8UC1);
+    cv::drawContours(centroid_mat, contours, -1, cv::Scalar(255), cv::FILLED);
+
+    std::cout <<"测试单点像素值： "<< static_cast<int>(centroid_mat.at<uchar>(0, 0)) << std::endl;
+    cv::imshow("centroid_mat", centroid_mat);
+
+    //找到重心
+    cv::Point p0 = find_centroid(centroid_mat);
+
+    //障碍物将由实心轮廓腐蚀得到
+    for (size_t u = 0; u < h; u++)
+    {
+        for (size_t v = 0; v < w; v++)
+        {
+            mask[u][v] = static_cast<int>(centroid_mat.at<uchar>(u, v) / 255);
+        }
+    }
+    printBinaryImage(mask, 2, "fitting_mask1");
+    //腐蚀
+    std::vector<std::vector<int>> kernel(3, std::vector<int>(3, 1));
+    mask = customize_erode(mask, kernel);
+
+    printBinaryImage(mask, 2, "fitting_mask2");
 
     std::vector<cv::Point> approx_contour;
     std::vector<cv::Point> result;
 
     //设置多边形近似阈值
-    double epsilon = 0.01 * cv::arcLength(contours[0], true);
+    double epsilon = 5;
+    //double epsilon = 0.05 * cv::arcLength(contours[0], true);
     cv::approxPolyDP(contours[0], approx_contour, epsilon, true);
+
+    cv::Mat approx_mat(h, w, CV_8UC1, cv::Scalar(0));
+    cv::drawContours(approx_mat, std::vector<std::vector<cv::Point>>{approx_contour}, -1, cv::Scalar(255), 1);
+    cv::imshow("approx_mat", approx_mat);
 
     int n = approx_contour.size();
     for (int i = 0; i < n; i++)
@@ -2667,14 +2711,18 @@ std::vector<std::vector<int>> orthogonal_polygon_fitting(const std::vector<std::
                 result.push_back(p1);
                 result.push_back(bend_point_2);
             }
+            else
+            {
+                result.push_back(p1);
+            }
         }
     }
 
     cv::drawContours(result_mat, std::vector<std::vector<cv::Point>>{result}, -1, cv::Scalar(255), 1);
 
-    for (int i = 0; i < h; i++)
+    for (size_t i = 0; i < h; i++)
     {
-        for (int j = 0; j < w; j++)
+        for (size_t j = 0; j < w; j++)
         {
             floor_plan_polygon_matrix[i][j] = static_cast<int>(result_mat.at<uchar>(i, j) / 255);
         }
@@ -2720,6 +2768,89 @@ cv::Point find_centroid(const cv::Mat& mat)
     return cv::Point(sum_x / total, sum_y / total);
 }
 
+void expanded_room_renew(std::vector<Room>& expanded_rooms, const std::vector<std::vector<int>>& segmented_matrix, std::vector<std::vector<int>>& floor_plan_optimization_matrix)
+{
+    size_t h = segmented_matrix.size();
+    size_t w = segmented_matrix[0].size();
+
+    std::vector<std::vector<int>> transfer(h, std::vector<int>(w, 0));
+
+    //前景背景置换
+    for (size_t i = 0; i < h; i++)
+    {
+        for (size_t j = 0; j < w; j++)
+        {
+            transfer[i][j] = floor_plan_optimization_matrix[i][j] == 0 ? 1 : 0;
+        }
+    }
+
+    std::vector<std::pair<int, int>> directions = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };//四连通
+
+    std::stack<std::pair<int, int>> background_stack;
+    background_stack.push(std::make_pair(0, 0));
+    transfer[0][0] = 0;
+
+    //将最外圈设为背景
+    while (!background_stack.empty())
+    {
+        std::pair<int, int> background_pixel = background_stack.top();
+        background_stack.pop();
+
+        int bx = background_pixel.first;
+        int by = background_pixel.second;
+
+        for (const auto& direction : directions)
+        {
+            int nx = bx + direction.first;
+            int ny = by + direction.second;
+
+            if (is_valid_pixel(nx, ny, h, w) && transfer[nx][ny] == 1)
+            {
+                background_stack.push(std::make_pair(nx, ny));
+                transfer[nx][ny] = 0;
+            }
+        }
+    }
+
+    //房间id继承
+    int room_id = 1;
+    bool hasChanged = true;
+
+    while (hasChanged)
+    {
+        hasChanged = false;
+        for (size_t u = 0; u < h; u++)
+        {
+            for (size_t v = 0; v < w; v++)
+            {
+                if (segmented_matrix[u][v] == room_id && transfer[u][v] == 1)
+                {
+                    transfer[u][v] = room_id;
+                    hasChanged = true;
+                    break;
+                }
+            }
+            if (hasChanged) break;
+        }
+        room_id++;
+    }
+
+    //房间id扩散
+    for (int id = 2; id < room_id - 1; id++)
+    {
+        for (size_t i = 0; i < h; i++)
+        {
+            for (size_t j = 0; j < w; j++)
+            {
+                if (transfer[i][j] == id)
+                {
+
+                }
+            }
+        }
+    }
+
+}
 
 
 
