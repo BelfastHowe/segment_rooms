@@ -2853,6 +2853,198 @@ void expanded_room_renew(std::vector<Room>& expanded_rooms, const std::vector<st
 }
 
 
+std::vector<std::vector<int>> floor_plan_alignment(std::vector<Room>& expanded_rooms, std::vector<std::vector<int>>& floor_plan_optimization_matrix)
+{
+    //设置变形长度阈值
+    int threshold = 20;
+
+    size_t h = floor_plan_optimization_matrix.size();
+    size_t w = floor_plan_optimization_matrix[0].size();
+
+    //构建全房间转折点列表
+    std::vector<std::pair<int, std::vector<cv::Point>>> rooms_contours;
+
+    for (auto& room : expanded_rooms)
+    {
+        int rd = room.get_room_id();
+
+        cv::Mat cache1(h, w, CV_8UC1, cv::Scalar(0));
+
+        for (size_t i = 0; i < h; i++)
+        {
+            for (size_t j = 0; j < w; j++)
+            {
+                for (const auto& p : room.get_outline_pixels())
+                {
+                    cache1.at<uchar>(p.first, p.second) = 255;
+                }
+            }
+        }
+
+        std::vector<std::vector<cv::Point>> contours;
+        cv::findContours(cache1, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+        rooms_contours.push_back(std::make_pair(rd, contours[0]));
+    }
+
+    //逐级变形
+    bool has_changed = true;
+
+    while (has_changed)
+    {
+        has_changed = false;
+
+        for (size_t n = 0; n < rooms_contours.size(); n++)
+        {
+            int room_id = rooms_contours[n].first;
+            std::vector<cv::Point> cnt = rooms_contours[n].second;
+
+
+
+            std::vector<std::vector<int>> mask(h, std::vector<int>(w, 0));
+            cv::Mat mask_mat(h, w, CV_8UC1, cv::Scalar(0));
+
+            //背景限制矩阵生成
+            for (auto& mask_cnt : rooms_contours)
+            {
+                if (mask_cnt.first == room_id) continue;
+
+                cv::drawContours(mask_mat, std::vector<std::vector<cv::Point>>{mask_cnt.second}, -1, cv::Scalar(255), 1);
+            }
+
+            for (size_t i = 0; i < h; i++)
+            {
+                for (size_t j = 0; j < w; j++)
+                {
+                    mask[i][j] = static_cast<int>(mask_mat.at<uchar>(i, j) / 255);
+                }
+            }
+
+
+            int length = cnt.size();
+
+            //单房间变形
+            for (int m = 0; m < length; m++)
+            {
+                //单边变形
+                std::vector<std::vector<int>> inside_mask = cvPoint_to_matrix(cnt, h, w);
+
+                std::pair<int, int> p1 = std::make_pair(cnt[m].y, cnt[m].x);
+                std::pair<int, int> p2 = std::make_pair(cnt[(m + 1) % length].y, cnt[(m + 1) % length].x);
+
+                bool stop_run = false;
+
+                //上下移动
+                if (p1.first == p2.first)
+                {
+                    //向上
+                    if (inside_mask[p1.first - 1][(p1.second + p2.second) / 2] == 0)
+                    {
+                        for (int x = p1.first; x >= x - threshold || x >= 0; x--)
+                        {
+                            //如果有边可以沿
+                            if (mask[x][p1.second] == 1 || mask[x][p2.second] == 1)
+                            {
+                                for (int y = 1 + std::min(p1.second, p2.second); y < std::max(p1.second, p2.second); y++)
+                                {
+                                    if (mask[x][y] == 1)
+                                    {
+                                        stop_run = true;
+                                        cv::Point np1(p1.second, x);
+                                        cv::Point np2(p2.second, x);
+                                        cnt[m] = np1;
+                                        cnt[(m + 1) % length] = np2;
+                                        has_changed = true;
+                                        break;
+                                    }
+                                }
+                                if (stop_run) break;
+                            }
+                            else
+                            {
+                                cv::Point np1(p1.second, std::min(x+1, p1.first));
+                                cv::Point np2(p2.second, std::min(x+1, p2.first));
+                                cnt[m] = np1;
+                                cnt[(m + 1) % length] = np2;
+                                has_changed = true;
+                                break;
+                            }
+                        }
+                    }
+                    //向下
+                    else if (inside_mask[p1.first + 1][(p1.second + p2.second) / 2] == 0)
+                    {
+                        for (int x = p1.first; x <= x + threshold || x < h; x++)
+                        {
+                            //如果有边可以沿
+                            if (mask[x][p1.second] == 1 || mask[x][p2.second] == 1)
+                            {
+                                for (int y = 1 + std::min(p1.second, p2.second); y < std::max(p1.second, p2.second); y++)
+                                {
+                                    if (mask[x][y] == 1)
+                                    {
+                                        stop_run = true;
+                                        cv::Point np1(p1.second, x);
+                                        cv::Point np2(p2.second, x);
+                                        cnt[m] = np1;
+                                        cnt[(m + 1) % length] = np2;
+                                        has_changed = true;
+                                        break;
+                                    }
+                                }
+                                if (stop_run) break;
+                            }
+                            else
+                            {
+                                cv::Point np1(p1.second, std::max(x - 1, p1.first));
+                                cv::Point np2(p2.second, std::max(x - 1, p2.first));
+                                cnt[m] = np1;
+                                cnt[(m + 1) % length] = np2;
+                                has_changed = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                //左右移动
+                else if (p1.second == p2.second)
+                {
+
+                }
+                else
+                {
+                    std::cerr << "在单个房间的户型图对齐变形中，找到的两个点xy都不相等" << std::endl;
+                    throw std::runtime_error("Invalid line found.");
+                }
+            }
+
+        }
+    }
+}
+
+std::vector<std::vector<int>> cvPoint_to_matrix(std::vector<cv::Point>& cnt, size_t h, size_t w)
+{
+    cv::Mat cache(h, w, CV_8UC1, cv::Scalar(0));
+    std::vector<std::vector<int>> dst(h, std::vector<int>(w, 0));
+
+    cv::drawContours(cache, std::vector<std::vector<cv::Point>>{cnt}, -1, cv::Scalar(255), cv::FILLED);
+
+    for (size_t i = 0; i < h; i++)
+    {
+        for (size_t j = 0; j < w; j++)
+        {
+            dst[i][j] = static_cast<int>(cache.at<uchar>(i, j) / 255);
+        }
+    }
+
+    std::vector<std::vector<int>> kernel(3, std::vector<int>(3, 1));
+    dst = customize_erode(dst, kernel);
+
+    return dst;
+}
+
+
+
 
 
 
