@@ -226,8 +226,11 @@ void tidy_room_Conditional_Dilation_Transformation(std::vector<std::vector<int>>
 @brief 户型图总体优化模块函数
 */
 void floor_plan_optimizer(std::vector<std::vector<int>>& expanded_matrix,
-                          std::vector<Room>& expanded_rooms,
-                          const std::vector<std::vector<int>>& segmented_matrix);
+    std::vector<std::vector<int>>& tidy_room,
+    std::vector<Room>& expanded_rooms,
+    const std::vector<std::vector<int>>& segmented_matrix,
+    std::vector<Room>& rooms,
+    const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels);
 
 //简单的正交多边形近似函数，主要用于确定户型图变形边界
 std::vector<std::vector<int>> orthogonal_polygon_fitting(const std::vector<std::vector<int>>& floor_plan_matrix);
@@ -237,6 +240,25 @@ bool isAboveLine(const cv::Point& point_to_check, const cv::Point& line_point_1,
 
 //单连通域重心计算函数
 cv::Point find_centroid(const cv::Mat& mat);
+
+//用优化后的户型图轮廓矩阵反向更新expanded_rooms列表
+void expanded_room_renew(std::vector<Room>& expanded_rooms, const std::vector<std::vector<int>>& segmented_matrix, const std::vector<std::vector<int>>& floor_plan_optimization_matrix);
+
+//户型图轮廓的阈值对齐
+std::vector<std::vector<int>> floor_plan_alignment(const std::vector<Room>& expanded_rooms, const std::vector<std::vector<int>>& floor_plan_optimization_matrix);
+
+//转折点列表转内部的单连通填充矩阵
+std::vector<std::vector<int>> cvPoint_to_matrix(std::vector<cv::Point>& cnt, size_t h, size_t w);
+
+//新的最终图像绘制
+void draw_final_map(std::vector<std::vector<int>>& segmented_matrix,
+    std::vector<std::vector<int>>& expanded_matrix,
+    std::vector<std::vector<int>>& tidy_room,
+    std::vector<Room>& expanded_rooms,
+    std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels);
+
+//宽度为1的封闭轮廓的逆时针顺序转折点提取
+std::vector<cv::Point> findTurnPoints(std::vector<std::vector<int>>& outline_matrix);
 
 
 

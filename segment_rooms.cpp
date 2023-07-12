@@ -97,7 +97,10 @@ void Room::calculate_outline(const std::vector<std::vector<int>>& matrix)
     stack.push(start_pixel);
 
     // 四连通方向：左，上，右，下
-    std::vector<std::pair<int, int>> directions = { {0, -1}, {-1, 0}, {0, 1}, {1, 0} };
+    //std::vector<std::pair<int, int>> directions = { {0, -1}, {-1, 0}, {0, 1}, {1, 0} };
+
+    // 四连通方向：下，左，上，右，保证逆时针寻找
+    std::vector<std::pair<int, int>> directions = { {1, 0}, {0, -1}, {-1, 0}, {0, 1} };
 
     while (!stack.empty())
     {
@@ -2554,8 +2557,11 @@ void tidy_room_Conditional_Dilation_Transformation(std::vector<std::vector<int>>
 
 
 void floor_plan_optimizer(std::vector<std::vector<int>>& expanded_matrix,
-                          std::vector<Room>& expanded_rooms,
-                          const std::vector<std::vector<int>>& segmented_matrix)
+    std::vector<std::vector<int>>& tidy_room,
+    std::vector<Room>& expanded_rooms,
+    const std::vector<std::vector<int>>& segmented_matrix,
+    std::vector<Room>& rooms,
+    const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels)
 {
     int h = segmented_matrix.size();
     int w = segmented_matrix[0].size();
@@ -2594,7 +2600,7 @@ void floor_plan_optimizer(std::vector<std::vector<int>>& expanded_matrix,
     //户型图正交化
     floor_plan_optimization_matrix = floor_plan_outline_Orthogonalization(floor_plan_matrix, segmented_matrix);
 
-    /*优化后的户型图轮廓绘制
+    //优化后的户型图轮廓绘制
     cv::Mat floor_plan_optimization_img(h, w, CV_8UC3, cv::Scalar(255, 255, 255));
     for (int x = 0; x < h; x++)
      {
@@ -2607,8 +2613,22 @@ void floor_plan_optimizer(std::vector<std::vector<int>>& expanded_matrix,
          }
      }
      cv::imshow("floor_plan_optimization_img", floor_plan_optimization_img);
-     cv::imwrite("C:\\Users\\13012\\Desktop\\result\\floor_plan_optimization_img.jpg", floor_plan_optimization_img);
-    */
+     cv::imwrite("C:\\Users\\13012\\Desktop\\result\\floor_plan_optimization_img.png", floor_plan_optimization_img);
+    
+
+    //规整房间生成
+    //std::vector<std::vector<int>> tidy_room(h, std::vector<int>(w, 0));
+    tidy_room_Conditional_Morphological_Transformation(tidy_room, floor_plan_optimization_matrix, rooms, door_pixels);
+
+
+
+    //反向更新expanded_rooms
+    expanded_room_renew(expanded_rooms, segmented_matrix, floor_plan_optimization_matrix);
+
+    //户型图对齐
+    //std::vector<std::vector<int>> aligned_floor_plan_matrix(h, std::vector<int>(w, 0));
+
+    expanded_matrix = floor_plan_alignment(expanded_rooms, floor_plan_optimization_matrix);
 
 
 
@@ -2768,7 +2788,7 @@ cv::Point find_centroid(const cv::Mat& mat)
     return cv::Point(sum_x / total, sum_y / total);
 }
 
-void expanded_room_renew(std::vector<Room>& expanded_rooms, const std::vector<std::vector<int>>& segmented_matrix, std::vector<std::vector<int>>& floor_plan_optimization_matrix)
+void expanded_room_renew(std::vector<Room>& expanded_rooms, const std::vector<std::vector<int>>& segmented_matrix, const std::vector<std::vector<int>>& floor_plan_optimization_matrix)
 {
     size_t h = segmented_matrix.size();
     size_t w = segmented_matrix[0].size();
@@ -2844,16 +2864,78 @@ void expanded_room_renew(std::vector<Room>& expanded_rooms, const std::vector<st
             {
                 if (transfer[i][j] == id)
                 {
+                    std::stack<std::pair<int, int>> diffusion;
+                    diffusion.push(std::make_pair(i, j));
 
+                    while (!diffusion.empty())
+                    {
+                        std::pair<int, int> p = diffusion.top();
+                        diffusion.pop();
+
+                        for (const auto& dir : directions)
+                        {
+                            int nx = p.first + dir.first;
+                            int ny = p.second + dir.second;
+
+                            if (is_valid_pixel(nx, ny, h, w) && transfer[nx][ny] == 1)
+                            {
+                                diffusion.push(std::make_pair(nx, ny));
+                                transfer[nx][ny] = id;
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 
+    //判断房间数是否对得上
+    if (expanded_rooms.size() != room_id - 2)
+    {
+        std::cerr << "In the expanded_room_renew function, the number of rooms found does not match the vector length" << std::endl;
+        throw std::runtime_error("Invalid line found.");
+    }
+
+    //更新expanded_rooms列表
+    for (auto& expanded_room : expanded_rooms)
+    {
+        int id_room = expanded_room.get_room_id();
+        expanded_room.clear_pixels();
+
+        for (size_t d = 0; d < h; d++)
+        {
+            for (size_t f = 0; f < w; f++)
+            {
+                if (transfer[d][f] == id_room)
+                {
+                    expanded_room.add_pixel(std::make_pair(d, f));
+                }
+            }
+        }
+    }
+
+    for (Room& room : expanded_rooms)
+    {
+        room.calculate_outline(segmented_matrix);
+    }
+
+
+    cv::Mat new_expanded_rooms_mat(h,w, CV_8UC3, cv::Scalar(255, 255, 255));
+    for (Room& room : expanded_rooms)
+    {
+        for (auto& p : room.get_outline_pixels())
+        {
+            new_expanded_rooms_mat.at<cv::Vec3b>(p.first, p.second) = cv::Vec3b(0, 0, 0);
+        }
+    }
+
+    cv::imshow("new_expanded_rooms_mat", new_expanded_rooms_mat);
+    cv::imwrite("C:\\Users\\13012\\Desktop\\result\\new_expanded_rooms_mat.png", new_expanded_rooms_mat);
+
 }
 
 
-std::vector<std::vector<int>> floor_plan_alignment(std::vector<Room>& expanded_rooms, std::vector<std::vector<int>>& floor_plan_optimization_matrix)
+std::vector<std::vector<int>> floor_plan_alignment(const std::vector<Room>& expanded_rooms, const std::vector<std::vector<int>>& floor_plan_optimization_matrix)
 {
     //设置变形长度阈值
     int threshold = 20;
@@ -2861,9 +2943,14 @@ std::vector<std::vector<int>> floor_plan_alignment(std::vector<Room>& expanded_r
     size_t h = floor_plan_optimization_matrix.size();
     size_t w = floor_plan_optimization_matrix[0].size();
 
+    std::vector<std::vector<int>> dst(h, std::vector<int>(w, 0));
+    cv::Mat dst_mat(h, w, CV_8UC1, cv::Scalar(0));
+
+
     //构建全房间转折点列表
     std::vector<std::pair<int, std::vector<cv::Point>>> rooms_contours;
 
+    /*
     for (auto& room : expanded_rooms)
     {
         int rd = room.get_room_id();
@@ -2885,6 +2972,35 @@ std::vector<std::vector<int>> floor_plan_alignment(std::vector<Room>& expanded_r
         cv::findContours(cache1, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
         rooms_contours.push_back(std::make_pair(rd, contours[0]));
+    }
+    */
+
+    for (auto& room : expanded_rooms)
+    {
+        int rd = room.get_room_id();
+
+        std::vector<std::pair<int, int>> allPoints = room.get_outline_pixels();
+        std::vector<cv::Point> turnPoints;
+
+        int n = allPoints.size();
+        for (int i = 0; i < n; i++)
+        {
+            std::pair<int, int> p1 = allPoints[i];
+            std::pair<int, int> p2 = allPoints[(i + 1) % n];
+            std::pair<int, int> p3 = allPoints[(i + 2) % n];
+
+            int dir1 = getDirection(p1, p2);
+            int dir2 = getDirection(p2, p3);
+
+            if (dir1 != dir2)
+            {
+                turnPoints.push_back(cv::Point(p2.second, p2.first));
+            }
+
+        }
+
+        rooms_contours.push_back(std::make_pair(rd, turnPoints));
+
     }
 
     //逐级变形
@@ -2927,6 +3043,8 @@ std::vector<std::vector<int>> floor_plan_alignment(std::vector<Room>& expanded_r
             for (int m = 0; m < length; m++)
             {
                 //单边变形
+
+                //此房间的内部填充 
                 std::vector<std::vector<int>> inside_mask = cvPoint_to_matrix(cnt, h, w);
 
                 std::pair<int, int> p1 = std::make_pair(cnt[m].y, cnt[m].x);
@@ -2937,13 +3055,16 @@ std::vector<std::vector<int>> floor_plan_alignment(std::vector<Room>& expanded_r
                 //上下移动
                 if (p1.first == p2.first)
                 {
+                    //记录初始两顶点状态
+                    int mask_flag = mask[p1.first][p1.second] + mask[p2.first][p2.second];
+                    
                     //向上
-                    if (inside_mask[p1.first - 1][(p1.second + p2.second) / 2] == 0)
+                    if (p1.first - 1 >= 0 && inside_mask[p1.first - 1][(p1.second + p2.second) / 2] == 0)
                     {
-                        for (int x = p1.first; x >= x - threshold || x >= 0; x--)
+                        for (int x = p1.first; x >= p1.first - threshold && x >= 0; x--)
                         {
-                            //如果有边可以沿
-                            if (mask[x][p1.second] == 1 || mask[x][p2.second] == 1)
+                            //如果有边可以沿且状态位没变
+                            if (mask[x][p1.second] + mask[x][p2.second] >= mask_flag && mask[x][p1.second] + mask[x][p2.second] != 0)
                             {
                                 for (int y = 1 + std::min(p1.second, p2.second); y < std::max(p1.second, p2.second); y++)
                                 {
@@ -2954,7 +3075,7 @@ std::vector<std::vector<int>> floor_plan_alignment(std::vector<Room>& expanded_r
                                         cv::Point np2(p2.second, x);
                                         cnt[m] = np1;
                                         cnt[(m + 1) % length] = np2;
-                                        has_changed = true;
+                                        if (x != p1.first) has_changed = true;
                                         break;
                                     }
                                 }
@@ -2962,22 +3083,22 @@ std::vector<std::vector<int>> floor_plan_alignment(std::vector<Room>& expanded_r
                             }
                             else
                             {
-                                cv::Point np1(p1.second, std::min(x+1, p1.first));
-                                cv::Point np2(p2.second, std::min(x+1, p2.first));
+                                cv::Point np1(p1.second, std::min(x + 1, p1.first));
+                                cv::Point np2(p2.second, std::min(x + 1, p2.first));
                                 cnt[m] = np1;
                                 cnt[(m + 1) % length] = np2;
-                                has_changed = true;
+                                if (std::min(x + 1, p1.first) != p1.first) has_changed = true;
                                 break;
                             }
                         }
                     }
                     //向下
-                    else if (inside_mask[p1.first + 1][(p1.second + p2.second) / 2] == 0)
+                    else if (p1.first + 1 < h && inside_mask[p1.first + 1][(p1.second + p2.second) / 2] == 0)
                     {
-                        for (int x = p1.first; x <= x + threshold || x < h; x++)
+                        for (int x = p1.first; x <= p1.first + threshold && x < h; x++)
                         {
                             //如果有边可以沿
-                            if (mask[x][p1.second] == 1 || mask[x][p2.second] == 1)
+                            if (mask[x][p1.second] + mask[x][p2.second] >= mask_flag && mask[x][p1.second] + mask[x][p2.second] != 0)
                             {
                                 for (int y = 1 + std::min(p1.second, p2.second); y < std::max(p1.second, p2.second); y++)
                                 {
@@ -2988,7 +3109,7 @@ std::vector<std::vector<int>> floor_plan_alignment(std::vector<Room>& expanded_r
                                         cv::Point np2(p2.second, x);
                                         cnt[m] = np1;
                                         cnt[(m + 1) % length] = np2;
-                                        has_changed = true;
+                                        if (x != p1.first) has_changed = true;
                                         break;
                                     }
                                 }
@@ -3000,7 +3121,7 @@ std::vector<std::vector<int>> floor_plan_alignment(std::vector<Room>& expanded_r
                                 cv::Point np2(p2.second, std::max(x - 1, p2.first));
                                 cnt[m] = np1;
                                 cnt[(m + 1) % length] = np2;
-                                has_changed = true;
+                                if (std::max(x - 1, p1.first) != p1.first) has_changed = true;
                                 break;
                             }
                         }
@@ -3009,17 +3130,106 @@ std::vector<std::vector<int>> floor_plan_alignment(std::vector<Room>& expanded_r
                 //左右移动
                 else if (p1.second == p2.second)
                 {
-
+                    //记录状态位
+                    int mask_flag = mask[p1.first][p1.second] + mask[p2.first][p2.second];
+                    
+                    //向左
+                    if (p1.second - 1 >= 0 && inside_mask[(p1.first + p2.first) / 2][p1.second - 1] == 0)
+                    {
+                        for (int y = p1.second; y >= p1.second - threshold && y >= 0; y--)
+                        {
+                            //是否可沿边
+                            if (mask[p1.first][y] + mask[p2.first][y] >= mask_flag && mask[p1.first][y] + mask[p2.first][y] != 0)
+                            {
+                                for (int x = 1 + std::min(p1.first, p2.first); x < std::max(p1.first, p2.first); x++)
+                                {
+                                    if (mask[x][y] == 1)
+                                    {
+                                        stop_run = true;
+                                        cv::Point np1(y, p1.first);
+                                        cv::Point np2(y, p2.first);
+                                        cnt[m] = np1;
+                                        cnt[(m + 1) % length] = np2;
+                                        if (y != p1.second) has_changed = true;
+                                        break;
+                                    }
+                                }
+                                if (stop_run) break;
+                            }
+                            else
+                            {
+                                cv::Point np1(std::min(y + 1, p1.second), p1.first);
+                                cv::Point np2(std::min(y + 1, p2.second), p2.first);
+                                cnt[m] = np1;
+                                cnt[(m + 1) % length] = np2;
+                                if (std::min(y + 1, p1.second) != p1.second) has_changed = true;
+                                break;
+                            }
+                        }
+                    }
+                    //向右
+                    else if (p1.second + 1 < w && inside_mask[(p1.first + p2.first) / 2][p1.second + 1] == 0)
+                    {
+                        for (int y = p1.second; y <= p1.second + threshold && y < w; y++)
+                        {
+                            //是否可沿边
+                            if (mask[p1.first][y] + mask[p2.first][y] >= mask_flag && mask[p1.first][y] + mask[p2.first][y] != 0)
+                            {
+                                for (int x = 1 + std::min(p1.first, p2.first); x < std::max(p1.first, p2.first); x++)
+                                {
+                                    if (mask[x][y] == 1)
+                                    {
+                                        stop_run = true;
+                                        cv::Point np1(y, p1.first);
+                                        cv::Point np2(y, p2.first);
+                                        cnt[m] = np1;
+                                        cnt[(m + 1) % length] = np2;
+                                        if (y != p1.second) has_changed = true;
+                                        break;
+                                    }
+                                }
+                                if (stop_run) break;
+                            }
+                            else
+                            {
+                                cv::Point np1(std::max(y - 1, p1.second), p1.first);
+                                cv::Point np2(std::max(y - 1, p2.second), p2.first);
+                                cnt[m] = np1;
+                                cnt[(m + 1) % length] = np2;
+                                if (std::max(y - 1, p1.second) != p1.second) has_changed = true;
+                                break;
+                            }
+                        }
+                    }
                 }
                 else
                 {
                     std::cerr << "在单个房间的户型图对齐变形中，找到的两个点xy都不相等" << std::endl;
                     throw std::runtime_error("Invalid line found.");
                 }
-            }
 
+                //单个房间的单边变形完成
+            }//单个房间变形完成
+
+            rooms_contours[n].second = cnt;
+
+        }//全房间变形完一轮
+    }//不再发生改变
+
+    for (auto& dst_cnt : rooms_contours)
+    {
+        cv::drawContours(dst_mat, std::vector<std::vector<cv::Point>>{dst_cnt.second}, -1, cv::Scalar(255), 1);
+    }
+
+    for (size_t i = 0; i < h; i++)
+    {
+        for (size_t j = 0; j < w; j++)
+        {
+            dst[i][j] = static_cast<int>(dst_mat.at<uchar>(i, j) / 255);
         }
     }
+
+    return dst;
 }
 
 std::vector<std::vector<int>> cvPoint_to_matrix(std::vector<cv::Point>& cnt, size_t h, size_t w)
@@ -3043,6 +3253,166 @@ std::vector<std::vector<int>> cvPoint_to_matrix(std::vector<cv::Point>& cnt, siz
     return dst;
 }
 
+
+void draw_final_map(std::vector<std::vector<int>>& segmented_matrix,
+    std::vector<std::vector<int>>& expanded_matrix,
+    std::vector<std::vector<int>>& tidy_room,
+    std::vector<Room>& expanded_rooms,
+    std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels)
+{
+    int h = segmented_matrix.size();
+    int w = segmented_matrix[0].size();
+
+    // 创建一个RGB画布，白色背景
+    cv::Mat final_map(h, w, CV_8UC3, cv::Scalar(255, 255, 255));
+
+    // 随机生成RGB颜色
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, 255);
+    std::vector<cv::Vec3b> colors;
+    for (int i = 0; i < expanded_rooms.size(); i++)
+    {
+        colors.push_back(cv::Vec3b(dis(gen), dis(gen), dis(gen)));
+    }
+
+
+    cv::Mat expanded_mat(h, w, CV_8UC3, cv::Scalar(255, 255, 255));
+    cv::Mat tidy_room_mat(h, w, CV_8UC3, cv::Scalar(255, 255, 255));
+
+    for (int x = 0; x < h; x++)
+    {
+        for (int y = 0; y < w; y++)
+        {
+            if (expanded_matrix[x][y] != 0)
+            {
+
+                expanded_mat.at<cv::Vec3b>(x, y) = cv::Vec3b(0, 0, 0);
+            }
+        }
+    }
+    cv::imshow("expanded_mat", expanded_mat);
+    cv::imwrite("C:\\Users\\13012\\Desktop\\result\\expanded_mat.png", expanded_mat);
+
+    
+
+
+    for (int x = 0; x < h; x++)
+    {
+        for (int y = 0; y < w; y++)
+        {
+            if (tidy_room[x][y] != 0)
+            {
+                final_map.at<cv::Vec3b>(x, y) = colors[tidy_room[x][y] - 1];
+            }
+        }
+    }
+
+    cv::imshow("tidy_room_mat", final_map);
+    cv::imwrite("C:\\Users\\13012\\Desktop\\result\\tidy_room_mat.png", final_map);
+
+    for (int x = 0; x < h; x++)
+    {
+        for (int y = 0; y < w; y++)
+        {
+            if (expanded_matrix[x][y] != 0)
+            {
+                final_map.at<cv::Vec3b>(x, y) = cv::Vec3b(0, 0, 0);
+            }
+        }
+    }
+
+    // 绘制门的线段
+    for (auto& door : door_pixels)
+    {
+        cv::line(final_map, cv::Point(door.first.second, door.first.first), cv::Point(door.second.second, door.second.first), cv::Scalar(0, 0, 255), 2);  // 红色
+    }
+
+
+    // 显示最终地图
+    cv::imshow("Final Map", final_map);
+    cv::imwrite("C:\\Users\\13012\\Desktop\\result\\final_map.png", final_map);
+
+    cv::waitKey(0);
+}
+
+
+std::vector<cv::Point> findTurnPoints(std::vector<std::vector<int>>& outline_matrix)
+{
+    size_t h = outline_matrix.size();
+    size_t w = outline_matrix[0].size();
+
+    std::pair<int, int> start_pixel = { -1, -1 };
+
+    std::vector<std::pair<int, int>> allPoints;
+    std::vector<cv::Point> turnPoints;
+
+    for (size_t i = 0; i < h; i++)
+    {
+        for (size_t j = 0; j < w; j++)
+        {
+            if (outline_matrix[i][j] == 1)
+            {
+                start_pixel = std::make_pair(i, j);
+                outline_matrix[i][j] = 0;
+                break;
+            }
+        }
+        if (start_pixel.first != -1) break;
+    }
+
+    if (start_pixel.first == -1)
+    {
+        turnPoints.clear();
+        return turnPoints;
+    }
+
+    //储存初始点并开始搜索
+    allPoints = { start_pixel };
+    std::stack<std::pair<int, int>> stack;
+    stack.push(start_pixel);
+
+    // 四连通方向：下，左，上，右，保证逆时针寻找
+    std::vector<std::pair<int, int>> directions = { {1, 0}, {0, -1}, {-1, 0}, {0, 1} };
+
+    while (!stack.empty())
+    {
+        int x = stack.top().first, y = stack.top().second;
+        stack.pop();
+
+        for (const auto& d : directions)
+        {
+            int nx = x + d.first, ny = y + d.second;
+            if (nx >= 0 && nx < h && ny >= 0 && ny < w && outline_matrix[nx][ny] == 1)
+            {
+                allPoints.push_back(std::make_pair(nx, ny));
+                stack.push(std::make_pair(nx, ny));
+                outline_matrix[nx][ny] = 0;
+                break;  // 只压入一个邻居到栈中
+            }
+        }
+    }
+
+    int n = allPoints.size();
+    for (int i = 0; i < allPoints.size(); i++)
+    {
+        std::pair<int, int> p1 = allPoints[i];
+        std::pair<int, int> p2 = allPoints[(i + 1) % n];
+        std::pair<int, int> p3 = allPoints[(i + 2) % n];
+
+        int dir1 = getDirection(p1, p2);
+        int dir2 = getDirection(p2, p3);
+
+        if (dir1 != dir2)
+        {
+            turnPoints.push_back(cv::Point(p2.second, p2.first));
+        }
+
+    }
+
+    return turnPoints;
+
+}
 
 
 
@@ -3234,16 +3604,26 @@ void test_final_map()
         room.print_connected_rooms();
     }
 
+    //凹角膨胀初始户型图生成
     auto expanded = expand_rooms(segmented_matrix, rooms);
     auto& expanded_matrix = expanded.first;
     auto& expanded_rooms = expanded.second;
 
-    draw_map(segmented_matrix, rooms, expanded_rooms, door_pixels);
+    //优化
+
+    std::vector<std::vector<int>> tidy_room(segmented_matrix.size(), std::vector<int>(segmented_matrix[0].size(), 0));
+    floor_plan_optimizer(expanded_matrix, tidy_room, expanded_rooms, segmented_matrix, rooms, door_pixels);
+
+
+    //draw_map(segmented_matrix, rooms, expanded_rooms, door_pixels);
+
+    draw_final_map(segmented_matrix, expanded_matrix, tidy_room, expanded_rooms, door_pixels);
 
 }
 
 
-int main() {
+int main() 
+{
     test_final_map();
     return 0;
 }

@@ -86,7 +86,7 @@ void printBinaryImage(const std::vector<std::vector<int>>& matrix, int scale, co
     cv::imshow(windowName, scaledImage);
     //cv::waitKey(0);
 
-    std::string outputPath = "C:\\Users\\13012\\Desktop\\result\\" + std::string(windowName) + ".jpg"; // 修改为你想要保存的路径
+    std::string outputPath = "C:\\Users\\13012\\Desktop\\result\\" + std::string(windowName) + ".png"; // 修改为你想要保存的路径
     cv::imwrite(outputPath, scaledImage);
 
 }
