@@ -293,11 +293,24 @@ std::vector<std::vector<int>> extract_filled_image(const std::vector<std::vector
     std::vector<std::vector<cv::Point>> contours;
     cv::findContours(matrix, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
+    int largest_contour_index = 0;
+    double max_contour_length = 0;
+
+    for (int i = 0; i < contours.size(); i++)
+    {
+        double contour_length = cv::arcLength(contours[i], true);
+        if (contour_length > max_contour_length)
+        {
+            max_contour_length = contour_length;
+            largest_contour_index = i;
+        }
+    }
+
     // 创建空白图像
     cv::Mat filled_image(matrix.size(), CV_8UC1, cv::Scalar(0));
 
     // 绘制外轮廓
-    cv::drawContours(filled_image, contours, -1, cv::Scalar(1), cv::FILLED);
+    cv::drawContours(filled_image, contours, largest_contour_index, cv::Scalar(1), cv::FILLED);
 
     // 将结果转换为二维数组
     std::vector<std::vector<int>> filled_image_arr(filled_image.rows, std::vector<int>(filled_image.cols));
@@ -2938,7 +2951,7 @@ void expanded_room_renew(std::vector<Room>& expanded_rooms, const std::vector<st
 std::vector<std::vector<int>> floor_plan_alignment(const std::vector<Room>& expanded_rooms, const std::vector<std::vector<int>>& floor_plan_optimization_matrix)
 {
     //设置变形长度阈值
-    int threshold = 20;
+    int threshold = 70;
 
     size_t h = floor_plan_optimization_matrix.size();
     size_t w = floor_plan_optimization_matrix[0].size();
@@ -3049,6 +3062,8 @@ std::vector<std::vector<int>> floor_plan_alignment(const std::vector<Room>& expa
 
                 std::pair<int, int> p1 = std::make_pair(cnt[m].y, cnt[m].x);
                 std::pair<int, int> p2 = std::make_pair(cnt[(m + 1) % length].y, cnt[(m + 1) % length].x);
+
+                if (std::abs(p1.first - p2.first) + std::abs(p1.second - p2.second) == 1) continue;
 
                 bool stop_run = false;
 
@@ -3214,6 +3229,215 @@ std::vector<std::vector<int>> floor_plan_alignment(const std::vector<Room>& expa
             rooms_contours[n].second = cnt;
 
         }//全房间变形完一轮
+
+        //情况补漏
+        for (size_t n = 0; n < rooms_contours.size(); n++)
+        {
+            int room_id = rooms_contours[n].first;
+            std::vector<cv::Point> cnt = rooms_contours[n].second;
+
+
+
+            std::vector<std::vector<int>> mask(h, std::vector<int>(w, 0));
+            cv::Mat mask_mat(h, w, CV_8UC1, cv::Scalar(0));
+
+            //背景限制矩阵生成
+            for (auto& mask_cnt : rooms_contours)
+            {
+                if (mask_cnt.first == room_id) continue;
+
+                cv::drawContours(mask_mat, std::vector<std::vector<cv::Point>>{mask_cnt.second}, -1, cv::Scalar(255), 1);
+            }
+
+            for (size_t i = 0; i < h; i++)
+            {
+                for (size_t j = 0; j < w; j++)
+                {
+                    mask[i][j] = static_cast<int>(mask_mat.at<uchar>(i, j) / 255);
+                }
+            }
+
+
+            int length = cnt.size();
+
+            //单房间变形
+            for (int m = 0; m < length; m++)
+            {
+                //单边变形
+
+                //此房间的内部填充 
+                std::vector<std::vector<int>> inside_mask = cvPoint_to_matrix(cnt, h, w);
+
+                std::pair<int, int> p1 = std::make_pair(cnt[m].y, cnt[m].x);
+                std::pair<int, int> p2 = std::make_pair(cnt[(m + 1) % length].y, cnt[(m + 1) % length].x);
+
+                if (std::abs(p1.first - p2.first) + std::abs(p1.second - p2.second) == 1) continue;
+
+                bool stop_run = false;
+
+                //上下移动
+                if (p1.first == p2.first)
+                {
+                    //记录初始两顶点状态
+                    //int mask_flag = mask[p1.first][p1.second] + mask[p2.first][p2.second];
+
+                    //向上
+                    if (p1.first - 1 >= 0 && inside_mask[p1.first - 1][(p1.second + p2.second) / 2] == 0)
+                    {
+                        for (int x = p1.first; x >= p1.first - threshold && x >= 0; x--)
+                        {
+                            //如果有边可以沿且状态位没变
+                            if (mask[x][p1.second] + mask[x][p2.second] != 0)
+                            {
+                                for (int y = 1 + std::min(p1.second, p2.second); y < std::max(p1.second, p2.second); y++)
+                                {
+                                    if (mask[x][y] == 1)
+                                    {
+                                        stop_run = true;
+                                        cv::Point np1(p1.second, x);
+                                        cv::Point np2(p2.second, x);
+                                        cnt[m] = np1;
+                                        cnt[(m + 1) % length] = np2;
+                                        if (x != p1.first) has_changed = true;
+                                        break;
+                                    }
+                                }
+                                if (stop_run) break;
+                            }
+                            else
+                            {
+                                cv::Point np1(p1.second, std::min(x + 1, p1.first));
+                                cv::Point np2(p2.second, std::min(x + 1, p2.first));
+                                cnt[m] = np1;
+                                cnt[(m + 1) % length] = np2;
+                                if (std::min(x + 1, p1.first) != p1.first) has_changed = true;
+                                break;
+                            }
+                        }
+                    }
+                    //向下
+                    else if (p1.first + 1 < h && inside_mask[p1.first + 1][(p1.second + p2.second) / 2] == 0)
+                    {
+                        for (int x = p1.first; x <= p1.first + threshold && x < h; x++)
+                        {
+                            //如果有边可以沿
+                            if (mask[x][p1.second] + mask[x][p2.second] != 0)
+                            {
+                                for (int y = 1 + std::min(p1.second, p2.second); y < std::max(p1.second, p2.second); y++)
+                                {
+                                    if (mask[x][y] == 1)
+                                    {
+                                        stop_run = true;
+                                        cv::Point np1(p1.second, x);
+                                        cv::Point np2(p2.second, x);
+                                        cnt[m] = np1;
+                                        cnt[(m + 1) % length] = np2;
+                                        if (x != p1.first) has_changed = true;
+                                        break;
+                                    }
+                                }
+                                if (stop_run) break;
+                            }
+                            else
+                            {
+                                cv::Point np1(p1.second, std::max(x - 1, p1.first));
+                                cv::Point np2(p2.second, std::max(x - 1, p2.first));
+                                cnt[m] = np1;
+                                cnt[(m + 1) % length] = np2;
+                                if (std::max(x - 1, p1.first) != p1.first) has_changed = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                //左右移动
+                else if (p1.second == p2.second)
+                {
+                    //记录状态位
+                    //int mask_flag = mask[p1.first][p1.second] + mask[p2.first][p2.second];
+
+                    //向左
+                    if (p1.second - 1 >= 0 && inside_mask[(p1.first + p2.first) / 2][p1.second - 1] == 0)
+                    {
+                        for (int y = p1.second; y >= p1.second - threshold && y >= 0; y--)
+                        {
+                            //是否可沿边
+                            if (mask[p1.first][y] + mask[p2.first][y] != 0)
+                            {
+                                for (int x = 1 + std::min(p1.first, p2.first); x < std::max(p1.first, p2.first); x++)
+                                {
+                                    if (mask[x][y] == 1)
+                                    {
+                                        stop_run = true;
+                                        cv::Point np1(y, p1.first);
+                                        cv::Point np2(y, p2.first);
+                                        cnt[m] = np1;
+                                        cnt[(m + 1) % length] = np2;
+                                        if (y != p1.second) has_changed = true;
+                                        break;
+                                    }
+                                }
+                                if (stop_run) break;
+                            }
+                            else
+                            {
+                                cv::Point np1(std::min(y + 1, p1.second), p1.first);
+                                cv::Point np2(std::min(y + 1, p2.second), p2.first);
+                                cnt[m] = np1;
+                                cnt[(m + 1) % length] = np2;
+                                if (std::min(y + 1, p1.second) != p1.second) has_changed = true;
+                                break;
+                            }
+                        }
+                    }
+                    //向右
+                    else if (p1.second + 1 < w && inside_mask[(p1.first + p2.first) / 2][p1.second + 1] == 0)
+                    {
+                        for (int y = p1.second; y <= p1.second + threshold && y < w; y++)
+                        {
+                            //是否可沿边
+                            if (mask[p1.first][y] + mask[p2.first][y] != 0)
+                            {
+                                for (int x = 1 + std::min(p1.first, p2.first); x < std::max(p1.first, p2.first); x++)
+                                {
+                                    if (mask[x][y] == 1)
+                                    {
+                                        stop_run = true;
+                                        cv::Point np1(y, p1.first);
+                                        cv::Point np2(y, p2.first);
+                                        cnt[m] = np1;
+                                        cnt[(m + 1) % length] = np2;
+                                        if (y != p1.second) has_changed = true;
+                                        break;
+                                    }
+                                }
+                                if (stop_run) break;
+                            }
+                            else
+                            {
+                                cv::Point np1(std::max(y - 1, p1.second), p1.first);
+                                cv::Point np2(std::max(y - 1, p2.second), p2.first);
+                                cnt[m] = np1;
+                                cnt[(m + 1) % length] = np2;
+                                if (std::max(y - 1, p1.second) != p1.second) has_changed = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    std::cerr << "在单个房间的户型图对齐变形中，找到的两个点xy都不相等" << std::endl;
+                    throw std::runtime_error("Invalid line found.");
+                }
+
+                //单个房间的单边变形完成
+            }//单个房间变形完成
+
+            rooms_contours[n].second = cnt;
+
+        }//全房间变形完一轮2
+
     }//不再发生改变
 
     for (auto& dst_cnt : rooms_contours)
@@ -3528,7 +3752,7 @@ void test_find_connected_rooms() {
 
 void test_final_map()
 {
-    const char* filename = "D:\\files\\mapfile\\dataset_occ\\seg_ori_20230518_151431_442_.debug";
+    const char* filename = "D:\\files\\mapfile\\dataset_occ\\seg_ori_20230522_035516_445.debug";
 
     // 读取地图文件并转化为01矩阵
     std::vector<std::vector<uint8_t>> binaryMatrix = readMapFile(filename);
@@ -3536,7 +3760,7 @@ void test_final_map()
     std::vector<std::vector<int>> origin_map = ConvertMatrixToInt(binaryMatrix);
 
     // 将01矩阵转化为二值图像并打印
-    printBinaryImage(origin_map, 2, "origin_map");
+    printBinaryImage(origin_map, 1, "origin_map");
 
     cv::Mat cv_kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
     std::vector<std::vector<int>> kernel;
@@ -3553,26 +3777,19 @@ void test_final_map()
     }
 
     std::vector<std::vector<int>> optimization_map = customize_closing(extract_filled_image(origin_map), kernel);
-    printBinaryImage(optimization_map, 2, "optimization_map");
+    printBinaryImage(optimization_map, 1, "optimization_map");
 
     std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>> door_pixels =
     {
-        {{119,  45}, {144,  45}},
-        {{228,  53}, {228,  77}},
-        {{301,  31}, {301,  42}},
-        {{116, 168}, {143, 168}},
-        {{112, 183}, {112, 196}},
-        {{148, 173}, {148, 184}},
-        {{113, 205}, {136, 205}},
-        {{112, 252}, {112, 268}},
-        {{139, 251}, {139, 265}},
-        {{116, 269}, {133, 269}},
-        {{155, 272}, {178, 272}},
-        {{180, 277}, {180, 288}},
-        {{ 75, 323}, { 75, 341}},
-        {{139, 319}, {139, 348}},
-        {{178, 332}, {178, 347}},
-        {{139, 351}, {175, 351}}
+        {{24, 102}, {47, 102}},
+        {{68, 76}, {68, 100}},
+        {{96, 53}, {96, 73}},
+        {{72, 73}, {90, 73}},
+        {{183, 73}, {200, 73}},
+        {{201, 75}, {201, 95}},
+        {{208, 73}, {230, 73}},
+        {{250, 73}, {273, 73}},
+        {{220, 98}, {239, 98}}
     };
 
     auto result = segment_rooms(optimization_map, door_pixels);
