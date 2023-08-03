@@ -12,8 +12,16 @@
 #include <stack>
 #include <utility>
 #include <iterator>
+#include <map>
 
 //using namespace std;
+
+using p64 = std::pair<int, int>;
+using MatrixInt = std::vector<std::vector<int>>;
+
+template<typename T>
+using Matrix = std::vector<std::vector<T>>;
+
 
 
 //多连通区域转化为单连通区域
@@ -30,11 +38,14 @@ class Room {
 private:
     int room_id;//房间编号
     std::vector<std::pair<int, int>> pixels;//房间内的像素点
+
     std::vector<std::pair<int, std::pair<std::pair<int, int>, std::pair<int, int>>>> connected_rooms;//房间关于门的连通信息
+    std::vector<std::pair<int, p64>> connection_info;//新连通信息
+
     std::vector<std::pair<int, int>> outline_pixels;//外轮廓像素点列表
 
 public:
-    Room(int room_id);//构造函数
+    Room(int room_id = 0);//构造函数
 
     void add_pixel(std::pair<int, int> pixel);//添加像素点
 
@@ -55,6 +66,12 @@ public:
     void calculate_outline(const std::vector<std::vector<int>>& matrix);//计算并保存外轮廓像素点
 
     const std::vector<std::pair<int, int>>& get_outline_pixels() const;//获取外轮廓像素点列表
+
+    void add_connection_info(int room_id, p64 door_id);//添加连通信息
+
+    const std::vector<std::pair<int, p64>>& get_connection_info() const;//获取连通信息
+
+    void delete_connection_info(int id);//删除连通信息（输入房间id来删除）
 };
 
 
@@ -99,6 +116,18 @@ struct Node //优化不规则线条时需要用到的节点路径结构体
     }
 };
 
+struct Door  //门框结构体
+{
+    std::pair<int, int> startPoint;
+    std::pair<int, int> endPoint;
+    std::vector<std::pair<int, int>> path;
+
+    // 带有默认值的构造函数
+    Door(std::pair<int, int> p1 = { -1, -1 }, std::pair<int, int> p2 = { -1, -1 }, std::vector<std::pair<int, int>> l = {})
+        : startPoint(p1), endPoint(p2), path(l)
+    {}
+};
+
 
 
 //将uint8_t矩阵转化为int矩阵
@@ -110,8 +139,26 @@ bool is_valid_pixel(int x, int y, int rows, int cols);
 //找出所有的门像素点
 std::vector<std::pair<int, int>> bresenham_line(int x1, int y1, int x2, int y2);
 
+
+//四连通光栅化直线绘制
+std::vector<p64> bresenham4(int x0, int y0, int x1, int y1);
+
+//门框字典构造
+std::map<p64, Door> doorVector2Map(std::vector<std::pair<p64, p64>>& doors);
+
+//门框干涉组件，深度优先搜索
+void doorDFS(MatrixInt& matrix, std::vector<std::vector<bool>>& visited, int a, int b, int target, Door& door);
+
+//门框干涉组件，干涉后门框字典重构
+std::map<p64, Door> findDoorFrames(MatrixInt& matrix);
+
+//门框干涉，复合id门框字典重构
+void door_frame_interaction(MatrixInt& src, std::map<p64, Door>& doorMap);
+
+
 //房间分割函数
 std::pair<std::vector<std::vector<int>>, std::vector<Room>> segment_rooms(const std::vector<std::vector<int>>& matrix, const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels);
+std::pair<MatrixInt, std::map<int, Room>> segment_rooms(MatrixInt& src, std::map<p64, Door>& doorMap, MatrixInt& bgmask);
 
 //自定义膨胀函数
 std::vector<std::vector<int>> customize_dilate(const std::vector<std::vector<int>>& binaryMatrix, const std::vector<std::vector<int>>& kernel);
@@ -131,9 +178,11 @@ std::vector<std::vector<int>> pixels_to_matrix(const std::vector<std::pair<int, 
 //房间连通性判断函数
 //void find_connected_rooms(const std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>& rooms, const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels);
 void find_connected_rooms(std::vector<Room>& rooms, const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels);
+void find_connected_rooms(std::map<int, Room>& rooms, const std::map<p64, Door>& doorMap);
 
 //凹角膨胀函数
 std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const std::vector<std::vector<int>>& segmented_matrix, const std::vector<Room>& rooms);
+std::pair<Matrix<int>, std::map<int, Room>> expanded_rooms(const Matrix<int>& segmented_matrix, const std::map<int, Room>& rooms);
 
 //成品地图绘制
 void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>& rooms, std::vector<Room>& expanded_rooms, std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels);
@@ -173,6 +222,7 @@ std::pair<double, bool> distanceToSegment(const std::pair<int, int>& point, cons
 
 //规整房间生成中，判断像素点是否应该被腐蚀
 bool should_not_be_eroded(const std::pair<int, int>& point, const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& doors, double threshold);
+bool should_not_be_eroded(const p64& point, const std::map<p64, Door>& doorMap, double threshold);
 
 //腐蚀后规整房间的id标明、扩散
 void tidyRoomDFS(int& x, int& y, int& h, int& w, std::vector<std::vector<int>>& tidy_room, int& id);
@@ -211,6 +261,12 @@ void tidy_room_Conditional_Morphological_Transformation(std::vector<std::vector<
                                                         std::vector<std::vector<int>>& mask,
                                                         std::vector<Room>& rooms,
                                                         const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& doors_pixels);
+
+void tidy_room_Conditional_Morphological_Transformation(Matrix<int>& src,
+    Matrix<int>& mask,
+    std::map<int, Room>& rooms,
+    const std::map<p64, Door>& doorMap);
+
 
 //条件腐蚀，只腐蚀经典锯齿边上的单个像素凸起
 void tidy_room_Conditional_Erosion_Transformation(std::vector<std::vector<int>>& src,

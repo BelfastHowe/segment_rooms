@@ -126,6 +126,31 @@ const std::vector<std::pair<int, int>>& Room::get_outline_pixels() const
     return outline_pixels;
 }
 
+const std::vector<std::pair<int, p64>>& Room::get_connection_info() const
+{
+    return connection_info;
+}
+
+void Room::add_connection_info(int room_id, p64 door_id)
+{
+    connection_info.push_back(std::make_pair(room_id, door_id));
+}
+
+void Room::delete_connection_info(int id)
+{
+    for (auto it = connection_info.begin(); it != connection_info.end(); )
+    {
+        if (it->first == id)
+        {
+            it = connection_info.erase(it);
+        }
+        else
+        {
+            ++it;
+        }
+    }
+}
+
 
 
 std::vector<std::vector<int>> ConvertMatrixToInt(const std::vector<std::vector<uint8_t>>& uint8_matrix) 
@@ -181,6 +206,213 @@ std::vector<std::pair<int, int>> bresenham_line(int x1, int y1, int x2, int y2)
 
     return points;
 }
+
+
+std::vector<p64> bresenham4(int x0, int y0, int x1, int y1)
+{
+    std::vector<p64> points;
+    int dx = abs(x1 - x0);
+    int dy = abs(y1 - y0);
+    int sgnX = x0 < x1 ? 1 : -1;
+    int sgnY = y0 < y1 ? 1 : -1;
+    int e = 0;
+    for (int i = 0; i < dx + dy; ++i)
+    {
+        points.push_back(std::make_pair(x0, y0));
+        int e1 = e + dy;
+        int e2 = e - dx;
+        if (abs(e1) < abs(e2))
+        {
+            x0 += sgnX;
+            e = e1;
+        }
+        else
+        {
+            y0 += sgnY;
+            e = e2;
+        }
+    }
+    return points;
+}
+
+std::map<p64, Door> doorVector2Map(std::vector<std::pair<p64, p64>>& doors)
+{
+    int ndoor = doors.size();
+    std::map<p64, Door> doorMap;
+
+    for (int i = 0; i < ndoor; i++)
+    {
+        int j = 0;
+
+        int x0 = doors[i].first.first;
+        int y0 = doors[i].first.second;
+        int x1 = doors[i].second.first;
+        int y1 = doors[i].second.second;
+
+        std::vector<std::pair<int, int>> line = bresenham4(x0, y0, x1, y1);
+        Door thisDoor({ x0,y0 }, { x1,y1 }, line);
+
+        doorMap.insert(std::map<std::pair<int, int>, Door>::value_type(std::make_pair(i, j), thisDoor));
+
+    }
+
+    return doorMap;
+}
+
+void doorDFS(MatrixInt& matrix, std::vector<std::vector<bool>>& visited, int a, int b, int target, Door& door)
+{
+    std::stack<p64> stack;
+    stack.push({ a, b });
+    while (!stack.empty())
+    {
+        p64 p = stack.top();
+        int i = p.first;
+        int j = p.second;
+
+        stack.pop();
+        if (i < 0 || i >= matrix.size() || j < 0 || j >= matrix[0].size() || visited[i][j] || matrix[i][j] != target)
+        {
+            continue;
+        }
+        visited[i][j] = true;
+        door.path.push_back({ i, j });
+        stack.push({ i + 1, j });
+        stack.push({ i - 1, j });
+        stack.push({ i, j + 1 });
+        stack.push({ i, j - 1 });
+    }
+
+    // 如果只有一个点，那么两个端点都是这个点
+    if (door.path.size() == 1)
+    {
+        door.startPoint = door.path[0];
+        door.endPoint = door.path[0];
+        return;
+    }
+
+    // 找到端点
+    for (auto& point : door.path)
+    {
+        //auto [iCurr, jCurr] = point;
+        int iCurr = point.first;
+        int jCurr = point.second;
+
+        int count = 0;
+        for (auto& other : door.path)
+        {
+            if (other != point && std::abs(other.first - iCurr) + std::abs(other.second - jCurr) == 1) count++;
+        }
+        if (count == 1)
+        { // 只有一个邻居在列表中，这是一个端点
+            if (door.startPoint.first == -1 && door.endPoint.second == -1)
+            {
+                door.startPoint = point;
+            }
+            else
+            {
+                door.endPoint = point;
+                break;
+            }
+        }
+    }
+
+}
+
+std::map<p64, Door> findDoorFrames(MatrixInt& matrix)
+{
+    std::vector<std::vector<bool>> visited(matrix.size(), std::vector<bool>(matrix[0].size(), false));
+    std::map<p64, Door> doorFrames;
+    std::map<int, int> counts;
+    for (int i = 0; i < matrix.size(); ++i)
+    {
+        for (int j = 0; j < matrix[0].size(); ++j)
+        {
+            if (matrix[i][j] >= 0 && !visited[i][j])
+            {
+                std::pair<int, int> id = { matrix[i][j], counts[matrix[i][j]]++ };
+                Door doorFrame;
+                doorDFS(matrix, visited, i, j, matrix[i][j], doorFrame);
+                doorFrames[id] = doorFrame;
+            }
+        }
+    }
+    return doorFrames;
+}
+
+void door_frame_interaction(MatrixInt& src, std::map<p64, Door>& doorMap)
+{
+    int h = src.size();
+    int w = src[0].size();
+
+    for (auto& row : src)
+    {
+        for (auto& element : row)
+        {
+            element = 0;
+        }
+    }
+
+    MatrixInt doors_matrix(h, std::vector<int>(w, -1));
+    MatrixInt bgmask(h, std::vector<int>(w, 0));
+
+    //打印到doors矩阵中并记录重叠
+    for (auto& dm : doorMap)
+    {
+        p64 id = dm.first;
+        Door& path = dm.second;
+
+        for (auto& p : path.path)
+        {
+            int x = p.first;
+            int y = p.second;
+
+            doors_matrix[x][y] = id.first;
+            bgmask[x][y]++;
+        }
+    }
+
+    //重叠矩阵简化
+    for (int x = 0; x < h; x++)
+    {
+        for (int y = 0; y < w; y++)
+        {
+            if (bgmask[x][y] <= 1)
+            {
+                bgmask[x][y] = 0;
+            }
+            else
+            {
+                bgmask[x][y] = 1;
+            }
+        }
+    }
+
+    //doors矩阵去重叠
+    for (int u = 0; u < h; u++)
+    {
+        for (int v = 0; v < w; v++)
+        {
+            if (bgmask[u][v] = 1)
+            {
+                doors_matrix[u][v] = -1;
+            }
+        }
+    }
+
+    doorMap.clear();
+
+    //传递出去重叠矩阵
+    src = bgmask;
+
+    //门框的复合id搜索
+    doorMap = findDoorFrames(doors_matrix);
+
+
+
+}
+
+
+
 
 std::pair<std::vector<std::vector<int>>, std::vector<Room>> segment_rooms(const std::vector<std::vector<int>>& matrix, const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels) 
 {
@@ -255,6 +487,98 @@ std::pair<std::vector<std::vector<int>>, std::vector<Room>> segment_rooms(const 
 
     return std::make_pair(segmented_matrix, rooms);//返回分割后的矩阵和房间对象列表
 }
+
+std::pair<MatrixInt, std::map<int, Room>> segment_rooms(MatrixInt& src, std::map<p64, Door>& doorMap, MatrixInt& bgmask)
+{
+    int h = src.size();
+    int w = src[0].size();
+
+    MatrixInt segmented_matrix = src; //创建副本
+    Matrix<bool> visited(h, std::vector<bool>(w, false));//创建与矩阵大小相同的访问标记矩阵
+
+    std::map<int, Room> rooms;
+    int room_id = 1;
+
+    std::vector<p64> directions = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };//定义DFS算法四个方向的偏移量
+
+
+    std::function<void(int, int, Room&)> dfs = [&](int x, int y, Room& room)
+    {
+        std::stack<std::pair<int, int>> stack;
+        stack.push(std::make_pair(x, y));//将当前像素点压入栈中
+
+        while (!stack.empty())
+        {
+            std::pair<int, int> current = stack.top();
+            stack.pop();//将当前像素点弹出栈
+
+            int current_x = current.first;
+            int current_y = current.second;
+            room.add_pixel(current);//将当前像素点添加到房间中
+
+            visited[current_x][current_y] = true;//将当前像素点标记为已访问
+
+            for (const auto& direction : directions)
+            {
+                int next_x = current_x + direction.first;
+                int next_y = current_y + direction.second;
+
+                if (is_valid_pixel(next_x, next_y, h, w) && segmented_matrix[next_x][next_y] == 1 && !visited[next_x][next_y])
+                {
+                    stack.push(std::make_pair(next_x, next_y));//将下一个点压入栈中
+                }
+            }
+        }
+    };
+
+
+    //门重叠点置为背景
+    for (int i = 0; i < h; i++)
+    {
+        for (int j = 0; j < w; j++)
+        {
+            if (bgmask[i][j] > 1)
+            {
+                segmented_matrix[i][j] = 0;
+            }
+        }
+    }
+
+
+    // 通过门像素进行分割
+    for (const auto& door : doorMap)
+    {
+        auto door_path = door.second.path;
+        for (const auto& p : door_path)
+        {
+            int x = p.first;
+            int y = p.second;
+            if (is_valid_pixel(x, y, h, w))
+            {
+                segmented_matrix[x][y] = 0;
+            }
+        }
+    }
+
+    for (int i = 0; i < h; i++)
+    {
+        for (int j = 0; j < w; j++)
+        {
+            if (segmented_matrix[i][j] == 1 && !visited[i][j])
+            {
+                Room room(room_id);
+                dfs(i, j, room);
+                rooms.insert(std::map<int, Room>::value_type(room_id, room));
+                room_id++;
+            }
+        }
+    }
+
+    return std::make_pair(segmented_matrix, rooms);
+
+}
+
+
 
 
 /*  以cv::Mat作为输入输出参数的版本
@@ -741,6 +1065,52 @@ void find_connected_rooms(std::vector<Room>& rooms, const std::vector<std::pair<
     }
 }
 
+void find_connected_rooms(std::map<int, Room>& rooms, const std::map<p64, Door>& doorMap)
+{
+    //对于每一对房间
+    for (auto it1 = rooms.begin(); it1 != rooms.end(); ++it1)
+    {
+        for (auto it2 = std::next(it1); it2 != rooms.end(); ++it2)
+        {
+            Room& room1 = it1->second;
+            Room& room2 = it2->second;
+
+            // 获取每个房间的轮廓像素点
+            const auto& room1_outline_pixels = room1.get_outline_pixels();
+            const auto& room2_outline_pixels = room2.get_outline_pixels();
+
+            //检查每个门是否连接两个房间
+            for (const auto& door : doorMap)
+            {
+                p64 door_id = door.first;
+                std::vector<p64> door_segment = door.second.path;
+
+                bool room1_connected = false;
+                bool room2_connected = false;
+
+                //检查门的每个像素是否连接到房间的轮廓
+                for (const auto& pixel : door_segment)
+                {
+                    if (std::find(room1_outline_pixels.begin(), room1_outline_pixels.end(), pixel) != room1_outline_pixels.end())
+                        room1_connected = true;
+
+                    if (std::find(room2_outline_pixels.begin(), room2_outline_pixels.end(), pixel) != room2_outline_pixels.end())
+                        room2_connected = true;
+                }
+
+                //如果两个房间都与门相连，则添加到连接的房间列表
+                if (room1_connected && room2_connected)
+                {
+                    room1.add_connection_info(room2.get_room_id(), door_id);
+                    room2.add_connection_info(room1.get_room_id(), door_id);
+                }
+            }
+        }
+    }
+}
+
+
+
 /*
 std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const std::vector<std::vector<int>>& segmented_matrix, const std::vector<Room>& rooms) 
 {
@@ -987,6 +1357,149 @@ std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const s
     return { expanded_matrix, expanded_rooms };
 
 }
+
+std::pair<Matrix<int>, std::map<int, Room>> expanded_rooms(const Matrix<int>& segmented_matrix, const std::map<int, Room>& rooms)
+{
+    // 创建一个新的房间字典作为副本
+    std::map<int, Room> expanded_rooms = rooms;
+
+    //创建一个新的矩阵副本,此时的segmented_matrix已经染色
+    Matrix<int> expanded_matrix = segmented_matrix;
+
+    int h = segmented_matrix.size();
+    int w = segmented_matrix[0].size();
+
+    std::stack<std::pair<p64, int>> expansion;
+    bool expansion_occurred = true;
+
+    while (expansion_occurred)
+    {
+        expansion_occurred = false;
+
+        for (int i = 0; i < h; i++)
+        {
+            for (int j = 0; j < w; j++)
+            {
+                // 当像素点不为0时，即该点位于某个房间内
+                if (expanded_matrix[i][j] != 0)
+                {
+                    int room_id = expanded_matrix[i][j];
+
+                    // 获取周围8个点的坐标
+                    std::vector<p64> neighbor_coords;
+                    for (int dx = -1; dx <= 1; dx++)
+                    {
+                        for (int dy = -1; dy <= 1; dy++)
+                        {
+                            int nx = i + dx;
+                            int ny = j + dy;
+                            if (0 <= nx && nx < h && 0 <= ny && ny < w)
+                            {
+                                neighbor_coords.push_back({ nx, ny });
+                            }
+                        }
+                    }
+
+                    // 获取周围8个点的像素值
+                    std::vector<int> neighbor_pixels;
+                    for (const auto& coord : neighbor_coords)
+                    {
+                        neighbor_pixels.push_back(expanded_matrix[coord.first][coord.second]);
+                    }
+
+
+                    // 判断周围8个点是否都等于房间号或0
+                    if (std::all_of(neighbor_pixels.begin(), neighbor_pixels.end(), [room_id](int pixel) { return pixel == room_id || pixel == 0; }))
+                    {
+                        // 计算周围8个点中0的数量
+                        int num_zeros = std::count(neighbor_pixels.begin(), neighbor_pixels.end(), 0);
+
+                        // 如果只有一个或两个0，则将该像素点置为房间号，并记录到副本中
+                        if (num_zeros == 1 || num_zeros == 2)
+                        {
+                            auto zero_it = neighbor_pixels.begin();
+                            while ((zero_it = std::find(zero_it, neighbor_pixels.end(), 0)) != neighbor_pixels.end())
+                            {
+                                int zero_index = std::distance(neighbor_pixels.begin(), zero_it);
+                                p64 zero_coord = neighbor_coords[zero_index];
+                                //expanded_matrix[zero_coord.first][zero_coord.second] = room_id;
+                                //expanded_rooms[room_id - 1].add_pixel(zero_coord);
+
+                                //对于符合条件的0点，当它的八领域内都没有别的房间像素时，才添加进待膨胀栈
+                                std::vector<int> judgment = {};
+                                for (int xx = -1; xx <= 1; xx++)
+                                {
+                                    for (int yy = -1; yy <= 1; yy++)
+                                    {
+                                        int u = zero_coord.first + xx;
+                                        int v = zero_coord.second + yy;
+                                        if (is_valid_pixel(u, v, h, w))
+                                        {
+                                            judgment.push_back(expanded_matrix[u][v]);
+                                        }
+                                    }
+                                }
+
+                                if (std::all_of(judgment.begin(), judgment.end(), [room_id](int pixel) {return pixel == room_id || pixel == 0; }))
+                                {
+                                    expansion.push(std::make_pair(zero_coord, room_id));
+
+                                    // 因为有像素点被膨胀了，所以将标志设置为True
+                                    expansion_occurred = true;
+
+                                    //zero_it++;
+                                }
+                                zero_it++;
+                            }
+                        }
+                    }
+
+                }
+            }
+        }
+
+        while (!expansion.empty())
+        {
+            std::pair<p64, int> pending = expansion.top();
+            expansion.pop();
+
+            p64 p = pending.first;
+            int id = pending.second;
+
+            //二次判定待膨胀点，防止不同房间的两个点同时膨胀让房间相连通
+            std::vector<int> judgment2 = {};
+            for (int d = -1; d <= 1; d++)
+            {
+                for (int f = -1; f <= 1; f++)
+                {
+                    int u = p.first + d;
+                    int v = p.second + f;
+                    if (is_valid_pixel(u, v, h, w))
+                    {
+                        judgment2.push_back(expanded_matrix[u][v]);
+                    }
+                }
+            }
+
+            if (std::all_of(judgment2.begin(), judgment2.end(), [id](int pixel) {return pixel == id || pixel == 0; }))
+            {
+                expanded_matrix[p.first][p.second] = id;
+                expanded_rooms[id].add_pixel(p);
+            }
+
+        }
+    }
+
+    // 计算扩展后的房间轮廓
+    for (auto& room : expanded_rooms)
+    {
+        room.second.calculate_outline(expanded_matrix);
+    }
+
+    return std::make_pair(expanded_matrix, expanded_rooms);
+}
+
+
 
 
 void draw_map(std::vector<std::vector<int>>& segmented_matrix,
@@ -1792,6 +2305,22 @@ bool should_not_be_eroded(const std::pair<int, int>& point, const std::vector<st
     return false;
 }
 
+bool should_not_be_eroded(const p64& point, const std::map<p64, Door>& doorMap, double threshold)
+{
+    for (const auto& door : doorMap)
+    {
+        std::pair<double, bool> result = distanceToSegment(point, door.second.startPoint, door.second.endPoint);
+        double distance = result.first;
+        bool isProjectionInside = result.second;
+        if (distance < threshold && isProjectionInside)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+
 
 void tidyRoomDFS(int& x, int& y,int& h, int& w, std::vector<std::vector<int>>& tidy_room, int& id)
 {
@@ -2429,6 +2958,77 @@ void tidy_room_Conditional_Morphological_Transformation(std::vector<std::vector<
     }
 }
 
+void tidy_room_Conditional_Morphological_Transformation(Matrix<int>& src,
+    Matrix<int>& mask,
+    std::map<int, Room>& rooms,
+    const std::map<p64, Door>& doorMap)
+{
+    int h = src.size();
+    int w = src[0].size();
+
+    for (auto& row : src)
+    {
+        for (auto& element : row)
+        {
+            element = 0;
+        }
+    }
+
+    for (auto& room : rooms)
+    {
+        int room_id = room.first;
+
+        Matrix<int> cache1(h, std::vector<int>(w, 0));
+        Matrix<int> cache2(h, std::vector<int>(w, 0));
+        Matrix<int> cache3(h, std::vector<int>(w, 0));
+
+        for (const auto& pixel : room.second.get_pixels())
+        {
+            cache1[pixel.first][pixel.second] = 1;
+        }
+        cache2 = cache1;
+
+        do
+        {
+            cache3 = cache1;
+
+            do
+            {
+                /* code */
+                cache1 = cache2;
+                tidy_room_Conditional_Dilation_Transformation(cache1, cache2, mask);
+            } while (cache1 != cache2);
+
+            do
+            {
+                cache1 = cache2;
+                fill_hollow(cache1, cache2, 3, 3);
+            } while (cache2 != cache1);
+
+            do
+            {
+                cache1 = cache2;
+                delete_jut(cache1, cache2, 3, 3);
+            } while (cache2 != cache1);
+
+        } while (cache3 != cache1);
+
+        for (int i = 0; i < h; i++)
+        {
+            for (int j = 0; j < w; j++)
+            {
+                if (cache2[i][j] == 1)
+                {
+                    src[i][j] = room_id;
+                }
+            }
+        }
+
+    }
+}
+
+
+
 void tidy_room_Conditional_Erosion_Transformation(std::vector<std::vector<int>>& src,
                                                   std::vector<std::vector<int>>& dst,
                                                   const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& doors_pixels)
@@ -2946,6 +3546,155 @@ void expanded_room_renew(std::vector<Room>& expanded_rooms, const std::vector<st
     cv::imwrite("C:\\Users\\13012\\Desktop\\result\\new_expanded_rooms_mat.png", new_expanded_rooms_mat);
 
 }
+
+void expanded_room_renew(std::map<int, Room>& expanded_rooms, const Matrix<int>& segmented_matrix, const Matrix<int>& floor_plan_optimization_matrix)
+{
+    size_t h = segmented_matrix.size();
+    size_t w = segmented_matrix[0].size();
+
+    Matrix<int> transfer(h, std::vector<int>(w, 0));
+
+    //前景背景置换
+    for (size_t i = 0; i < h; i++)
+    {
+        for (size_t j = 0; j < w; j++)
+        {
+            if (floor_plan_optimization_matrix[i][j] == 1)
+            {
+                transfer[i][j] = -1;
+            }
+        }
+    }
+
+    std::vector<p64> directions = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };//四连通
+
+    std::stack<p64> background_stack;
+    background_stack.push(std::make_pair(0, 0));
+    transfer[0][0] = -1;
+
+    //将最外圈设为背景
+    while (!background_stack.empty())
+    {
+        p64 background_pixel = background_stack.top();
+        background_stack.pop();
+
+        int bx = background_pixel.first;
+        int by = background_pixel.second;
+
+        for (const auto& direction : directions)
+        {
+            int nx = bx + direction.first;
+            int ny = by + direction.second;
+
+            if (is_valid_pixel(nx, ny, h, w) && transfer[nx][ny] == 0)
+            {
+                background_stack.push(std::make_pair(nx, ny));
+                transfer[nx][ny] = -1;
+            }
+        }
+    }
+
+    //房间id继承
+    int room_id = 1;
+    bool hasChanged = true;
+
+    while (hasChanged)
+    {
+        hasChanged = false;
+        for (size_t u = 0; u < h; u++)
+        {
+            for (size_t v = 0; v < w; v++)
+            {
+                if (segmented_matrix[u][v] == room_id && transfer[u][v] == 0)
+                {
+                    transfer[u][v] = room_id;
+                    hasChanged = true;
+                    break;
+                }
+            }
+            if (hasChanged) break;
+        }
+        room_id++;
+    }
+
+    //房间id扩散
+    for (int id = 1; id < room_id - 1; id++)
+    {
+        for (size_t i = 0; i < h; i++)
+        {
+            for (size_t j = 0; j < w; j++)
+            {
+                if (transfer[i][j] == id)
+                {
+                    std::stack<p64> diffusion;
+                    diffusion.push(std::make_pair(i, j));
+
+                    while (!diffusion.empty())
+                    {
+                        p64 p = diffusion.top();
+                        diffusion.pop();
+
+                        for (const auto& dir : directions)
+                        {
+                            int nx = p.first + dir.first;
+                            int ny = p.second + dir.second;
+
+                            if (is_valid_pixel(nx, ny, h, w) && transfer[nx][ny] == 0)
+                            {
+                                diffusion.push(std::make_pair(nx, ny));
+                                transfer[nx][ny] = id;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    //判断房间数是否对得上
+    if (expanded_rooms.size() != room_id - 2)
+    {
+        std::cerr << "In the expanded_room_renew function, the number of rooms found does not match the vector length" << std::endl;
+        throw std::runtime_error("Invalid line found.");
+    }
+
+    //更新expanded_rooms列表
+    for (auto& expanded_room : expanded_rooms)
+    {
+        int id_room = expanded_room.first;
+        expanded_room.second.clear_pixels();
+
+        for (size_t d = 0; d < h; d++)
+        {
+            for (size_t f = 0; f < w; f++)
+            {
+                if (transfer[d][f] == id_room)
+                {
+                    expanded_room.second.add_pixel(std::make_pair(d, f));
+                }
+            }
+        }
+    }
+
+    for (auto& room : expanded_rooms)
+    {
+        room.second.calculate_outline(segmented_matrix);
+    }
+
+    cv::Mat new_expanded_rooms_mat(h, w, CV_8UC3, cv::Scalar(255, 255, 255));
+    for (auto& room : expanded_rooms)
+    {
+        for (auto& p : room.second.get_outline_pixels())
+        {
+            new_expanded_rooms_mat.at<cv::Vec3b>(p.first, p.second) = cv::Vec3b(0, 0, 0);
+        }
+    }
+
+    cv::imshow("new_expanded_rooms_mat", new_expanded_rooms_mat);
+    cv::imwrite("C:\\Users\\13012\\Desktop\\result\\new_expanded_rooms_mat.png", new_expanded_rooms_mat);
+
+}
+
 
 
 std::vector<std::vector<int>> floor_plan_alignment(const std::vector<Room>& expanded_rooms, const std::vector<std::vector<int>>& floor_plan_optimization_matrix)
