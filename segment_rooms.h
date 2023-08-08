@@ -72,6 +72,8 @@ public:
     const std::vector<std::pair<int, p64>>& get_connection_info() const;//获取连通信息
 
     void delete_connection_info(int id);//删除连通信息（输入房间id来删除）
+
+    void clear_connection_info();
 };
 
 
@@ -182,7 +184,7 @@ void find_connected_rooms(std::map<int, Room>& rooms, const std::map<p64, Door>&
 
 //凹角膨胀函数
 std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const std::vector<std::vector<int>>& segmented_matrix, const std::vector<Room>& rooms);
-std::pair<Matrix<int>, std::map<int, Room>> expanded_rooms(const Matrix<int>& segmented_matrix, const std::map<int, Room>& rooms);
+std::pair<Matrix<int>, std::map<int, Room>> expand_rooms(const Matrix<int>& segmented_matrix, const std::map<int, Room>& rooms);
 
 //成品地图绘制
 void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>& rooms, std::vector<Room>& expanded_rooms, std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels);
@@ -288,6 +290,13 @@ void floor_plan_optimizer(std::vector<std::vector<int>>& expanded_matrix,
     std::vector<Room>& rooms,
     const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels);
 
+int floor_plan_optimizer(Matrix<int>& expanded_matrix,
+    Matrix<int>& tidy_room,
+    std::map<int, Room>& expanded_rooms,
+    const Matrix<int>& segmented_matrix,
+    std::map<int, Room>& rooms,
+    const std::map<p64, Door>& doorMap);
+
 //简单的正交多边形近似函数，主要用于确定户型图变形边界
 std::vector<std::vector<int>> orthogonal_polygon_fitting(const std::vector<std::vector<int>>& floor_plan_matrix);
 
@@ -299,9 +308,11 @@ cv::Point find_centroid(const cv::Mat& mat);
 
 //用优化后的户型图轮廓矩阵反向更新expanded_rooms列表
 void expanded_room_renew(std::vector<Room>& expanded_rooms, const std::vector<std::vector<int>>& segmented_matrix, const std::vector<std::vector<int>>& floor_plan_optimization_matrix);
+int expanded_room_renew(std::map<int, Room>& expanded_rooms, const Matrix<int>& segmented_matrix, const Matrix<int>& floor_plan_optimization_matrix);
 
 //户型图轮廓的阈值对齐
 std::vector<std::vector<int>> floor_plan_alignment(const std::vector<Room>& expanded_rooms, const std::vector<std::vector<int>>& floor_plan_optimization_matrix);
+Matrix<int> floor_plan_alignment(const std::map<int, Room>& expanded_rooms, const Matrix<int>& floor_plan_optimization_matrix);
 
 //转折点列表转内部的单连通填充矩阵
 std::vector<std::vector<int>> cvPoint_to_matrix(std::vector<cv::Point>& cnt, size_t h, size_t w);
@@ -313,8 +324,17 @@ void draw_final_map(std::vector<std::vector<int>>& segmented_matrix,
     std::vector<Room>& expanded_rooms,
     std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels);
 
+void draw_final_map(Matrix<int>& segmented_matrix,
+    Matrix<int>& expanded_matrix,
+    Matrix<int>& tidy_room,
+    std::map<int, Room>& expanded_rooms,
+    std::map<p64, Door>& doorMap);
+
 //宽度为1的封闭轮廓的逆时针顺序转折点提取
 std::vector<cv::Point> findTurnPoints(std::vector<std::vector<int>>& outline_matrix);
+
+//双房间手动合并
+int room_merge(int room1, int room2, std::map<int, Room>& rooms, std::map<int, Room>& expanded_rooms, std::map<p64, Door>& doorMap, Matrix<int>& segmented_matrix, Matrix<int>& expanded_matrix);
 
 
 
