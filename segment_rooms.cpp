@@ -402,7 +402,7 @@ void door_frame_interaction(MatrixInt& src, std::map<p64, Door>& doorMap)
     {
         for (int v = 0; v < w; v++)
         {
-            if (bgmask[u][v] = 1)
+            if (bgmask[u][v] == 1)
             {
                 doors_matrix[u][v] = -1;
             }
@@ -550,7 +550,7 @@ std::pair<MatrixInt, std::map<int, Room>> segment_rooms(MatrixInt& src, std::map
     {
         for (int j = 0; j < w; j++)
         {
-            if (bgmask[i][j] = 1)
+            if (bgmask[i][j] == 1)
             {
                 segmented_matrix[i][j] = 0;
             }
@@ -2071,6 +2071,11 @@ int getDirection(std::pair<int, int> a, std::pair<int, int> b)
 
 std::vector<std::pair<int, int>> getLeastTurnPath(const std::pair<int, int>& start, const std::pair<int, int>& end, const std::vector<std::vector<int>>& mask) 
 {
+    int max_x = std::max(start.first, end.first);
+    int min_x = std::min(start.first, end.first);
+    int max_y = std::max(start.second, end.second);
+    int min_y = std::min(start.second, end.second);
+
     // 四连通偏移量
     std::vector<std::pair<int, int>> offsets = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };
 
@@ -2096,7 +2101,8 @@ std::vector<std::pair<int, int>> getLeastTurnPath(const std::pair<int, int>& sta
             std::pair<int, int> newPos = { curPos.first + offset.first, curPos.second + offset.second };
 
             // 边界检查和障碍物检查
-            if (newPos.first < 0 || newPos.first >= mask.size() || newPos.second < 0 || newPos.second >= mask[0].size() || mask[newPos.first][newPos.second] == 0 || visited[newPos.first][newPos.second])
+            //if (newPos.first < 0 || newPos.first >= mask.size() || newPos.second < 0 || newPos.second >= mask[0].size() || mask[newPos.first][newPos.second] == 0 || visited[newPos.first][newPos.second])
+            if (newPos.first < min_x || newPos.first > max_x || newPos.second < min_y || newPos.second > max_y || mask[newPos.first][newPos.second] == 0 || visited[newPos.first][newPos.second])
                 continue;
 
             // 计算转折数
@@ -2974,6 +2980,7 @@ void tidy_room_Conditional_Morphological_Transformation(std::vector<std::vector<
         }
 
     }
+    std::cout << "房间图优化完成" << std::endl;
 }
 
 void tidy_room_Conditional_Morphological_Transformation(Matrix<int>& src,
@@ -3306,6 +3313,8 @@ int floor_plan_optimizer(Matrix<int>& expanded_matrix,
     }
     cv::imshow("floor_plan_optimization_img", floor_plan_optimization_img);
     cv::imwrite("C:\\Users\\13012\\Desktop\\result\\floor_plan_optimization_img.png", floor_plan_optimization_img);
+
+    //cv::waitKey(0);
 
     tidy_room_Conditional_Morphological_Transformation(tidy_room, floor_plan_optimization_matrix, rooms, doorMap);
 
@@ -4532,7 +4541,7 @@ Matrix<int> floor_plan_alignment(const std::map<int, Room>& expanded_rooms, cons
                 else
                 {
                     std::cerr << "GRS ERROR:在单个房间的户型图对齐变形中，找到的两个点xy都不相等" << std::endl;
-                    //throw std::runtime_error("Invalid line found.");
+                    throw std::runtime_error("Invalid line found.");
 
                     return {};
                 }
@@ -4742,7 +4751,7 @@ Matrix<int> floor_plan_alignment(const std::map<int, Room>& expanded_rooms, cons
                 else
                 {
                     std::cerr << "GRS ERROR:在单个房间的户型图对齐变形中，找到的两个点xy都不相等" << std::endl;
-                    //throw std::runtime_error("Invalid line found.");
+                    throw std::runtime_error("Invalid line found.");
 
                     return {};
                 }
