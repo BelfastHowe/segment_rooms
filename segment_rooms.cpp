@@ -5308,6 +5308,45 @@ int room_merge(int room1, int room2, std::map<int, Room>& rooms, std::map<int, R
         }
     }
 
+    //更改其他房间的连通信息，本来与room2连通的现在与room1连通
+    for (auto rit = rooms.begin(); rit != rooms.end(); rit++)
+    {
+        if (rit->first == room1 || rit->first == room2) continue;
+
+        std::vector<std::pair<int, p64>> cis = rit->second.get_connection_info();
+
+        rit->second.clear_connection_info();
+
+        for (auto& ci : cis)
+        {
+            if (ci.first == room2)
+            {
+                ci.first = room1;
+            }
+        }
+
+        for (auto& ci : cis)
+        {
+            rit->second.add_connection_info(ci.first, ci.second);
+        }
+    }
+
+    for (auto erit = expanded_rooms.begin(); erit != expanded_rooms.end(); erit++)
+    {
+        if (erit->first == room1 || erit->first == room2) continue;
+
+        int room_id = erit->first;
+
+        erit->second.clear_connection_info();
+
+        for (auto& ci : rooms[room_id].get_connection_info())
+        {
+            erit->second.add_connection_info(ci.first, ci.second);
+        }
+
+
+    }
+
 
     return 0;
 }
@@ -5628,7 +5667,35 @@ int test_new_map()
     if (op_flag == 2)return 2;
     if (op_flag == 3)return 3;
 
-    room_merge(1, 2, rooms, expanded_rooms, doorMap, segmented_matrix, expanded_matrix);
+    room_merge(4, 5, rooms, expanded_rooms, doorMap, segmented_matrix, expanded_matrix);
+
+    // Print the connected rooms
+    for (auto& room : rooms)
+    {
+        int room_id = room.first;
+        for (const auto& coninfo : room.second.get_connection_info())
+        {
+            int conroomid = coninfo.first;
+            p64 doorid = coninfo.second;
+
+            auto iter = doorMap.find(doorid);
+            if (iter != doorMap.end())
+            {
+                const Door& door = iter->second;
+
+                std::cout << "Room " << room_id << " is connected to Room " << conroomid << " through door "
+                    << doorid.first << "." << doorid.second << "("
+                    << door.startPoint.first << ", " << door.startPoint.second << ") to ("
+                    << door.endPoint.first << ", " << door.endPoint.second << ")" << std::endl;
+            }
+            else
+            {
+                std::cerr << "GRS ERROR:No connected door found in doorMap" << std::endl;
+                return 1;
+            }
+
+        }
+    }
 
 
     draw_final_map(segmented_matrix, expanded_matrix, segmented_matrix, expanded_rooms, doorMap);
