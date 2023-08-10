@@ -1,4 +1,4 @@
-#include <segment_rooms.h>
+ï»¿#include <segment_rooms.h>
 #include <generate_connected_region.h>
 #include <sstream>
 
@@ -53,10 +53,10 @@ void Room::print_connected_rooms() const
 
 void Room::calculate_outline(const std::vector<std::vector<int>>& matrix)
 {
-    // ³õÊ¼»¯¿Õ·¿¼ä¾ØÕó
+    // åˆå§‹åŒ–ç©ºæˆ¿é—´çŸ©é˜µ
     std::vector<std::vector<int>> room_matrix(matrix.size(), std::vector<int>(matrix[0].size(), 0));
 
-    // Ìî³ä·¿¼ä¾ØÕó
+    // å¡«å……æˆ¿é—´çŸ©é˜µ
     for (const auto& pixel : pixels)
     {
         int x = pixel.first;
@@ -64,11 +64,11 @@ void Room::calculate_outline(const std::vector<std::vector<int>>& matrix)
         room_matrix[x][y] = 1;
     }
 
-    // ¼ÆËãÂÖÀª
+    // è®¡ç®—è½®å»“
     std::vector<std::vector<int>> room_filled = extract_filled_image(room_matrix);
     std::vector<std::vector<int>> room_outline = extract_edges(room_filled);
 
-    // Ñ°ÕÒ³õÊ¼µã
+    // å¯»æ‰¾åˆå§‹ç‚¹
     std::pair<int, int> start_pixel = { -1, -1 };
     for (int i = 0; i < room_outline.size(); ++i)
     {
@@ -84,22 +84,22 @@ void Room::calculate_outline(const std::vector<std::vector<int>>& matrix)
         if (start_pixel.first != -1) break;
     }
 
-    // Èç¹ûÃ»ÓĞÕÒµ½ÂÖÀª£¬Çå¿Õoutline_pixels²¢·µ»Ø
+    // å¦‚æœæ²¡æœ‰æ‰¾åˆ°è½®å»“ï¼Œæ¸…ç©ºoutline_pixelså¹¶è¿”å›
     if (start_pixel.first == -1)
     {
         outline_pixels.clear();
         return;
     }
 
-    // ´æ´¢³õÊ¼µã²¢¿ªÊ¼Éî¶ÈÓÅÏÈËÑË÷
+    // å­˜å‚¨åˆå§‹ç‚¹å¹¶å¼€å§‹æ·±åº¦ä¼˜å…ˆæœç´¢
     outline_pixels = { start_pixel };
     std::stack<std::pair<int, int>> stack;
     stack.push(start_pixel);
 
-    // ËÄÁ¬Í¨·½Ïò£º×ó£¬ÉÏ£¬ÓÒ£¬ÏÂ
+    // å››è¿é€šæ–¹å‘ï¼šå·¦ï¼Œä¸Šï¼Œå³ï¼Œä¸‹
     //std::vector<std::pair<int, int>> directions = { {0, -1}, {-1, 0}, {0, 1}, {1, 0} };
 
-    // ËÄÁ¬Í¨·½Ïò£ºÏÂ£¬×ó£¬ÉÏ£¬ÓÒ£¬±£Ö¤ÄæÊ±ÕëÑ°ÕÒ
+    // å››è¿é€šæ–¹å‘ï¼šä¸‹ï¼Œå·¦ï¼Œä¸Šï¼Œå³ï¼Œä¿è¯é€†æ—¶é’ˆå¯»æ‰¾
     std::vector<std::pair<int, int>> directions = { {1, 0}, {0, -1}, {-1, 0}, {0, 1} };
 
     while (!stack.empty())
@@ -115,7 +115,7 @@ void Room::calculate_outline(const std::vector<std::vector<int>>& matrix)
                 outline_pixels.push_back({ nx, ny });
                 room_outline[nx][ny] = 0;  // mark as visited
                 stack.push({ nx, ny });
-                break;  // Ö»Ñ¹ÈëÒ»¸öÁÚ¾Óµ½Õ»ÖĞ
+                break;  // åªå‹å…¥ä¸€ä¸ªé‚»å±…åˆ°æ ˆä¸­
             }
         }
     }
@@ -242,7 +242,7 @@ std::vector<p64> bresenham4(int x0, int y0, int x1, int y1)
 
 std::map<p64, Door> doorVector2Map(std::vector<std::pair<p64, p64>>& doors)
 {
-    std::cout << "¿ªÊ¼³õÊ¼»¯doorMap" << std::endl;
+    std::cout << "å¼€å§‹åˆå§‹åŒ–doorMap" << std::endl;
 
     int ndoor = doors.size();
     std::map<p64, Door> doorMap;
@@ -263,7 +263,7 @@ std::map<p64, Door> doorVector2Map(std::vector<std::pair<p64, p64>>& doors)
 
     }
 
-    std::cout << "doorMap³õÊ¼»¯³É¹¦" << std::endl;
+    std::cout << "doorMapåˆå§‹åŒ–æˆåŠŸ" << std::endl;
     return doorMap;
 }
 
@@ -290,7 +290,7 @@ void doorDFS(MatrixInt& matrix, std::vector<std::vector<bool>>& visited, int a, 
         stack.push({ i, j - 1 });
     }
 
-    // Èç¹ûÖ»ÓĞÒ»¸öµã£¬ÄÇÃ´Á½¸ö¶Ëµã¶¼ÊÇÕâ¸öµã
+    // å¦‚æœåªæœ‰ä¸€ä¸ªç‚¹ï¼Œé‚£ä¹ˆä¸¤ä¸ªç«¯ç‚¹éƒ½æ˜¯è¿™ä¸ªç‚¹
     if (door.path.size() == 1)
     {
         door.startPoint = door.path[0];
@@ -298,7 +298,7 @@ void doorDFS(MatrixInt& matrix, std::vector<std::vector<bool>>& visited, int a, 
         return;
     }
 
-    // ÕÒµ½¶Ëµã
+    // æ‰¾åˆ°ç«¯ç‚¹
     for (auto& point : door.path)
     {
         //auto [iCurr, jCurr] = point;
@@ -311,7 +311,7 @@ void doorDFS(MatrixInt& matrix, std::vector<std::vector<bool>>& visited, int a, 
             if (other != point && std::abs(other.first - iCurr) + std::abs(other.second - jCurr) == 1) count++;
         }
         if (count == 1)
-        { // Ö»ÓĞÒ»¸öÁÚ¾ÓÔÚÁĞ±íÖĞ£¬ÕâÊÇÒ»¸ö¶Ëµã
+        { // åªæœ‰ä¸€ä¸ªé‚»å±…åœ¨åˆ—è¡¨ä¸­ï¼Œè¿™æ˜¯ä¸€ä¸ªç«¯ç‚¹
             if (door.startPoint.first == -1 && door.endPoint.second == -1)
             {
                 door.startPoint = point;
@@ -349,7 +349,7 @@ std::map<p64, Door> findDoorFrames(MatrixInt& matrix)
 
 void door_frame_interaction(MatrixInt& src, std::map<p64, Door>& doorMap)
 {
-    std::cout << "¿ªÊ¼ÃÅ¿ò¸ÉÉæ" << std::endl;
+    std::cout << "å¼€å§‹é—¨æ¡†å¹²æ¶‰" << std::endl;
 
     int h = src.size();
     int w = src[0].size();
@@ -365,7 +365,7 @@ void door_frame_interaction(MatrixInt& src, std::map<p64, Door>& doorMap)
     MatrixInt doors_matrix(h, std::vector<int>(w, -1));
     MatrixInt bgmask(h, std::vector<int>(w, 0));
 
-    //´òÓ¡µ½doors¾ØÕóÖĞ²¢¼ÇÂ¼ÖØµş
+    //æ‰“å°åˆ°doorsçŸ©é˜µä¸­å¹¶è®°å½•é‡å 
     for (auto& dm : doorMap)
     {
         p64 id = dm.first;
@@ -381,7 +381,7 @@ void door_frame_interaction(MatrixInt& src, std::map<p64, Door>& doorMap)
         }
     }
 
-    //ÖØµş¾ØÕó¼ò»¯
+    //é‡å çŸ©é˜µç®€åŒ–
     for (int x = 0; x < h; x++)
     {
         for (int y = 0; y < w; y++)
@@ -397,7 +397,7 @@ void door_frame_interaction(MatrixInt& src, std::map<p64, Door>& doorMap)
         }
     }
 
-    //doors¾ØÕóÈ¥ÖØµş
+    //doorsçŸ©é˜µå»é‡å 
     for (int u = 0; u < h; u++)
     {
         for (int v = 0; v < w; v++)
@@ -412,13 +412,13 @@ void door_frame_interaction(MatrixInt& src, std::map<p64, Door>& doorMap)
 
     doorMap.clear();
 
-    //´«µİ³öÈ¥ÖØµş¾ØÕó
+    //ä¼ é€’å‡ºå»é‡å çŸ©é˜µ
     src = bgmask;
 
-    //ÃÅ¿òµÄ¸´ºÏidËÑË÷
+    //é—¨æ¡†çš„å¤åˆidæœç´¢
     doorMap = findDoorFrames(doors_matrix);
 
-    std::cout << "ÃÅ¿ò¸ÉÉæÍê³É" << std::endl;
+    std::cout << "é—¨æ¡†å¹²æ¶‰å®Œæˆ" << std::endl;
 
 }
 
@@ -430,28 +430,28 @@ std::pair<std::vector<std::vector<int>>, std::vector<Room>> segment_rooms(const 
     int rows = matrix.size();
     int cols = matrix[0].size();
 
-    std::vector<std::vector<int>> segmented_matrix = matrix;//´´½¨¸±±¾ÒÔ±£³ÖÔ­Ê¼¾ØÕó²»±ä
-    std::vector<std::vector<bool>> visited(rows, std::vector<bool>(cols, false));//´´½¨Óë¾ØÕó´óĞ¡ÏàÍ¬µÄ·ÃÎÊ±ê¼Ç¾ØÕó
-    std::vector<Room> rooms;//´´½¨·¿¼äÁĞ±í
-    int room_id = 1;//·¿¼äµÄ³õÊ¼±êÊ¶·û
+    std::vector<std::vector<int>> segmented_matrix = matrix;//åˆ›å»ºå‰¯æœ¬ä»¥ä¿æŒåŸå§‹çŸ©é˜µä¸å˜
+    std::vector<std::vector<bool>> visited(rows, std::vector<bool>(cols, false));//åˆ›å»ºä¸çŸ©é˜µå¤§å°ç›¸åŒçš„è®¿é—®æ ‡è®°çŸ©é˜µ
+    std::vector<Room> rooms;//åˆ›å»ºæˆ¿é—´åˆ—è¡¨
+    int room_id = 1;//æˆ¿é—´çš„åˆå§‹æ ‡è¯†ç¬¦
 
-    std::vector<std::pair<int, int>> directions = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };//¶¨ÒåDFSËã·¨ËÄ¸ö·½ÏòµÄÆ«ÒÆÁ¿
+    std::vector<std::pair<int, int>> directions = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };//å®šä¹‰DFSç®—æ³•å››ä¸ªæ–¹å‘çš„åç§»é‡
 
     std::function<void(int, int, Room&)> dfs = [&](int x, int y, Room& room) 
     {
         std::stack<std::pair<int, int>> stack;
-        stack.push(std::make_pair(x, y));//½«µ±Ç°ÏñËØµãÑ¹ÈëÕ»ÖĞ
+        stack.push(std::make_pair(x, y));//å°†å½“å‰åƒç´ ç‚¹å‹å…¥æ ˆä¸­
 
         while (!stack.empty()) 
         {
             std::pair<int, int> current = stack.top();
-            stack.pop();//½«µ±Ç°ÏñËØµãµ¯³öÕ»
+            stack.pop();//å°†å½“å‰åƒç´ ç‚¹å¼¹å‡ºæ ˆ
 
             int current_x = current.first;
             int current_y = current.second;
-            room.add_pixel(current);//½«µ±Ç°ÏñËØµãÌí¼Óµ½·¿¼äÖĞ
+            room.add_pixel(current);//å°†å½“å‰åƒç´ ç‚¹æ·»åŠ åˆ°æˆ¿é—´ä¸­
 
-            visited[current_x][current_y] = true;//½«µ±Ç°ÏñËØµã±ê¼ÇÎªÒÑ·ÃÎÊ
+            visited[current_x][current_y] = true;//å°†å½“å‰åƒç´ ç‚¹æ ‡è®°ä¸ºå·²è®¿é—®
 
             for (const auto& direction : directions) 
             {
@@ -460,13 +460,13 @@ std::pair<std::vector<std::vector<int>>, std::vector<Room>> segment_rooms(const 
 
                 if (is_valid_pixel(next_x, next_y, rows, cols) && segmented_matrix[next_x][next_y] == 1 && !visited[next_x][next_y]) 
                 {
-                    stack.push(std::make_pair(next_x, next_y));//½«ÏÂÒ»¸öµãÑ¹ÈëÕ»ÖĞ
+                    stack.push(std::make_pair(next_x, next_y));//å°†ä¸‹ä¸€ä¸ªç‚¹å‹å…¥æ ˆä¸­
                 }
             }
         }
     };
 
-    // Í¨¹ıÃÅÏñËØ½øĞĞ·Ö¸î
+    // é€šè¿‡é—¨åƒç´ è¿›è¡Œåˆ†å‰²
     for (const auto& door : door_pixels) 
     {
         std::vector<std::pair<int, int>> door_segment = bresenham_line(door.first.first, door.first.second, door.second.first, door.second.second);
@@ -476,60 +476,60 @@ std::pair<std::vector<std::vector<int>>, std::vector<Room>> segment_rooms(const 
             int y = point.second;
             if (is_valid_pixel(x, y, rows, cols)) 
             {
-                segmented_matrix[x][y] = 0;//½«ÃÅÏñËØËùÔÚµÄµã±ê¼ÇÎª0
+                segmented_matrix[x][y] = 0;//å°†é—¨åƒç´ æ‰€åœ¨çš„ç‚¹æ ‡è®°ä¸º0
             }
         }
     }
 
-    // ±éÀú¾ØÕóÖĞµÄÃ¿¸öÏñËØ£¬½øĞĞ·¿¼äËÑË÷ºÍ±ê¼Ç
+    // éå†çŸ©é˜µä¸­çš„æ¯ä¸ªåƒç´ ï¼Œè¿›è¡Œæˆ¿é—´æœç´¢å’Œæ ‡è®°
     for (int i = 0; i < rows; i++) 
     {
         for (int j = 0; j < cols; j++) 
         {
             if (segmented_matrix[i][j] == 1 && !visited[i][j]) 
             {
-                Room room(room_id);//´´½¨Ò»¸öĞÂµÄ·¿¼ä¶ÔÏó
-                dfs(i, j, room);//¿ªÊ¼Éî¶ÈÓÅÏÈËÑË÷£¬½«ÊôÓÚÍ¬Ò»¸ö·¿¼äµÄÏñËØÌí¼Óµ½·¿¼ä¶ÔÏóÖĞ
-                rooms.push_back(room);//½«·¿¼ä¶ÔÏóÌí¼Óµ½·¿¼äÁĞ±íÖĞ
+                Room room(room_id);//åˆ›å»ºä¸€ä¸ªæ–°çš„æˆ¿é—´å¯¹è±¡
+                dfs(i, j, room);//å¼€å§‹æ·±åº¦ä¼˜å…ˆæœç´¢ï¼Œå°†å±äºåŒä¸€ä¸ªæˆ¿é—´çš„åƒç´ æ·»åŠ åˆ°æˆ¿é—´å¯¹è±¡ä¸­
+                rooms.push_back(room);//å°†æˆ¿é—´å¯¹è±¡æ·»åŠ åˆ°æˆ¿é—´åˆ—è¡¨ä¸­
                 room_id++;
             }
         }
     }
 
-    return std::make_pair(segmented_matrix, rooms);//·µ»Ø·Ö¸îºóµÄ¾ØÕóºÍ·¿¼ä¶ÔÏóÁĞ±í
+    return std::make_pair(segmented_matrix, rooms);//è¿”å›åˆ†å‰²åçš„çŸ©é˜µå’Œæˆ¿é—´å¯¹è±¡åˆ—è¡¨
 }
 
 std::pair<MatrixInt, std::map<int, Room>> segment_rooms(MatrixInt& src, std::map<p64, Door>& doorMap, MatrixInt& bgmask)
 {
-    std::cout << "¿ªÊ¼·Ö¸î" << std::endl;
+    std::cout << "å¼€å§‹åˆ†å‰²" << std::endl;
 
     int h = src.size();
     int w = src[0].size();
 
-    MatrixInt segmented_matrix = src; //´´½¨¸±±¾
-    Matrix<bool> visited(h, std::vector<bool>(w, false));//´´½¨Óë¾ØÕó´óĞ¡ÏàÍ¬µÄ·ÃÎÊ±ê¼Ç¾ØÕó
+    MatrixInt segmented_matrix = src; //åˆ›å»ºå‰¯æœ¬
+    Matrix<bool> visited(h, std::vector<bool>(w, false));//åˆ›å»ºä¸çŸ©é˜µå¤§å°ç›¸åŒçš„è®¿é—®æ ‡è®°çŸ©é˜µ
 
     std::map<int, Room> rooms;
     int room_id = 1;
 
-    std::vector<p64> directions = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };//¶¨ÒåDFSËã·¨ËÄ¸ö·½ÏòµÄÆ«ÒÆÁ¿
+    std::vector<p64> directions = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };//å®šä¹‰DFSç®—æ³•å››ä¸ªæ–¹å‘çš„åç§»é‡
 
 
     std::function<void(int, int, Room&)> dfs = [&](int x, int y, Room& room)
     {
         std::stack<std::pair<int, int>> stack;
-        stack.push(std::make_pair(x, y));//½«µ±Ç°ÏñËØµãÑ¹ÈëÕ»ÖĞ
+        stack.push(std::make_pair(x, y));//å°†å½“å‰åƒç´ ç‚¹å‹å…¥æ ˆä¸­
 
         while (!stack.empty())
         {
             std::pair<int, int> current = stack.top();
-            stack.pop();//½«µ±Ç°ÏñËØµãµ¯³öÕ»
+            stack.pop();//å°†å½“å‰åƒç´ ç‚¹å¼¹å‡ºæ ˆ
 
             int current_x = current.first;
             int current_y = current.second;
-            room.add_pixel(current);//½«µ±Ç°ÏñËØµãÌí¼Óµ½·¿¼äÖĞ
+            room.add_pixel(current);//å°†å½“å‰åƒç´ ç‚¹æ·»åŠ åˆ°æˆ¿é—´ä¸­
 
-            visited[current_x][current_y] = true;//½«µ±Ç°ÏñËØµã±ê¼ÇÎªÒÑ·ÃÎÊ
+            visited[current_x][current_y] = true;//å°†å½“å‰åƒç´ ç‚¹æ ‡è®°ä¸ºå·²è®¿é—®
 
             for (const auto& direction : directions)
             {
@@ -538,14 +538,14 @@ std::pair<MatrixInt, std::map<int, Room>> segment_rooms(MatrixInt& src, std::map
 
                 if (is_valid_pixel(next_x, next_y, h, w) && segmented_matrix[next_x][next_y] == 1 && !visited[next_x][next_y])
                 {
-                    stack.push(std::make_pair(next_x, next_y));//½«ÏÂÒ»¸öµãÑ¹ÈëÕ»ÖĞ
+                    stack.push(std::make_pair(next_x, next_y));//å°†ä¸‹ä¸€ä¸ªç‚¹å‹å…¥æ ˆä¸­
                 }
             }
         }
     };
 
 
-    //ÃÅÖØµşµãÖÃÎª±³¾°
+    //é—¨é‡å ç‚¹ç½®ä¸ºèƒŒæ™¯
     for (int i = 0; i < h; i++)
     {
         for (int j = 0; j < w; j++)
@@ -558,7 +558,7 @@ std::pair<MatrixInt, std::map<int, Room>> segment_rooms(MatrixInt& src, std::map
     }
 
 
-    // Í¨¹ıÃÅÏñËØ½øĞĞ·Ö¸î
+    // é€šè¿‡é—¨åƒç´ è¿›è¡Œåˆ†å‰²
     for (const auto& door : doorMap)
     {
         auto& door_path = door.second.path;
@@ -587,7 +587,7 @@ std::pair<MatrixInt, std::map<int, Room>> segment_rooms(MatrixInt& src, std::map
         }
     }
 
-    std::cout << "·Ö¸îÍê³É" << std::endl;
+    std::cout << "åˆ†å‰²å®Œæˆ" << std::endl;
 
     return std::make_pair(segmented_matrix, rooms);
 
@@ -596,20 +596,20 @@ std::pair<MatrixInt, std::map<int, Room>> segment_rooms(MatrixInt& src, std::map
 
 
 
-/*  ÒÔcv::Mat×÷ÎªÊäÈëÊä³ö²ÎÊıµÄ°æ±¾
+/*  ä»¥cv::Matä½œä¸ºè¾“å…¥è¾“å‡ºå‚æ•°çš„ç‰ˆæœ¬
 cv::Mat extract_filled_image(const cv::Mat& connected_region) 
 {
-    // Éú³ÉÊ¾ÀıÁ¬Í¨ÇøÓòµÄ¶şÖµÍ¼Ïñ
+    // ç”Ÿæˆç¤ºä¾‹è¿é€šåŒºåŸŸçš„äºŒå€¼å›¾åƒ
     cv::Mat matrix = connected_region.clone();
 
-    // ²éÕÒÍâ±ßÔµÂÖÀª
+    // æŸ¥æ‰¾å¤–è¾¹ç¼˜è½®å»“
     std::vector<std::vector<cv::Point>> contours;
     cv::findContours(matrix, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
-    // ´´½¨¿Õ°×Í¼Ïñ
+    // åˆ›å»ºç©ºç™½å›¾åƒ
     cv::Mat filled_image = cv::Mat::zeros(matrix.size(), CV_8UC1);
 
-    // »æÖÆÍâÂÖÀª
+    // ç»˜åˆ¶å¤–è½®å»“
     cv::drawContours(filled_image, contours, -1, cv::Scalar(255), cv::FILLED);
 
     return filled_image;
@@ -618,7 +618,7 @@ cv::Mat extract_filled_image(const cv::Mat& connected_region)
 
 std::vector<std::vector<int>> extract_filled_image(const std::vector<std::vector<int>>& connected_region) 
 {
-    // Éú³ÉÊ¾ÀıÁ¬Í¨ÇøÓòµÄ¶şÖµÍ¼Ïñ
+    // ç”Ÿæˆç¤ºä¾‹è¿é€šåŒºåŸŸçš„äºŒå€¼å›¾åƒ
     cv::Mat matrix(connected_region.size(), connected_region[0].size(), CV_8UC1);
     for (size_t i = 0; i < connected_region.size(); i++) 
     {
@@ -628,7 +628,7 @@ std::vector<std::vector<int>> extract_filled_image(const std::vector<std::vector
         }
     }
 
-    // ²éÕÒÍâ±ßÔµÂÖÀª
+    // æŸ¥æ‰¾å¤–è¾¹ç¼˜è½®å»“
     std::vector<std::vector<cv::Point>> contours;
     cv::findContours(matrix, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
@@ -645,13 +645,13 @@ std::vector<std::vector<int>> extract_filled_image(const std::vector<std::vector
         }
     }
 
-    // ´´½¨¿Õ°×Í¼Ïñ
+    // åˆ›å»ºç©ºç™½å›¾åƒ
     cv::Mat filled_image(matrix.size(), CV_8UC1, cv::Scalar(0));
 
-    // »æÖÆÍâÂÖÀª
+    // ç»˜åˆ¶å¤–è½®å»“
     cv::drawContours(filled_image, contours, largest_contour_index, cv::Scalar(1), cv::FILLED);
 
-    // ½«½á¹û×ª»»Îª¶şÎ¬Êı×é
+    // å°†ç»“æœè½¬æ¢ä¸ºäºŒç»´æ•°ç»„
     std::vector<std::vector<int>> filled_image_arr(filled_image.rows, std::vector<int>(filled_image.cols));
     for (int i = 0; i < filled_image.rows; i++) 
     {
@@ -665,20 +665,20 @@ std::vector<std::vector<int>> extract_filled_image(const std::vector<std::vector
 }
 
 
-/*  ÒÔcv::Mat½á¹¹×÷ÎªÊäÈëÊä³öµÄ°æ±¾
+/*  ä»¥cv::Matç»“æ„ä½œä¸ºè¾“å…¥è¾“å‡ºçš„ç‰ˆæœ¬
 cv::Mat extract_edges(const cv::Mat& filled_image) 
 {
-    // ´´½¨01¾ØÕó
+    // åˆ›å»º01çŸ©é˜µ
     cv::Mat matrix = filled_image.clone();
 
-    // ÔÚ¾ØÕóÍâÎ§²¹Ò»È¦0
+    // åœ¨çŸ©é˜µå¤–å›´è¡¥ä¸€åœˆ0
     cv::Mat padded_matrix;
     cv::copyMakeBorder(matrix, padded_matrix, 1, 1, 1, 1, cv::BORDER_CONSTANT, 0);
 
-    // ¶¨Òå3x3µÄÈ«1¾í»ıºË
+    // å®šä¹‰3x3çš„å…¨1å·ç§¯æ ¸
     cv::Mat kernel = cv::Mat::ones(3, 3, CV_8U);
 
-    // ¶ÔÃ¿¸öÏñËØ½øĞĞ¾í»ı²¢ÅĞ¶ÏÊÇ·ñÎª±ßÔµ
+    // å¯¹æ¯ä¸ªåƒç´ è¿›è¡Œå·ç§¯å¹¶åˆ¤æ–­æ˜¯å¦ä¸ºè¾¹ç¼˜
     cv::Mat edges = cv::Mat::zeros(matrix.size(), CV_8U);
     for (int i = 1; i < padded_matrix.rows - 1; i++) 
     {
@@ -697,10 +697,10 @@ cv::Mat extract_edges(const cv::Mat& filled_image)
 
 std::vector<std::vector<int>> extract_edges(const std::vector<std::vector<int>>& filled_image) 
 {
-    // ´´½¨01¾ØÕó
+    // åˆ›å»º01çŸ©é˜µ
     std::vector<std::vector<int>> matrix = filled_image;
 
-    // ÔÚ¾ØÕóÍâÎ§²¹Ò»È¦0
+    // åœ¨çŸ©é˜µå¤–å›´è¡¥ä¸€åœˆ0
     std::vector<std::vector<int>> padded_matrix(matrix.size() + 2, std::vector<int>(matrix[0].size() + 2, 0));
     for (int i = 0; i < matrix.size(); i++) 
     {
@@ -710,10 +710,10 @@ std::vector<std::vector<int>> extract_edges(const std::vector<std::vector<int>>&
         }
     }
 
-    // ¶¨Òå3x3µÄÈ«1¾í»ıºË
+    // å®šä¹‰3x3çš„å…¨1å·ç§¯æ ¸
     std::vector<std::vector<int>> kernel(3, std::vector<int>(3, 1));
 
-    // ¶ÔÃ¿¸öÏñËØ½øĞĞ¾í»ı²¢ÅĞ¶ÏÊÇ·ñÎª±ßÔµ
+    // å¯¹æ¯ä¸ªåƒç´ è¿›è¡Œå·ç§¯å¹¶åˆ¤æ–­æ˜¯å¦ä¸ºè¾¹ç¼˜
     std::vector<std::vector<int>> edges(matrix.size(), std::vector<int>(matrix[0].size(), 0));
     for (int i = 1; i < padded_matrix.size() - 1; i++) 
     {
@@ -840,7 +840,7 @@ std::vector<std::vector<int>> customize_opening(const std::vector<std::vector<in
 
     std::vector<std::vector<int>> paddedMatrix(rows + 2 * padRows, std::vector<int>(cols + 2 * padCols, 0));
 
-    // ½«Ô­Ê¼¾ØÕó¸´ÖÆµ½ÖĞ¼ä²¿·Ö
+    // å°†åŸå§‹çŸ©é˜µå¤åˆ¶åˆ°ä¸­é—´éƒ¨åˆ†
     for (int i = 0; i < rows; ++i) 
     {
         for (int j = 0; j < cols; ++j) 
@@ -851,7 +851,7 @@ std::vector<std::vector<int>> customize_opening(const std::vector<std::vector<in
 
     std::vector<std::vector<int>> openedMatrix(rows, std::vector<int>(cols, 0));
 
-    // ¸¯Ê´²Ù×÷
+    // è…èš€æ“ä½œ
     for (int i = 0; i < rows; ++i) 
     {
         for (int j = 0; j < cols; ++j) 
@@ -878,7 +878,7 @@ std::vector<std::vector<int>> customize_opening(const std::vector<std::vector<in
         }
     }
 
-    // ÅòÕÍ²Ù×÷
+    // è†¨èƒ€æ“ä½œ
     for (int i = 0; i < rows; ++i) 
     {
         for (int j = 0; j < cols; ++j) 
@@ -912,7 +912,7 @@ std::vector<std::vector<int>> customize_closing(const std::vector<std::vector<in
 
     std::vector<std::vector<int>> paddedMatrix(rows + 2 * padRows, std::vector<int>(cols + 2 * padCols, 0));
 
-    // ½«Ô­Ê¼¾ØÕó¸´ÖÆµ½ÖĞ¼ä²¿·Ö
+    // å°†åŸå§‹çŸ©é˜µå¤åˆ¶åˆ°ä¸­é—´éƒ¨åˆ†
     for (int i = 0; i < rows; ++i) 
     {
         for (int j = 0; j < cols; ++j) 
@@ -923,7 +923,7 @@ std::vector<std::vector<int>> customize_closing(const std::vector<std::vector<in
 
     std::vector<std::vector<int>> closedMatrix(rows, std::vector<int>(cols, 0));
 
-    // ÅòÕÍ²Ù×÷
+    // è†¨èƒ€æ“ä½œ
     for (int i = 0; i < rows; ++i) 
     {
         for (int j = 0; j < cols; ++j) 
@@ -943,7 +943,7 @@ std::vector<std::vector<int>> customize_closing(const std::vector<std::vector<in
         }
     }
 
-    // ¸¯Ê´²Ù×÷
+    // è…èš€æ“ä½œ
     for (int i = 0; i < rows; ++i) 
     {
         for (int j = 0; j < cols; ++j) 
@@ -992,7 +992,7 @@ void find_connected_rooms(const std::vector<std::vector<int>>& segmented_matrix,
     int rows = segmented_matrix.size();
     int cols = segmented_matrix[0].size();
 
-    //¶ÔÓÚÃ¿Ò»¶Ô·¿¼ä
+    //å¯¹äºæ¯ä¸€å¯¹æˆ¿é—´
     for (size_t i = 0; i < rooms.size(); i++) 
     {
         for (size_t j = i + 1; j < rooms.size(); j++) 
@@ -1000,14 +1000,14 @@ void find_connected_rooms(const std::vector<std::vector<int>>& segmented_matrix,
             Room& room1 = rooms[i];
             Room& room2 = rooms[j];
 
-            //ÎªÃ¿¸ö·¿¼äÌáÈ¡Ìî³äÍ¼Ïñ²¢ÌáÈ¡±ßÔµ
+            //ä¸ºæ¯ä¸ªæˆ¿é—´æå–å¡«å……å›¾åƒå¹¶æå–è¾¹ç¼˜
             auto room1_filled_image = extract_filled_image(pixels_to_matrix(room1.get_pixels(), rows, cols));
             auto room2_filled_image = extract_filled_image(pixels_to_matrix(room2.get_pixels(), rows, cols));
 
             auto room1_edges = extract_edges(room1_filled_image);
             auto room2_edges = extract_edges(room2_filled_image);
 
-            //¼ì²éÃ¿¸öÃÅÊÇ·ñÁ¬½ÓÁ½¸ö·¿¼ä
+            //æ£€æŸ¥æ¯ä¸ªé—¨æ˜¯å¦è¿æ¥ä¸¤ä¸ªæˆ¿é—´
             for (const auto& door : door_pixels) 
             {
                 auto door_segment = bresenham_line(door.first.first, door.first.second, door.second.first, door.second.second);
@@ -1015,7 +1015,7 @@ void find_connected_rooms(const std::vector<std::vector<int>>& segmented_matrix,
                 bool room1_connected = false;
                 bool room2_connected = false;
 
-                //¼ì²éÃÅµÄÃ¿¸öÏñËØÊÇ·ñÁ¬½Óµ½·¿¼äµÄ±ßÔµ
+                //æ£€æŸ¥é—¨çš„æ¯ä¸ªåƒç´ æ˜¯å¦è¿æ¥åˆ°æˆ¿é—´çš„è¾¹ç¼˜
                 for (const auto& pixel : door_segment) 
                 {
                     if (room1_edges[pixel.first][pixel.second] == 1)
@@ -1025,7 +1025,7 @@ void find_connected_rooms(const std::vector<std::vector<int>>& segmented_matrix,
                         room2_connected = true;
                 }
 
-                //Èç¹ûÁ½¸ö·¿¼ä¶¼ÓëÃÅÏàÁ¬£¬ÔòÌí¼Óµ½Á¬½ÓµÄ·¿¼äÁĞ±í
+                //å¦‚æœä¸¤ä¸ªæˆ¿é—´éƒ½ä¸é—¨ç›¸è¿ï¼Œåˆ™æ·»åŠ åˆ°è¿æ¥çš„æˆ¿é—´åˆ—è¡¨
                 if (room1_connected && room2_connected) 
                 {
                     room1.add_connected_room(room2.get_room_id(), door);
@@ -1039,7 +1039,7 @@ void find_connected_rooms(const std::vector<std::vector<int>>& segmented_matrix,
 
 void find_connected_rooms(std::vector<Room>& rooms, const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels)
 {
-    //¶ÔÓÚÃ¿Ò»¶Ô·¿¼ä
+    //å¯¹äºæ¯ä¸€å¯¹æˆ¿é—´
     for (size_t i = 0; i < rooms.size(); i++)
     {
         for (size_t j = i + 1; j < rooms.size(); j++)
@@ -1047,11 +1047,11 @@ void find_connected_rooms(std::vector<Room>& rooms, const std::vector<std::pair<
             Room& room1 = rooms[i];
             Room& room2 = rooms[j];
 
-            // »ñÈ¡Ã¿¸ö·¿¼äµÄÂÖÀªÏñËØµã
+            // è·å–æ¯ä¸ªæˆ¿é—´çš„è½®å»“åƒç´ ç‚¹
             const auto& room1_outline_pixels = room1.get_outline_pixels();
             const auto& room2_outline_pixels = room2.get_outline_pixels();
 
-            //¼ì²éÃ¿¸öÃÅÊÇ·ñÁ¬½ÓÁ½¸ö·¿¼ä
+            //æ£€æŸ¥æ¯ä¸ªé—¨æ˜¯å¦è¿æ¥ä¸¤ä¸ªæˆ¿é—´
             for (const auto& door : door_pixels)
             {
                 auto door_segment = bresenham_line(door.first.first, door.first.second, door.second.first, door.second.second);
@@ -1059,7 +1059,7 @@ void find_connected_rooms(std::vector<Room>& rooms, const std::vector<std::pair<
                 bool room1_connected = false;
                 bool room2_connected = false;
 
-                //¼ì²éÃÅµÄÃ¿¸öÏñËØÊÇ·ñÁ¬½Óµ½·¿¼äµÄÂÖÀª
+                //æ£€æŸ¥é—¨çš„æ¯ä¸ªåƒç´ æ˜¯å¦è¿æ¥åˆ°æˆ¿é—´çš„è½®å»“
                 for (const auto& pixel : door_segment)
                 {
                     if (std::find(room1_outline_pixels.begin(), room1_outline_pixels.end(), pixel) != room1_outline_pixels.end())
@@ -1069,7 +1069,7 @@ void find_connected_rooms(std::vector<Room>& rooms, const std::vector<std::pair<
                         room2_connected = true;
                 }
 
-                //Èç¹ûÁ½¸ö·¿¼ä¶¼ÓëÃÅÏàÁ¬£¬ÔòÌí¼Óµ½Á¬½ÓµÄ·¿¼äÁĞ±í
+                //å¦‚æœä¸¤ä¸ªæˆ¿é—´éƒ½ä¸é—¨ç›¸è¿ï¼Œåˆ™æ·»åŠ åˆ°è¿æ¥çš„æˆ¿é—´åˆ—è¡¨
                 if (room1_connected && room2_connected)
                 {
                     room1.add_connected_room(room2.get_room_id(), door);
@@ -1082,9 +1082,9 @@ void find_connected_rooms(std::vector<Room>& rooms, const std::vector<std::pair<
 
 void find_connected_rooms(std::map<int, Room>& rooms, const std::map<p64, Door>& doorMap)
 {
-    std::cout << "¿ªÊ¼Á¬Í¨ĞÔËÑË÷" << std::endl;
+    std::cout << "å¼€å§‹è¿é€šæ€§æœç´¢" << std::endl;
 
-    //¶ÔÓÚÃ¿Ò»¶Ô·¿¼ä
+    //å¯¹äºæ¯ä¸€å¯¹æˆ¿é—´
     for (auto it1 = rooms.begin(); it1 != rooms.end(); ++it1)
     {
         for (auto it2 = std::next(it1); it2 != rooms.end(); ++it2)
@@ -1092,11 +1092,11 @@ void find_connected_rooms(std::map<int, Room>& rooms, const std::map<p64, Door>&
             Room& room1 = it1->second;
             Room& room2 = it2->second;
 
-            // »ñÈ¡Ã¿¸ö·¿¼äµÄÂÖÀªÏñËØµã
+            // è·å–æ¯ä¸ªæˆ¿é—´çš„è½®å»“åƒç´ ç‚¹
             const auto& room1_outline_pixels = room1.get_outline_pixels();
             const auto& room2_outline_pixels = room2.get_outline_pixels();
 
-            //¼ì²éÃ¿¸öÃÅÊÇ·ñÁ¬½ÓÁ½¸ö·¿¼ä
+            //æ£€æŸ¥æ¯ä¸ªé—¨æ˜¯å¦è¿æ¥ä¸¤ä¸ªæˆ¿é—´
             for (const auto& door : doorMap)
             {
                 p64 door_id = door.first;
@@ -1105,7 +1105,7 @@ void find_connected_rooms(std::map<int, Room>& rooms, const std::map<p64, Door>&
                 bool room1_connected = false;
                 bool room2_connected = false;
 
-                //¼ì²éÃÅµÄÃ¿¸öÏñËØÊÇ·ñÁ¬½Óµ½·¿¼äµÄÂÖÀª
+                //æ£€æŸ¥é—¨çš„æ¯ä¸ªåƒç´ æ˜¯å¦è¿æ¥åˆ°æˆ¿é—´çš„è½®å»“
                 for (const auto& pixel : door_segment)
                 {
                     if (std::find(room1_outline_pixels.begin(), room1_outline_pixels.end(), pixel) != room1_outline_pixels.end())
@@ -1115,7 +1115,7 @@ void find_connected_rooms(std::map<int, Room>& rooms, const std::map<p64, Door>&
                         room2_connected = true;
                 }
 
-                //Èç¹ûÁ½¸ö·¿¼ä¶¼ÓëÃÅÏàÁ¬£¬ÔòÌí¼Óµ½Á¬½ÓµÄ·¿¼äÁĞ±í
+                //å¦‚æœä¸¤ä¸ªæˆ¿é—´éƒ½ä¸é—¨ç›¸è¿ï¼Œåˆ™æ·»åŠ åˆ°è¿æ¥çš„æˆ¿é—´åˆ—è¡¨
                 if (room1_connected && room2_connected)
                 {
                     room1.add_connection_info(room2.get_room_id(), door_id);
@@ -1124,7 +1124,7 @@ void find_connected_rooms(std::map<int, Room>& rooms, const std::map<p64, Door>&
             }
         }
     }
-    std::cout << "Á¬Í¨ËÑË÷Íê³É" << std::endl;
+    std::cout << "è¿é€šæœç´¢å®Œæˆ" << std::endl;
 }
 
 
@@ -1132,37 +1132,37 @@ void find_connected_rooms(std::map<int, Room>& rooms, const std::map<p64, Door>&
 /*
 std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const std::vector<std::vector<int>>& segmented_matrix, const std::vector<Room>& rooms) 
 {
-    // ´´½¨Ò»¸öĞÂµÄ·¿¼äÁĞ±í×÷Îª¸±±¾
+    // åˆ›å»ºä¸€ä¸ªæ–°çš„æˆ¿é—´åˆ—è¡¨ä½œä¸ºå‰¯æœ¬
     std::vector<Room> expanded_rooms = rooms;
 
-    // ´´½¨Ò»¸öĞÂµÄ¾ØÕó¸±±¾
+    // åˆ›å»ºä¸€ä¸ªæ–°çš„çŸ©é˜µå‰¯æœ¬
     std::vector<std::vector<int>> expanded_matrix = segmented_matrix;
 
-    // »ñÈ¡¾ØÕóµÄ´óĞ¡
+    // è·å–çŸ©é˜µçš„å¤§å°
     int height = segmented_matrix.size();
     int width = segmented_matrix[0].size();
 
-    // ÉèÖÃÒ»¸ö±êÖ¾£¬ÓÃÀ´±íÊ¾ÊÇ·ñ»¹ÓĞÏñËØ¿ÉÒÔ½øĞĞÅòÕÍ
+    // è®¾ç½®ä¸€ä¸ªæ ‡å¿—ï¼Œç”¨æ¥è¡¨ç¤ºæ˜¯å¦è¿˜æœ‰åƒç´ å¯ä»¥è¿›è¡Œè†¨èƒ€
     bool expansion_occurred = true;
     //std::stack<std::pair<int, int>> expansion;
 
-    // Ö»Òª»¹ÓĞÏñËØ¿ÉÒÔÅòÕÍ£¬¾Í¼ÌĞøÑ­»·
+    // åªè¦è¿˜æœ‰åƒç´ å¯ä»¥è†¨èƒ€ï¼Œå°±ç»§ç»­å¾ªç¯
     while (expansion_occurred) 
     {
-        // ÔÚ¿ªÊ¼ĞÂÒ»ÂÖµÄÑ­»·Ê±£¬Ê×ÏÈ½«±êÖ¾ÉèÖÃÎªFalse
+        // åœ¨å¼€å§‹æ–°ä¸€è½®çš„å¾ªç¯æ—¶ï¼Œé¦–å…ˆå°†æ ‡å¿—è®¾ç½®ä¸ºFalse
         expansion_occurred = false;
 
-        // ±éÀú¾ØÕó
+        // éå†çŸ©é˜µ
         for (int i = 0; i < height; i++) 
         {
             for (int j = 0; j < width; j++) 
             {
-                // µ±ÏñËØµã²»Îª0Ê±£¬¼´¸ÃµãÎ»ÓÚÄ³¸ö·¿¼äÄÚ
+                // å½“åƒç´ ç‚¹ä¸ä¸º0æ—¶ï¼Œå³è¯¥ç‚¹ä½äºæŸä¸ªæˆ¿é—´å†…
                 if (expanded_matrix[i][j] != 0) 
                 {
                     int room_id = expanded_matrix[i][j];
 
-                    // »ñÈ¡ÖÜÎ§8¸öµãµÄ×ø±ê
+                    // è·å–å‘¨å›´8ä¸ªç‚¹çš„åæ ‡
                     std::vector<std::pair<int, int>> neighbor_coords;
                     for (int dx = -1; dx <= 1; dx++) 
                     {
@@ -1177,20 +1177,20 @@ std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const s
                         }
                     }
 
-                    // »ñÈ¡ÖÜÎ§8¸öµãµÄÏñËØÖµ
+                    // è·å–å‘¨å›´8ä¸ªç‚¹çš„åƒç´ å€¼
                     std::vector<int> neighbor_pixels;
                     for (const auto& coord : neighbor_coords) 
                     {
                         neighbor_pixels.push_back(expanded_matrix[coord.first][coord.second]);
                     }
 
-                    // ÅĞ¶ÏÖÜÎ§8¸öµãÊÇ·ñ¶¼µÈÓÚ·¿¼äºÅ»ò0
+                    // åˆ¤æ–­å‘¨å›´8ä¸ªç‚¹æ˜¯å¦éƒ½ç­‰äºæˆ¿é—´å·æˆ–0
                     if (std::all_of(neighbor_pixels.begin(), neighbor_pixels.end(), [room_id](int pixel) { return pixel == room_id || pixel == 0; })) 
                     {
-                        // ¼ÆËãÖÜÎ§8¸öµãÖĞ0µÄÊıÁ¿
+                        // è®¡ç®—å‘¨å›´8ä¸ªç‚¹ä¸­0çš„æ•°é‡
                         int num_zeros = std::count(neighbor_pixels.begin(), neighbor_pixels.end(), 0);
 
-                        // Èç¹ûÖ»ÓĞÒ»¸ö»òÁ½¸ö0£¬Ôò½«¸ÃÏñËØµãÖÃÎª·¿¼äºÅ£¬²¢¼ÇÂ¼µ½¸±±¾ÖĞ
+                        // å¦‚æœåªæœ‰ä¸€ä¸ªæˆ–ä¸¤ä¸ª0ï¼Œåˆ™å°†è¯¥åƒç´ ç‚¹ç½®ä¸ºæˆ¿é—´å·ï¼Œå¹¶è®°å½•åˆ°å‰¯æœ¬ä¸­
                         if (num_zeros == 1 || num_zeros == 2)
                         {
                             auto zero_it = neighbor_pixels.begin();
@@ -1201,7 +1201,7 @@ std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const s
                                 expanded_matrix[zero_coord.first][zero_coord.second] = room_id;
                                 expanded_rooms[room_id - 1].add_pixel(zero_coord);
 
-                                // ÒòÎªÓĞÏñËØµã±»ÅòÕÍÁË£¬ËùÒÔ½«±êÖ¾ÉèÖÃÎªTrue
+                                // å› ä¸ºæœ‰åƒç´ ç‚¹è¢«è†¨èƒ€äº†ï¼Œæ‰€ä»¥å°†æ ‡å¿—è®¾ç½®ä¸ºTrue
                                 expansion_occurred = true;
 
                                 zero_it++;
@@ -1213,7 +1213,7 @@ std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const s
         }
     }
 
-    // ¼ÆËãÀ©Õ¹ºóµÄ·¿¼äÂÖÀª
+    // è®¡ç®—æ‰©å±•åçš„æˆ¿é—´è½®å»“
     for (Room& room : expanded_rooms) 
     {
         room.calculate_outline(expanded_matrix);
@@ -1225,13 +1225,13 @@ std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const s
 
 std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const std::vector<std::vector<int>>& segmented_matrix, const std::vector<Room>& rooms)
 {
-    // ´´½¨Ò»¸öĞÂµÄ·¿¼äÁĞ±í×÷Îª¸±±¾
+    // åˆ›å»ºä¸€ä¸ªæ–°çš„æˆ¿é—´åˆ—è¡¨ä½œä¸ºå‰¯æœ¬
     std::vector<Room> expanded_rooms = rooms;
 
-    // ´´½¨Ò»¸öĞÂµÄ¾ØÕó¸±±¾
+    // åˆ›å»ºä¸€ä¸ªæ–°çš„çŸ©é˜µå‰¯æœ¬
     std::vector<std::vector<int>> expanded_matrix = segmented_matrix;
 
-    // »ñÈ¡¾ØÕóµÄ´óĞ¡
+    // è·å–çŸ©é˜µçš„å¤§å°
     int height = segmented_matrix.size();
     int width = segmented_matrix[0].size();
 
@@ -1240,20 +1240,20 @@ std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const s
 
     while (expansion_occurred)
     {
-        //±êÖ¾Î»ÖÃ0
+        //æ ‡å¿—ä½ç½®0
         expansion_occurred = false;
 
-        // ±éÀú¾ØÕó
+        // éå†çŸ©é˜µ
         for (int i = 0; i < height; i++)
         {
             for (int j = 0; j < width; j++)
             {
-                // µ±ÏñËØµã²»Îª0Ê±£¬¼´¸ÃµãÎ»ÓÚÄ³¸ö·¿¼äÄÚ
+                // å½“åƒç´ ç‚¹ä¸ä¸º0æ—¶ï¼Œå³è¯¥ç‚¹ä½äºæŸä¸ªæˆ¿é—´å†…
                 if (expanded_matrix[i][j] != 0)
                 {
                     int room_id = expanded_matrix[i][j];
 
-                    // »ñÈ¡ÖÜÎ§8¸öµãµÄ×ø±ê
+                    // è·å–å‘¨å›´8ä¸ªç‚¹çš„åæ ‡
                     std::vector<std::pair<int, int>> neighbor_coords;
                     for (int dx = -1; dx <= 1; dx++)
                     {
@@ -1268,20 +1268,20 @@ std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const s
                         }
                     }
 
-                    // »ñÈ¡ÖÜÎ§8¸öµãµÄÏñËØÖµ
+                    // è·å–å‘¨å›´8ä¸ªç‚¹çš„åƒç´ å€¼
                     std::vector<int> neighbor_pixels;
                     for (const auto& coord : neighbor_coords)
                     {
                         neighbor_pixels.push_back(expanded_matrix[coord.first][coord.second]);
                     }
 
-                    // ÅĞ¶ÏÖÜÎ§8¸öµãÊÇ·ñ¶¼µÈÓÚ·¿¼äºÅ»ò0
+                    // åˆ¤æ–­å‘¨å›´8ä¸ªç‚¹æ˜¯å¦éƒ½ç­‰äºæˆ¿é—´å·æˆ–0
                     if (std::all_of(neighbor_pixels.begin(), neighbor_pixels.end(), [room_id](int pixel) { return pixel == room_id || pixel == 0; }))
                     {
-                        // ¼ÆËãÖÜÎ§8¸öµãÖĞ0µÄÊıÁ¿
+                        // è®¡ç®—å‘¨å›´8ä¸ªç‚¹ä¸­0çš„æ•°é‡
                         int num_zeros = std::count(neighbor_pixels.begin(), neighbor_pixels.end(), 0);
 
-                        // Èç¹ûÖ»ÓĞÒ»¸ö»òÁ½¸ö0£¬Ôò½«¸ÃÏñËØµãÖÃÎª·¿¼äºÅ£¬²¢¼ÇÂ¼µ½¸±±¾ÖĞ
+                        // å¦‚æœåªæœ‰ä¸€ä¸ªæˆ–ä¸¤ä¸ª0ï¼Œåˆ™å°†è¯¥åƒç´ ç‚¹ç½®ä¸ºæˆ¿é—´å·ï¼Œå¹¶è®°å½•åˆ°å‰¯æœ¬ä¸­
                         if (num_zeros == 1 || num_zeros == 2)
                         {
                             auto zero_it = neighbor_pixels.begin();
@@ -1292,7 +1292,7 @@ std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const s
                                 //expanded_matrix[zero_coord.first][zero_coord.second] = room_id;
                                 //expanded_rooms[room_id - 1].add_pixel(zero_coord);
 
-                                //¶ÔÓÚ·ûºÏÌõ¼şµÄ0µã£¬µ±ËüµÄ°ËÁìÓòÄÚ¶¼Ã»ÓĞ±ğµÄ·¿¼äÏñËØÊ±£¬²ÅÌí¼Ó½ø´ıÅòÕÍÕ»
+                                //å¯¹äºç¬¦åˆæ¡ä»¶çš„0ç‚¹ï¼Œå½“å®ƒçš„å…«é¢†åŸŸå†…éƒ½æ²¡æœ‰åˆ«çš„æˆ¿é—´åƒç´ æ—¶ï¼Œæ‰æ·»åŠ è¿›å¾…è†¨èƒ€æ ˆ
                                 std::vector<int> judgment = {};
                                 for (int xx = -1; xx <= 1; xx++)
                                 {
@@ -1311,7 +1311,7 @@ std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const s
                                 {
                                     expansion.push(std::make_pair(zero_coord, room_id));
 
-                                    // ÒòÎªÓĞÏñËØµã±»ÅòÕÍÁË£¬ËùÒÔ½«±êÖ¾ÉèÖÃÎªTrue
+                                    // å› ä¸ºæœ‰åƒç´ ç‚¹è¢«è†¨èƒ€äº†ï¼Œæ‰€ä»¥å°†æ ‡å¿—è®¾ç½®ä¸ºTrue
                                     expansion_occurred = true;
 
                                     //zero_it++;
@@ -1332,7 +1332,7 @@ std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const s
             std::pair<int, int> p = pending.first;
             int id = pending.second;
 
-            //¶ş´ÎÅĞ¶¨´ıÅòÕÍµã£¬·ÀÖ¹²»Í¬·¿¼äµÄÁ½¸öµãÍ¬Ê±ÅòÕÍÈÃ·¿¼äÏàÁ¬Í¨
+            //äºŒæ¬¡åˆ¤å®šå¾…è†¨èƒ€ç‚¹ï¼Œé˜²æ­¢ä¸åŒæˆ¿é—´çš„ä¸¤ä¸ªç‚¹åŒæ—¶è†¨èƒ€è®©æˆ¿é—´ç›¸è¿é€š
             std::vector<int> judgment2 = {};
             for (int d = -1; d <= 1; d++)
             {
@@ -1366,7 +1366,7 @@ std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const s
         }
     }
 
-    // ¼ÆËãÀ©Õ¹ºóµÄ·¿¼äÂÖÀª
+    // è®¡ç®—æ‰©å±•åçš„æˆ¿é—´è½®å»“
     for (Room& room : expanded_rooms)
     {
         room.calculate_outline(expanded_matrix);
@@ -1378,10 +1378,12 @@ std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const s
 
 std::pair<Matrix<int>, std::map<int, Room>> expand_rooms(const Matrix<int>& segmented_matrix, const std::map<int, Room>& rooms)
 {
-    // ´´½¨Ò»¸öĞÂµÄ·¿¼ä×Öµä×÷Îª¸±±¾
+    std::cout << "å¼€å§‹å‡¹è§’è†¨èƒ€" << std::endl;
+
+    // åˆ›å»ºä¸€ä¸ªæ–°çš„æˆ¿é—´å­—å…¸ä½œä¸ºå‰¯æœ¬
     std::map<int, Room> expanded_rooms = rooms;
 
-    //´´½¨Ò»¸öĞÂµÄ¾ØÕó¸±±¾,´ËÊ±µÄsegmented_matrixÒÑ¾­È¾É«
+    //åˆ›å»ºä¸€ä¸ªæ–°çš„çŸ©é˜µå‰¯æœ¬,æ­¤æ—¶çš„segmented_matrixå·²ç»æŸ“è‰²
     Matrix<int> expanded_matrix = segmented_matrix;
 
     int h = segmented_matrix.size();
@@ -1398,12 +1400,12 @@ std::pair<Matrix<int>, std::map<int, Room>> expand_rooms(const Matrix<int>& segm
         {
             for (int j = 0; j < w; j++)
             {
-                // µ±ÏñËØµã²»Îª0Ê±£¬¼´¸ÃµãÎ»ÓÚÄ³¸ö·¿¼äÄÚ
+                // å½“åƒç´ ç‚¹ä¸ä¸º0æ—¶ï¼Œå³è¯¥ç‚¹ä½äºæŸä¸ªæˆ¿é—´å†…
                 if (expanded_matrix[i][j] != 0)
                 {
                     int room_id = expanded_matrix[i][j];
 
-                    // »ñÈ¡ÖÜÎ§8¸öµãµÄ×ø±ê
+                    // è·å–å‘¨å›´8ä¸ªç‚¹çš„åæ ‡
                     std::vector<p64> neighbor_coords;
                     for (int dx = -1; dx <= 1; dx++)
                     {
@@ -1418,7 +1420,7 @@ std::pair<Matrix<int>, std::map<int, Room>> expand_rooms(const Matrix<int>& segm
                         }
                     }
 
-                    // »ñÈ¡ÖÜÎ§8¸öµãµÄÏñËØÖµ
+                    // è·å–å‘¨å›´8ä¸ªç‚¹çš„åƒç´ å€¼
                     std::vector<int> neighbor_pixels;
                     for (const auto& coord : neighbor_coords)
                     {
@@ -1426,13 +1428,13 @@ std::pair<Matrix<int>, std::map<int, Room>> expand_rooms(const Matrix<int>& segm
                     }
 
 
-                    // ÅĞ¶ÏÖÜÎ§8¸öµãÊÇ·ñ¶¼µÈÓÚ·¿¼äºÅ»ò0
+                    // åˆ¤æ–­å‘¨å›´8ä¸ªç‚¹æ˜¯å¦éƒ½ç­‰äºæˆ¿é—´å·æˆ–0
                     if (std::all_of(neighbor_pixels.begin(), neighbor_pixels.end(), [room_id](int pixel) { return pixel == room_id || pixel == 0; }))
                     {
-                        // ¼ÆËãÖÜÎ§8¸öµãÖĞ0µÄÊıÁ¿
+                        // è®¡ç®—å‘¨å›´8ä¸ªç‚¹ä¸­0çš„æ•°é‡
                         int num_zeros = std::count(neighbor_pixels.begin(), neighbor_pixels.end(), 0);
 
-                        // Èç¹ûÖ»ÓĞÒ»¸ö»òÁ½¸ö0£¬Ôò½«¸ÃÏñËØµãÖÃÎª·¿¼äºÅ£¬²¢¼ÇÂ¼µ½¸±±¾ÖĞ
+                        // å¦‚æœåªæœ‰ä¸€ä¸ªæˆ–ä¸¤ä¸ª0ï¼Œåˆ™å°†è¯¥åƒç´ ç‚¹ç½®ä¸ºæˆ¿é—´å·ï¼Œå¹¶è®°å½•åˆ°å‰¯æœ¬ä¸­
                         if (num_zeros == 1 || num_zeros == 2)
                         {
                             auto zero_it = neighbor_pixels.begin();
@@ -1443,7 +1445,7 @@ std::pair<Matrix<int>, std::map<int, Room>> expand_rooms(const Matrix<int>& segm
                                 //expanded_matrix[zero_coord.first][zero_coord.second] = room_id;
                                 //expanded_rooms[room_id - 1].add_pixel(zero_coord);
 
-                                //¶ÔÓÚ·ûºÏÌõ¼şµÄ0µã£¬µ±ËüµÄ°ËÁìÓòÄÚ¶¼Ã»ÓĞ±ğµÄ·¿¼äÏñËØÊ±£¬²ÅÌí¼Ó½ø´ıÅòÕÍÕ»
+                                //å¯¹äºç¬¦åˆæ¡ä»¶çš„0ç‚¹ï¼Œå½“å®ƒçš„å…«é¢†åŸŸå†…éƒ½æ²¡æœ‰åˆ«çš„æˆ¿é—´åƒç´ æ—¶ï¼Œæ‰æ·»åŠ è¿›å¾…è†¨èƒ€æ ˆ
                                 std::vector<int> judgment = {};
                                 for (int xx = -1; xx <= 1; xx++)
                                 {
@@ -1462,7 +1464,7 @@ std::pair<Matrix<int>, std::map<int, Room>> expand_rooms(const Matrix<int>& segm
                                 {
                                     expansion.push(std::make_pair(zero_coord, room_id));
 
-                                    // ÒòÎªÓĞÏñËØµã±»ÅòÕÍÁË£¬ËùÒÔ½«±êÖ¾ÉèÖÃÎªTrue
+                                    // å› ä¸ºæœ‰åƒç´ ç‚¹è¢«è†¨èƒ€äº†ï¼Œæ‰€ä»¥å°†æ ‡å¿—è®¾ç½®ä¸ºTrue
                                     expansion_occurred = true;
 
                                     //zero_it++;
@@ -1484,7 +1486,7 @@ std::pair<Matrix<int>, std::map<int, Room>> expand_rooms(const Matrix<int>& segm
             p64 p = pending.first;
             int id = pending.second;
 
-            //¶ş´ÎÅĞ¶¨´ıÅòÕÍµã£¬·ÀÖ¹²»Í¬·¿¼äµÄÁ½¸öµãÍ¬Ê±ÅòÕÍÈÃ·¿¼äÏàÁ¬Í¨
+            //äºŒæ¬¡åˆ¤å®šå¾…è†¨èƒ€ç‚¹ï¼Œé˜²æ­¢ä¸åŒæˆ¿é—´çš„ä¸¤ä¸ªç‚¹åŒæ—¶è†¨èƒ€è®©æˆ¿é—´ç›¸è¿é€š
             std::vector<int> judgment2 = {};
             for (int d = -1; d <= 1; d++)
             {
@@ -1508,11 +1510,13 @@ std::pair<Matrix<int>, std::map<int, Room>> expand_rooms(const Matrix<int>& segm
         }
     }
 
-    // ¼ÆËãÀ©Õ¹ºóµÄ·¿¼äÂÖÀª
+    // è®¡ç®—æ‰©å±•åçš„æˆ¿é—´è½®å»“
     for (auto& room : expanded_rooms)
     {
         room.second.calculate_outline(expanded_matrix);
     }
+
+    std::cout << "å‡¹è§’è†¨èƒ€å®Œæˆ" << std::endl;
 
     return std::make_pair(expanded_matrix, expanded_rooms);
 }
@@ -1528,10 +1532,10 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix,
     int h = segmented_matrix.size();
     int w = segmented_matrix[0].size();
 
-    // ´´½¨Ò»¸öRGB»­²¼£¬°×É«±³¾°
+    // åˆ›å»ºä¸€ä¸ªRGBç”»å¸ƒï¼Œç™½è‰²èƒŒæ™¯
     cv::Mat final_map(h, w, CV_8UC3, cv::Scalar(255, 255, 255));
 
-    // Ëæ»úÉú³ÉRGBÑÕÉ«
+    // éšæœºç”ŸæˆRGBé¢œè‰²
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> dis(0, 255);
@@ -1541,7 +1545,7 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix,
         colors.push_back(cv::Vec3b(dis(gen), dis(gen), dis(gen)));
     }
     /*
-    // È¾É«Ã¿¸ö·¿¼ä
+    // æŸ“è‰²æ¯ä¸ªæˆ¿é—´
     for (int x = 0; x < h; x++) 
     {
         for (int y = 0; y < w; y++) 
@@ -1553,13 +1557,13 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix,
         }
     }
 
-    // Êä³öÖĞ¼äÍ¼Ïñ
+    // è¾“å‡ºä¸­é—´å›¾åƒ
     cv::imshow("Colored Rooms", final_map);
     cv::imwrite("C:\\Users\\13012\\Desktop\\result\\Colored Rooms.jpg", final_map);
     //cv::waitKey(0);
     */
 
-    // »æÖÆÀ©Õ¹ºóµÄ·¿¼äÂÖÀª
+    // ç»˜åˆ¶æ‰©å±•åçš„æˆ¿é—´è½®å»“
     std::vector<std::vector<int>> floor_plan_matrix(h, std::vector<int>(w, 0));
     std::vector<std::vector<int>> floor_plan_optimization_matrix(h, std::vector<int>(w, 0));
     std::vector<std::vector<int>> floor_plan_optimization_matrix1(h, std::vector<int>(w, 0));
@@ -1568,7 +1572,7 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix,
     {
         for (auto& pixel : room.get_outline_pixels()) 
         {
-            //final_map.at<cv::Vec3b>(pixel.first, pixel.second) = cv::Vec3b(0, 0, 0);  // Ê¹ÓÃºÚÉ«»æÖÆÂÖÀªÏß
+            //final_map.at<cv::Vec3b>(pixel.first, pixel.second) = cv::Vec3b(0, 0, 0);  // ä½¿ç”¨é»‘è‰²ç»˜åˆ¶è½®å»“çº¿
             int u = pixel.first;
             int v = pixel.second;
             floor_plan_matrix[u][v] = 1;
@@ -1627,7 +1631,7 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix,
 
     //floor_plan_optimization_matrix1 = floor_plan_optimization_matrix;
 
-    //completion_link(floor_plan_optimization_matrix1);//ËÄÁ¬Í¨Á¬½Ó´¦²¹È«
+    //completion_link(floor_plan_optimization_matrix1);//å››è¿é€šè¿æ¥å¤„è¡¥å…¨
 
     
 
@@ -1659,7 +1663,7 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix,
         }
     }
 
-    // Êä³öÖĞ¼äÍ¼Ïñ
+    // è¾“å‡ºä¸­é—´å›¾åƒ
     cv::imshow("Colored Rooms", final_map);
     cv::imwrite("C:\\Users\\13012\\Desktop\\result\\Colored Rooms.jpg", final_map);
 
@@ -1690,14 +1694,14 @@ void draw_map(std::vector<std::vector<int>>& segmented_matrix,
     }
 
 
-    // »æÖÆÃÅµÄÏß¶Î
+    // ç»˜åˆ¶é—¨çš„çº¿æ®µ
     for (auto& door : door_pixels) 
     {
-        cv::line(final_map, cv::Point(door.first.second, door.first.first), cv::Point(door.second.second, door.second.first), cv::Scalar(0, 0, 255), 2);  // ºìÉ«
+        cv::line(final_map, cv::Point(door.first.second, door.first.first), cv::Point(door.second.second, door.second.first), cv::Scalar(0, 0, 255), 2);  // çº¢è‰²
     }
     
 
-    // ÏÔÊ¾×îÖÕµØÍ¼
+    // æ˜¾ç¤ºæœ€ç»ˆåœ°å›¾
     cv::imshow("Final Map", final_map);
     cv::imwrite("C:\\Users\\13012\\Desktop\\result\\final_map.jpg", final_map);
 
@@ -1854,16 +1858,16 @@ std::vector<Line> extractIntersections(std::vector<std::vector<int>>& img)
     // offsets for 4-connectivity
     std::vector<std::pair<int, int>> offsets = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };
 
-    // ±éÀú¾ØÕó
+    // éå†çŸ©é˜µ
     for (int i = 0; i < img.size(); ++i) 
     {
         for (int j = 0; j < img[i].size(); ++j) 
         {
-            // ¼ì²âµ½Ç°¾°
+            // æ£€æµ‹åˆ°å‰æ™¯
             if (img[i][j] != 0) 
             {
                 int connectedPoints = 0;
-                // ¼ÆËãËÄÁ¬Í¨µãÖĞÇ°¾°µÄÊıÁ¿
+                // è®¡ç®—å››è¿é€šç‚¹ä¸­å‰æ™¯çš„æ•°é‡
                 for (const auto& offset : offsets) 
                 {
                     int ni = i + offset.first, nj = j + offset.second;
@@ -1872,12 +1876,12 @@ std::vector<Line> extractIntersections(std::vector<std::vector<int>>& img)
                         connectedPoints++;
                     }
                 }
-                // Èç¹ûËüÊÇÁ¬½Óµã
+                // å¦‚æœå®ƒæ˜¯è¿æ¥ç‚¹
                 if (connectedPoints > 2) 
                 {
                     std::pair<int, int> intersectionPoint = { i, j };
                     lines.push_back(Line{ static_cast<int>(lines.size()), Line::INTERSECTION, {intersectionPoint}, intersectionPoint, intersectionPoint });
-                    img[i][j] = 0;  // ½«Õâ¸öµãÖÃÎª±³¾°
+                    img[i][j] = 0;  // å°†è¿™ä¸ªç‚¹ç½®ä¸ºèƒŒæ™¯
                 }
             }
         }
@@ -1888,10 +1892,10 @@ std::vector<Line> extractIntersections(std::vector<std::vector<int>>& img)
 
 void extractOrthogonalLines(std::vector<std::vector<int>>& img, std::vector<Line>& lines)
 {
-    int threshold = 10;//ÉèÖÃÏß¶Î³¤¶ÈãĞÖµ
+    int threshold = 10;//è®¾ç½®çº¿æ®µé•¿åº¦é˜ˆå€¼
 
 
-    //µÚÒ»²½£¬ÌáÈ¡Ë®Æ½Ïß
+    //ç¬¬ä¸€æ­¥ï¼Œæå–æ°´å¹³çº¿
     for (int i = 0; i < img.size(); ++i) 
     {
         for (int j = 0; j < img[i].size(); ) 
@@ -1905,7 +1909,7 @@ void extractOrthogonalLines(std::vector<std::vector<int>>& img, std::vector<Line
                 }
                 int end = j - 1;
 
-                // Ö»¿¼ÂÇ³¤ÓÚãĞÖµµÄÏß¶Î
+                // åªè€ƒè™‘é•¿äºé˜ˆå€¼çš„çº¿æ®µ
                 if (end - start + 1 > threshold) 
                 {
                     Line line;
@@ -1916,7 +1920,7 @@ void extractOrthogonalLines(std::vector<std::vector<int>>& img, std::vector<Line
                     for (int k = start + 1; k < end; ++k)
                     {
                         line.points.push_back({ i, k });
-                        img[i][k] = 0;  // ÖØÖÃÎª±³¾°
+                        img[i][k] = 0;  // é‡ç½®ä¸ºèƒŒæ™¯
                     }
                     lines.push_back(line);
                 }
@@ -1928,7 +1932,7 @@ void extractOrthogonalLines(std::vector<std::vector<int>>& img, std::vector<Line
         }
     }
 
-    //µÚ¶ş²½£¬ÌáÈ¡´¹Ö±Ïß
+    //ç¬¬äºŒæ­¥ï¼Œæå–å‚ç›´çº¿
     for (int j = 0; j < img[0].size(); ++j) 
     {
         for (int i = 0; i < img.size(); ) 
@@ -1942,7 +1946,7 @@ void extractOrthogonalLines(std::vector<std::vector<int>>& img, std::vector<Line
                 }
                 int end = i - 1;
 
-                // Ö»¿¼ÂÇ³¤ÓÚãĞÖµµÄÏß¶Î
+                // åªè€ƒè™‘é•¿äºé˜ˆå€¼çš„çº¿æ®µ
                 if (end - start + 1 > threshold) 
                 {
                     Line line;
@@ -1953,7 +1957,7 @@ void extractOrthogonalLines(std::vector<std::vector<int>>& img, std::vector<Line
                     for (int k = start + 1; k < end; ++k)
                     {
                         line.points.push_back({ k, j });
-                        img[k][j] = 0;  // ÖØÖÃÎª±³¾°
+                        img[k][j] = 0;  // é‡ç½®ä¸ºèƒŒæ™¯
                     }
                     lines.push_back(line);
                 }
@@ -1970,16 +1974,16 @@ void findNonLinearLines(std::vector<std::vector<int>>& img, std::vector<Line>& l
 {
     int height = img.size();
     int width = img[0].size();
-    int lineId = lines.size();  //È·¶¨lineµÄid
+    int lineId = lines.size();  //ç¡®å®šlineçš„id
 
-    std::vector<std::pair<int, int>> offsets = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };  //ËÄÁ¬Í¨Æ«ÒÆÁ¿
+    std::vector<std::pair<int, int>> offsets = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };  //å››è¿é€šåç§»é‡
 
     for (int i = 0; i < height; i++)
     {
         for (int j = 0; j < width; j++)
         {
             if (img[i][j] != 0) 
-            {  // ÕÒµ½Ò»ÌõÏßµÄÒ»¸öµã
+            {  // æ‰¾åˆ°ä¸€æ¡çº¿çš„ä¸€ä¸ªç‚¹
                 Line line;
                 line.id = lineId++;
                 line.direction = Line::NONLINEAR;
@@ -2002,7 +2006,7 @@ void findNonLinearLines(std::vector<std::vector<int>>& img, std::vector<Line>& l
                         if (next.first >= 0 && next.first < height && next.second >= 0 && next.second < width && img[next.first][next.second] != 0)
                         {
                             dfsStack.push(next);
-                            img[next.first][next.second] = 0;  //ÌáÈ¡¹ıµÄÏñËØÖÃÎª±³¾°
+                            img[next.first][next.second] = 0;  //æå–è¿‡çš„åƒç´ ç½®ä¸ºèƒŒæ™¯
                         }
                     }
                 }
@@ -2012,20 +2016,20 @@ void findNonLinearLines(std::vector<std::vector<int>>& img, std::vector<Line>& l
                     int connected = 0;
                     for (auto& p : line.points)
                     {
-                        if (std::abs(p.first - point.first) + std::abs(p.second - point.second) == 1) //Âü¹ş¶Ù¾àÀëÎª1
+                        if (std::abs(p.first - point.first) + std::abs(p.second - point.second) == 1) //æ›¼å“ˆé¡¿è·ç¦»ä¸º1
                         {
                             connected++;
                         }
                     }
 
-                    // ¸ù¾İconnectedµÄÖµ£¬È·¶¨Ïß¶ÎµÄÆğµãºÍÖÕµã
+                    // æ ¹æ®connectedçš„å€¼ï¼Œç¡®å®šçº¿æ®µçš„èµ·ç‚¹å’Œç»ˆç‚¹
                     switch (connected)
                     {
-                    case 0:  //Èç¹ûËüÊÇÒ»¸ö¹ÂÁ¢µÄÏñËØ
+                    case 0:  //å¦‚æœå®ƒæ˜¯ä¸€ä¸ªå­¤ç«‹çš„åƒç´ 
                         line.startPoint = point;
                         line.endPoint = point;
                         break;
-                    case 1:  //Èç¹ûËüÊÇÒ»¸ö¶Ëµã
+                    case 1:  //å¦‚æœå®ƒæ˜¯ä¸€ä¸ªç«¯ç‚¹
                         if (line.startPoint.first == -1 && line.startPoint.second == -1)
                         {
                             line.startPoint = point;
@@ -2040,9 +2044,9 @@ void findNonLinearLines(std::vector<std::vector<int>>& img, std::vector<Line>& l
                             throw std::runtime_error("Invalid line found.");
                         }
                         break;
-                    case 2://Èç¹û¸ÃµãÔÚÏßµÄÖĞ¼ä£¬¾Í¼ÌĞø
+                    case 2://å¦‚æœè¯¥ç‚¹åœ¨çº¿çš„ä¸­é—´ï¼Œå°±ç»§ç»­
                         break;
-                    default:  //Èç¹û¸ÃµãÓĞ¶àÓÚÁ½¸öÁÚ¾Ó£¬¾Í±¨´í
+                    default:  //å¦‚æœè¯¥ç‚¹æœ‰å¤šäºä¸¤ä¸ªé‚»å±…ï¼Œå°±æŠ¥é”™
                         std::cerr << "Found a point with " << connected << " neighbors in a non-linear." << std::endl;
                         throw std::runtime_error("Invalid line found.");
                     }
@@ -2076,13 +2080,13 @@ std::vector<std::pair<int, int>> getLeastTurnPath(const std::pair<int, int>& sta
     int max_y = std::max(start.second, end.second);
     int min_y = std::min(start.second, end.second);
 
-    // ËÄÁ¬Í¨Æ«ÒÆÁ¿
+    // å››è¿é€šåç§»é‡
     std::vector<std::pair<int, int>> offsets = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };
 
     std::priority_queue<Node> pq;
-    pq.emplace(start, std::vector<std::pair<int, int>>{start}, 0); // ½«ÆğÊ¼½ÚµãÌí¼Óµ½¶ÓÁĞÖĞ
+    pq.emplace(start, std::vector<std::pair<int, int>>{start}, 0); // å°†èµ·å§‹èŠ‚ç‚¹æ·»åŠ åˆ°é˜Ÿåˆ—ä¸­
 
-    std::vector<std::vector<bool>> visited(mask.size(), std::vector<bool>(mask[0].size(), false)); // ¼ÇÂ¼ÒÑ¾­·ÃÎÊ¹ıµÄµã
+    std::vector<std::vector<bool>> visited(mask.size(), std::vector<bool>(mask[0].size(), false)); // è®°å½•å·²ç»è®¿é—®è¿‡çš„ç‚¹
     visited[start.first][start.second] = true;
 
     while (!pq.empty()) 
@@ -2092,43 +2096,45 @@ std::vector<std::pair<int, int>> getLeastTurnPath(const std::pair<int, int>& sta
 
         std::pair<int, int> curPos = curNode.pos;
         if (curPos == end) 
-        { // ÎÒÃÇÒÑ¾­ÕÒµ½ÁËÒ»ÌõÍ¨ÍùÖÕµãµÄµÀÂ·
-            return curNode.path; // ·µ»ØÕâ¸öÂ·¾¶
+        { // æˆ‘ä»¬å·²ç»æ‰¾åˆ°äº†ä¸€æ¡é€šå¾€ç»ˆç‚¹çš„é“è·¯
+            return curNode.path; // è¿”å›è¿™ä¸ªè·¯å¾„
         }
 
         for (const auto& offset : offsets) 
         {
             std::pair<int, int> newPos = { curPos.first + offset.first, curPos.second + offset.second };
 
-            // ±ß½ç¼ì²éºÍÕÏ°­Îï¼ì²é
+            // è¾¹ç•Œæ£€æŸ¥å’Œéšœç¢ç‰©æ£€æŸ¥
             //if (newPos.first < 0 || newPos.first >= mask.size() || newPos.second < 0 || newPos.second >= mask[0].size() || mask[newPos.first][newPos.second] == 0 || visited[newPos.first][newPos.second])
             if (newPos.first < min_x || newPos.first > max_x || newPos.second < min_y || newPos.second > max_y || mask[newPos.first][newPos.second] == 0 || visited[newPos.first][newPos.second])
                 continue;
 
-            // ¼ÆËã×ªÕÛÊı
+            // è®¡ç®—è½¬æŠ˜æ•°
             int newTurns = curNode.turns;
             if (curNode.path.size() > 1 && getDirection(curNode.path[curNode.path.size() - 2], curPos) != getDirection(curPos, newPos))
             {
                 newTurns++;
             }
 
-            // ´´½¨Ò»¸öĞÂµÄ½Úµã²¢½«ÆäÌí¼Óµ½¶ÓÁĞÖĞ
+            // åˆ›å»ºä¸€ä¸ªæ–°çš„èŠ‚ç‚¹å¹¶å°†å…¶æ·»åŠ åˆ°é˜Ÿåˆ—ä¸­
             std::vector<std::pair<int, int>> newPath = curNode.path;
             newPath.push_back(newPos);
 
-            // ±ê¼ÇĞÂ½ÚµãÎªÒÑ·ÃÎÊ
+            // æ ‡è®°æ–°èŠ‚ç‚¹ä¸ºå·²è®¿é—®
             visited[newPos.first][newPos.second] = true;
 
             pq.emplace(newPos, newPath, newTurns);
         }
     }
 
-    // Èç¹ûÃ»ÓĞ´ÓÆğµãµ½ÖÕµãµÄÂ·¾¶
+    // å¦‚æœæ²¡æœ‰ä»èµ·ç‚¹åˆ°ç»ˆç‚¹çš„è·¯å¾„
     return std::vector<std::pair<int, int>>{};
 }
 
 std::vector<std::vector<int>> floor_plan_outline_Orthogonalization(std::vector<std::vector<int>>& img, const std::vector<std::vector<int>>& segmented_matrix)
 {
+    std::cout << "å¼€å§‹æˆ·å‹å›¾æ­£äº¤åŒ–" << std::endl;
+
     std::vector<std::vector<int>> mask(segmented_matrix.size(), std::vector<int>(segmented_matrix[0].size(), 1));
     std::vector<std::vector<int>> output(img.size(), std::vector<int>(img[0].size(), 0));
 
@@ -2140,33 +2146,33 @@ std::vector<std::vector<int>> floor_plan_outline_Orthogonalization(std::vector<s
         }
     }
 
-    //µÚ1²½£ºÌáÈ¡½»²æµã
+    //ç¬¬1æ­¥ï¼šæå–äº¤å‰ç‚¹
     std::vector<Line> lines = extractIntersections(img);
 
     //printBinaryImage(img, 2, "img1");
     //cv::waitKey(0);
 
-    // µÚ2²½£ºÌáÈ¡Õı½»Ïß
+    // ç¬¬2æ­¥ï¼šæå–æ­£äº¤çº¿
     extractOrthogonalLines(img, lines);
 
     //printBinaryImage(img, 2, "img2");
     //cv::waitKey(0);
 
-    // µÚ3²½£ºÑ°ÕÒ·ÇÏßĞÔÏßÌõ
+    // ç¬¬3æ­¥ï¼šå¯»æ‰¾éçº¿æ€§çº¿æ¡
     findNonLinearLines(img, lines);
 
     printBinaryImage(img, 2, "img3");
     //cv::waitKey(0);
 
-    //µÚ4²½£ºµ÷Õû·ÇÏßĞÔÏßÌõ£¬Ê¹Æä¾ßÓĞ×îĞ¡µÄ×ªÕÛµã
-    //Èç¹û¿ÉÄÜµÄ»°£¬ÓÃ×îĞ¡×ªÍäµÄÂ·¾¶À´´úÌæ·ÇÏßĞÔµÄÏßÂ·
+    //ç¬¬4æ­¥ï¼šè°ƒæ•´éçº¿æ€§çº¿æ¡ï¼Œä½¿å…¶å…·æœ‰æœ€å°çš„è½¬æŠ˜ç‚¹
+    //å¦‚æœå¯èƒ½çš„è¯ï¼Œç”¨æœ€å°è½¬å¼¯çš„è·¯å¾„æ¥ä»£æ›¿éçº¿æ€§çš„çº¿è·¯
     
     
     for (auto& line : lines)
     {
         if (line.direction == Line::NONLINEAR)
         {
-            //¼ì²é¸ÃĞĞµÄËùÓĞÏñËØÊÇ·ñ¶¼ÔÚÑÚÄ¤ÖĞ
+            //æ£€æŸ¥è¯¥è¡Œçš„æ‰€æœ‰åƒç´ æ˜¯å¦éƒ½åœ¨æ©è†œä¸­
             bool allInMask = std::all_of(line.points.begin(), line.points.end(), [&mask](const std::pair<int, int>& p) 
                 {
                     return mask[p.first][p.second] == 1; 
@@ -2175,13 +2181,13 @@ std::vector<std::vector<int>> floor_plan_outline_Orthogonalization(std::vector<s
             /*
             if (!allInMask)
             {
-                std::cerr << "ÓĞ·ÇÏßĞÔÏßÌõÔÚ·¿¼äÏñËØÉÏ" << std::endl;
+                std::cerr << "æœ‰éçº¿æ€§çº¿æ¡åœ¨æˆ¿é—´åƒç´ ä¸Š" << std::endl;
                 throw std::runtime_error("Invalid line found.");
             }
             //continue;
             */
 
-            //Èç¹ûËùÓĞµÄÏñËØ¶¼ÔÚmaskÇ°¾°ÖĞ£¬Ôò³¢ÊÔÌæ»»ÏßÌõ
+            //å¦‚æœæ‰€æœ‰çš„åƒç´ éƒ½åœ¨maskå‰æ™¯ä¸­ï¼Œåˆ™å°è¯•æ›¿æ¢çº¿æ¡
             if (allInMask)
             {
                 auto newPath = getLeastTurnPath(line.startPoint, line.endPoint, mask);
@@ -2191,7 +2197,7 @@ std::vector<std::vector<int>> floor_plan_outline_Orthogonalization(std::vector<s
     }
     
 
-    // µÚÎå²½£º½«ËùÓĞÏßÌõÊä³öµ½Ò»¸öĞÂµÄÍ¼ÏñÉÏ
+    // ç¬¬äº”æ­¥ï¼šå°†æ‰€æœ‰çº¿æ¡è¾“å‡ºåˆ°ä¸€ä¸ªæ–°çš„å›¾åƒä¸Š
     for (const auto& line : lines)
     {
         for (const auto& p : line.points)
@@ -2201,6 +2207,7 @@ std::vector<std::vector<int>> floor_plan_outline_Orthogonalization(std::vector<s
         }
     }
 
+    std::cout << "æˆ·å‹å›¾æ­£äº¤åŒ–å®Œæˆ" << std::endl;
 
     return output;
 }
@@ -2264,7 +2271,7 @@ void completion_link(std::vector<std::vector<int>>& floor_plan_matrix)
                     }
                     else
                     {
-                        std::cerr << "case=1Ê±ÕÒ²»µ½¹ÂÁ¢½Çµã" << std::endl;
+                        std::cerr << "case=1æ—¶æ‰¾ä¸åˆ°å­¤ç«‹è§’ç‚¹" << std::endl;
                         throw std::runtime_error("Invalid line found.");
                     }
                     break;
@@ -2275,7 +2282,7 @@ void completion_link(std::vector<std::vector<int>>& floor_plan_matrix)
                     else if (p[8] == 1 && p[2] == 1 && p[7] == 0 && p[1] == 0 && p[3] == 0) floor_plan_matrix[i - 1][j] = 1;
                     else
                     {
-                        std::cerr << "case=2Ê±ÕÒ²»µ½·ûºÏÌõ¼şµÄ½Çµã¶Ô" << std::endl;
+                        std::cerr << "case=2æ—¶æ‰¾ä¸åˆ°ç¬¦åˆæ¡ä»¶çš„è§’ç‚¹å¯¹" << std::endl;
                         throw std::runtime_error("Invalid line found.");
                     }
                     break;
@@ -2380,15 +2387,15 @@ std::vector<std::vector<int>> tidy_room_erode(std::vector<std::vector<int>>& seg
                                               std::vector<std::vector<int>>& floor_plan,
                                               const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& doors_pixels)
 {
-    int erode_times = 3;//¸¯Ê´¼¸´Î
-    double threshold = 10;//ÃÅ¿ò±£»¤µÄ¿í¶È
+    int erode_times = 3;//è…èš€å‡ æ¬¡
+    double threshold = 10;//é—¨æ¡†ä¿æŠ¤çš„å®½åº¦
 
     int h = floor_plan.size();
     int w = floor_plan[0].size();
 
     std::vector<std::vector<int>> tidy_room(h, std::vector<int>(w, 0));
 
-    //»§ĞÍÍ¼ÂÖÀªÇ°¾°±³¾°»¥»»
+    //æˆ·å‹å›¾è½®å»“å‰æ™¯èƒŒæ™¯äº’æ¢
     for (int x = 0; x < h; x++)
     {
         for (int y = 0; y < w; y++)
@@ -2397,13 +2404,13 @@ std::vector<std::vector<int>> tidy_room_erode(std::vector<std::vector<int>>& seg
         }
     }
 
-    std::vector<std::pair<int, int>> directions = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };//ËÄÁ¬Í¨
+    std::vector<std::pair<int, int>> directions = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };//å››è¿é€š
 
     std::stack<std::pair<int, int>> background_stack;
     background_stack.push(std::make_pair(0, 0));
     tidy_room[0][0] = 0;
 
-    //½«×îÍâÈ¦ÉèÎª±³¾°
+    //å°†æœ€å¤–åœˆè®¾ä¸ºèƒŒæ™¯
     while (!background_stack.empty())
     {
         std::pair<int, int> background_pixel = background_stack.top();
@@ -2427,7 +2434,7 @@ std::vector<std::vector<int>> tidy_room_erode(std::vector<std::vector<int>>& seg
 
     //printBinaryImage(tidy_room, 2, "tidyroom_matrix");
 
-    //Ìõ¼ş¸¯Ê´
+    //æ¡ä»¶è…èš€
     for (int times = 0; times < erode_times; ++times)
     {
         std::vector<std::vector<int>> tidy_room_cache = tidy_room;
@@ -2458,7 +2465,7 @@ std::vector<std::vector<int>> tidy_room_erode(std::vector<std::vector<int>>& seg
         }
     }
 
-    //·¿¼äid¼Ì³Ğ
+    //æˆ¿é—´idç»§æ‰¿
     int room_id = 1;
     bool hasChanged = true;
 
@@ -2481,7 +2488,7 @@ std::vector<std::vector<int>> tidy_room_erode(std::vector<std::vector<int>>& seg
         room_id++;
     }
 
-    //·¿¼äidÀ©É¢
+    //æˆ¿é—´idæ‰©æ•£
     for (int id = 2; id < room_id - 1; id++)
     {
         for (int i = 0; i < h; i++)
@@ -2513,7 +2520,7 @@ std::vector<std::vector<int>> tidy_room_dilate(std::vector<std::vector<int>>& ro
 
     for (int round = 0; round < rounds; round++)
     {
-        //¼ÇÂ¼ĞèÒª¸¯Ê´µÄµãµÄ¶ÓÁĞ
+        //è®°å½•éœ€è¦è…èš€çš„ç‚¹çš„é˜Ÿåˆ—
         std::queue<std::pair<int, int>> points_to_erode;
         for (int u = 0; u < m; u++)
         {
@@ -2535,7 +2542,7 @@ std::vector<std::vector<int>> tidy_room_dilate(std::vector<std::vector<int>>& ro
             }
         }
 
-        //¶Ô¶ÓÁĞÖĞµÄµã½øĞĞ¸¯Ê´
+        //å¯¹é˜Ÿåˆ—ä¸­çš„ç‚¹è¿›è¡Œè…èš€
         while (!points_to_erode.empty())
         {
             std::pair<int, int> point = points_to_erode.front();
@@ -2547,7 +2554,7 @@ std::vector<std::vector<int>> tidy_room_dilate(std::vector<std::vector<int>>& ro
 
     for (int round = 0; round < rounds; round++) 
     {
-        // Ê¹ÓÃÒ»¸ö¶ÓÁĞÀ´´æ´¢Ã¿ÂÖĞèÒªÀ©Õ¹µÄµã
+        // ä½¿ç”¨ä¸€ä¸ªé˜Ÿåˆ—æ¥å­˜å‚¨æ¯è½®éœ€è¦æ‰©å±•çš„ç‚¹
         std::queue<std::pair<int, int>> points_to_expand;
         for (int i = 0; i < m; i++) 
         {
@@ -2569,7 +2576,7 @@ std::vector<std::vector<int>> tidy_room_dilate(std::vector<std::vector<int>>& ro
             }
         }
 
-        // ¶ÔĞèÒªÀ©Õ¹µÄµã½øĞĞÅòÕÍ
+        // å¯¹éœ€è¦æ‰©å±•çš„ç‚¹è¿›è¡Œè†¨èƒ€
         while (!points_to_expand.empty()) 
         {
             std::pair<int, int> point = points_to_expand.front();
@@ -2580,7 +2587,7 @@ std::vector<std::vector<int>> tidy_room_dilate(std::vector<std::vector<int>>& ro
                 int new_x = point.first + dx[i];
                 int new_y = point.second + dy[i];
 
-                // ÅĞ¶ÏĞÂµãÊÇ·ñÔÚ¾ØÕó·¶Î§ÄÚ£¬ÒÔ¼°ÊÇ·ñ¿ÉÒÔ±»ÅòÕÍ
+                // åˆ¤æ–­æ–°ç‚¹æ˜¯å¦åœ¨çŸ©é˜µèŒƒå›´å†…ï¼Œä»¥åŠæ˜¯å¦å¯ä»¥è¢«è†¨èƒ€
                 if (new_x >= 0 && new_x < m && new_y >= 0 && new_y < n && floor_plan_matrix[new_x][new_y] != 1 && tidy_room_matrix[new_x][new_y] == 0)
                 {
                     tidy_room_matrix[new_x][new_y] = tidy_room_matrix[point.first][point.second];
@@ -2595,7 +2602,7 @@ std::vector<std::vector<int>> tidy_room_dilate(std::vector<std::vector<int>>& ro
 
 void polygon_fitting(std::vector<std::vector<int>>& room_matrix, double epsilon)
 {
-    //½«ÊäÈëµÄ¾ØÕó×ª»¯ÎªopencvµÄMat¸ñÊ½
+    //å°†è¾“å…¥çš„çŸ©é˜µè½¬åŒ–ä¸ºopencvçš„Matæ ¼å¼
     cv::Mat binary_image(room_matrix.size(), room_matrix[0].size(), CV_8U);
     for (size_t i = 0; i < room_matrix.size(); i++)
     {
@@ -2607,27 +2614,27 @@ void polygon_fitting(std::vector<std::vector<int>>& room_matrix, double epsilon)
 
     std::vector<std::vector<cv::Point>> contours;
 
-    //Ê¹ÓÃfindContoursÕÒ³öÍâ²¿ÂÖÀª
+    //ä½¿ç”¨findContoursæ‰¾å‡ºå¤–éƒ¨è½®å»“
     cv::findContours(binary_image, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
     std::vector<cv::Point> approx_contour;
 
-    // ¶ÔÕÒµ½µÄÂÖÀª½øĞĞ¶à±ßĞÎÄâºÏ
+    // å¯¹æ‰¾åˆ°çš„è½®å»“è¿›è¡Œå¤šè¾¹å½¢æ‹Ÿåˆ
     cv::approxPolyDP(contours[0], approx_contour, epsilon, true);
 
-    // ´´½¨Ò»¸ö¿Õ°×Í¼Ïñ£¬ÓÃÓÚ»æÖÆÄâºÏºóµÄÍ¼Ïñ
+    // åˆ›å»ºä¸€ä¸ªç©ºç™½å›¾åƒï¼Œç”¨äºç»˜åˆ¶æ‹Ÿåˆåçš„å›¾åƒ
     cv::Mat result = cv::Mat::zeros(binary_image.size(), CV_8U);
 
-    // Ê¹ÓÃdrawContours»æÖÆÄâºÏºóµÄÍ¼Ïñ
+    // ä½¿ç”¨drawContoursç»˜åˆ¶æ‹Ÿåˆåçš„å›¾åƒ
     cv::drawContours(result, std::vector<std::vector<cv::Point>>{approx_contour}, -1, cv::Scalar(255), cv::FILLED);
 
-    // ½«Ô­¾ØÕóÈ«²¿ÖÃ0
+    // å°†åŸçŸ©é˜µå…¨éƒ¨ç½®0
     for (auto& row : room_matrix)
     {
         fill(row.begin(), row.end(), 0);
     }
 
-    // ½«½á¹û×ª»»»Ø¶şÖµ¾ØÕó£¬²¢Ö±½ÓĞŞ¸ÄÔ­¾ØÕó
+    // å°†ç»“æœè½¬æ¢å›äºŒå€¼çŸ©é˜µï¼Œå¹¶ç›´æ¥ä¿®æ”¹åŸçŸ©é˜µ
     for (int i = 0; i < result.rows; i++)
     {
         for (int j = 0; j < result.cols; j++)
@@ -2684,7 +2691,7 @@ void delete_jut(std::vector<std::vector<int>>& src, std::vector<std::vector<int>
     {
         for (int j = 0; j < width - 1; j++)
         {
-            //ĞĞÏû³ı
+            //è¡Œæ¶ˆé™¤
             if (dst[i][j] == 0 && dst[i][j + 1] == 1)
             {
                 if (j + uthreshold >= width)
@@ -2701,7 +2708,7 @@ void delete_jut(std::vector<std::vector<int>>& src, std::vector<std::vector<int>
                         if (dst[i][k] == 0) break;
                     }
 
-                    k = std::min(k, width - 1); // È·±£ k ²»»áÔ½½ç
+                    k = std::min(k, width - 1); // ç¡®ä¿ k ä¸ä¼šè¶Šç•Œ
                     if (dst[i][k] == 0)
                     {
                         for (int h = j + 1; h < k; h++)
@@ -2709,7 +2716,7 @@ void delete_jut(std::vector<std::vector<int>>& src, std::vector<std::vector<int>
                     }
                 }
             }
-            //ÁĞÏû³ı
+            //åˆ—æ¶ˆé™¤
             if (dst[i][j] == 0 && dst[i + 1][j] == 1)
             {
                 if (i + vthreshold >= height)
@@ -2724,7 +2731,7 @@ void delete_jut(std::vector<std::vector<int>>& src, std::vector<std::vector<int>
                         if (dst[k][j] == 0) break;
                     }
 
-                    k = std::min(k, height - 1); // È·±£ k ²»»áÔ½½ç
+                    k = std::min(k, height - 1); // ç¡®ä¿ k ä¸ä¼šè¶Šç•Œ
                     if (dst[k][j] == 0)
                     {
                         for (int h = i + 1; h < k; h++)
@@ -2748,7 +2755,7 @@ void fill_hollow(std::vector<std::vector<int>>& src, std::vector<std::vector<int
     {
         for (int j = 0; j < width - 1; j++)
         {
-            //ĞĞÌî²¹
+            //è¡Œå¡«è¡¥
             if (dst[i][j] == 1 && dst[i][j + 1] == 0)
             {
                 if (j + uthreshold >= width)
@@ -2767,7 +2774,7 @@ void fill_hollow(std::vector<std::vector<int>>& src, std::vector<std::vector<int
                         if (dst[i][k] == 1) break;
                     }
 
-                    k = std::min(k, width - 1); // È·±£ k ²»»áÔ½½ç
+                    k = std::min(k, width - 1); // ç¡®ä¿ k ä¸ä¼šè¶Šç•Œ
                     if (dst[i][k] == 1)
                     {
                         for (int h = j + 1; h < k; h++)
@@ -2775,7 +2782,7 @@ void fill_hollow(std::vector<std::vector<int>>& src, std::vector<std::vector<int
                     }
                 }
             }
-            //ÁĞÌî²¹
+            //åˆ—å¡«è¡¥
             if (dst[i][j] == 1 && dst[i + 1][j] == 0)
             {
                 if (i + vthreshold >= height)
@@ -2792,7 +2799,7 @@ void fill_hollow(std::vector<std::vector<int>>& src, std::vector<std::vector<int
                         if (dst[k][j] == 1) break;
                     }
 
-                    k = std::min(k, height - 1); // È·±£ k ²»»áÔ½½ç
+                    k = std::min(k, height - 1); // ç¡®ä¿ k ä¸ä¼šè¶Šç•Œ
                     if (dst[k][j] == 1)
                     {
                         for (int h = i + 1; h < k; h++)
@@ -2837,7 +2844,7 @@ void customize_blur(std::vector<std::vector<int>>& src, std::vector<std::vector<
                 }
             }
 
-            // ¸ù¾İãĞÖµÉèÖÃĞÂÖµ
+            // æ ¹æ®é˜ˆå€¼è®¾ç½®æ–°å€¼
             dst[i - padSize][j - padSize] = sum > threshold ? 1 : 0;
         }
     }
@@ -2980,7 +2987,7 @@ void tidy_room_Conditional_Morphological_Transformation(std::vector<std::vector<
         }
 
     }
-    std::cout << "·¿¼äÍ¼ÓÅ»¯Íê³É" << std::endl;
+    std::cout << "æˆ¿é—´å›¾ä¼˜åŒ–å®Œæˆ" << std::endl;
 }
 
 void tidy_room_Conditional_Morphological_Transformation(Matrix<int>& src,
@@ -2988,6 +2995,8 @@ void tidy_room_Conditional_Morphological_Transformation(Matrix<int>& src,
     std::map<int, Room>& rooms,
     const std::map<p64, Door>& doorMap)
 {
+    std::cout << "å¼€å§‹è§„æ•´æˆ¿é—´å›¾" << std::endl;
+
     int h = src.size();
     int w = src[0].size();
 
@@ -3017,12 +3026,12 @@ void tidy_room_Conditional_Morphological_Transformation(Matrix<int>& src,
         {
             cache3 = cache1;
 
-            do
-            {
+            //do
+            //{
                 /* code */
-                cache1 = cache2;
-                tidy_room_Conditional_Dilation_Transformation(cache1, cache2, mask);
-            } while (cache1 != cache2);
+            //    cache1 = cache2;
+            //    tidy_room_Conditional_Dilation_Transformation(cache1, cache2, mask);
+            //} while (cache1 != cache2);
 
             do
             {
@@ -3050,6 +3059,8 @@ void tidy_room_Conditional_Morphological_Transformation(Matrix<int>& src,
         }
 
     }
+
+    std::cout << "æˆ¿é—´å›¾è§„æ•´å®Œæˆ" << std::endl;
 }
 
 
@@ -3078,7 +3089,7 @@ void tidy_room_Conditional_Erosion_Transformation(std::vector<std::vector<int>>&
             {
                 if (dst[i][j] == 1 && !should_not_be_eroded(std::make_pair(i, j), doors_pixels, threshold))
                 {
-                    //´´½¨3*3ÁÚÓòÁĞ±í
+                    //åˆ›å»º3*3é‚»åŸŸåˆ—è¡¨
                     int p[9];
                     p[0] = dst[i][j];          // P1
                     p[1] = dst[i - 1][j];      // P2
@@ -3145,7 +3156,7 @@ void tidy_room_Conditional_Dilation_Transformation(std::vector<std::vector<int>>
             {
                 if (dst[i][j] == 0 && mask[i][j] == 0)
                 {
-                    //´´½¨3*3ÁÚÓòÁĞ±í
+                    //åˆ›å»º3*3é‚»åŸŸåˆ—è¡¨
                     int p[9];
                     p[0] = dst[i][j];          // P1
                     p[1] = dst[i - 1][j];      // P2
@@ -3211,14 +3222,14 @@ void floor_plan_optimizer(std::vector<std::vector<int>>& expanded_matrix,
     {
         for (auto& pixel : room.get_outline_pixels())
         {
-            //final_map.at<cv::Vec3b>(pixel.first, pixel.second) = cv::Vec3b(0, 0, 0);  // Ê¹ÓÃºÚÉ«»æÖÆÂÖÀªÏß
+            //final_map.at<cv::Vec3b>(pixel.first, pixel.second) = cv::Vec3b(0, 0, 0);  // ä½¿ç”¨é»‘è‰²ç»˜åˆ¶è½®å»“çº¿
             int u = pixel.first;
             int v = pixel.second;
             floor_plan_matrix[u][v] = 1;
         }
     }
 
-    /*ÓÅ»¯Ç°µÄ»§ĞÍÍ¼ÂÖÀª»æÖÆ
+    /*ä¼˜åŒ–å‰çš„æˆ·å‹å›¾è½®å»“ç»˜åˆ¶
     cv::Mat floor_plan_img(h, w, CV_8UC3, cv::Scalar(255, 255, 255));
     for (int x = 0; x < h; x++)
     {
@@ -3235,10 +3246,10 @@ void floor_plan_optimizer(std::vector<std::vector<int>>& expanded_matrix,
     cv::imwrite("C:\\Users\\13012\\Desktop\\result\\floor_plan_img.jpg", floor_plan_img);
     */
 
-    //»§ĞÍÍ¼Õı½»»¯
+    //æˆ·å‹å›¾æ­£äº¤åŒ–
     floor_plan_optimization_matrix = floor_plan_outline_Orthogonalization(floor_plan_matrix, segmented_matrix);
 
-    //ÓÅ»¯ºóµÄ»§ĞÍÍ¼ÂÖÀª»æÖÆ
+    //ä¼˜åŒ–åçš„æˆ·å‹å›¾è½®å»“ç»˜åˆ¶
     cv::Mat floor_plan_optimization_img(h, w, CV_8UC3, cv::Scalar(255, 255, 255));
     for (int x = 0; x < h; x++)
      {
@@ -3254,16 +3265,16 @@ void floor_plan_optimizer(std::vector<std::vector<int>>& expanded_matrix,
      cv::imwrite("C:\\Users\\13012\\Desktop\\result\\floor_plan_optimization_img.png", floor_plan_optimization_img);
     
 
-    //¹æÕû·¿¼äÉú³É
+    //è§„æ•´æˆ¿é—´ç”Ÿæˆ
     //std::vector<std::vector<int>> tidy_room(h, std::vector<int>(w, 0));
     tidy_room_Conditional_Morphological_Transformation(tidy_room, floor_plan_optimization_matrix, rooms, door_pixels);
 
 
 
-    //·´Ïò¸üĞÂexpanded_rooms
+    //åå‘æ›´æ–°expanded_rooms
     expanded_room_renew(expanded_rooms, segmented_matrix, floor_plan_optimization_matrix);
 
-    //»§ĞÍÍ¼¶ÔÆë
+    //æˆ·å‹å›¾å¯¹é½
     //std::vector<std::vector<int>> aligned_floor_plan_matrix(h, std::vector<int>(w, 0));
 
     expanded_matrix = floor_plan_alignment(expanded_rooms, floor_plan_optimization_matrix);
@@ -3295,11 +3306,14 @@ int floor_plan_optimizer(Matrix<int>& expanded_matrix,
         }
     }
 
+    printBinaryImage(floor_plan_matrix, 1, "floor_plan_matrix");
+    cv::waitKey(1);
 
-    //»§ĞÍÍ¼Õı½»»¯
+
+    //æˆ·å‹å›¾æ­£äº¤åŒ–
     floor_plan_optimization_matrix = floor_plan_outline_Orthogonalization(floor_plan_matrix, segmented_matrix);
 
-    //ÓÅ»¯ºóµÄ»§ĞÍÍ¼ÂÖÀª»æÖÆ
+    //ä¼˜åŒ–åçš„æˆ·å‹å›¾è½®å»“ç»˜åˆ¶
     cv::Mat floor_plan_optimization_img(h, w, CV_8UC3, cv::Scalar(255, 255, 255));
     for (int x = 0; x < h; x++)
     {
@@ -3318,12 +3332,16 @@ int floor_plan_optimizer(Matrix<int>& expanded_matrix,
 
     tidy_room_Conditional_Morphological_Transformation(tidy_room, floor_plan_optimization_matrix, rooms, doorMap);
 
-    //·´Ïò¸üĞÂexpanded_rooms
+    //åå‘æ›´æ–°expanded_rooms
     int re_flag = expanded_room_renew(expanded_rooms, segmented_matrix, floor_plan_optimization_matrix);
 
     if (re_flag == 2) return 2;
 
-    expanded_matrix = floor_plan_alignment(expanded_rooms, floor_plan_optimization_matrix);
+
+
+    //expanded_matrix = floor_plan_alignment(expanded_rooms, floor_plan_optimization_matrix);
+    expanded_matrix = floor_plan_optimization_matrix;
+
 
     if (expanded_matrix.size() == 0)
     {
@@ -3340,16 +3358,16 @@ std::vector<std::vector<int>> orthogonal_polygon_fitting(const std::vector<std::
 
     //std::vector<std::vector<int>> kernel(3, std::vector<int>(3, 1));
 
-    //ÉèÖÃÕı½»±äĞÎµÄÕÏ°­Îï
+    //è®¾ç½®æ­£äº¤å˜å½¢çš„éšœç¢ç‰©
     std::vector<std::vector<int>> mask(h, std::vector<int>(w, 0));
 
-    //Êä³öµÄ½á¹û
+    //è¾“å‡ºçš„ç»“æœ
     std::vector<std::vector<int>> floor_plan_polygon_matrix(h, std::vector<int>(w, 0));
 
     cv::Mat floor_plan_mat(h, w, CV_8UC1);
     cv::Mat result_mat = cv::Mat::zeros(h, w, CV_8UC1);
 
-    //×ª»¯ÎªMat
+    //è½¬åŒ–ä¸ºMat
     for (size_t i = 0; i < h; i++)
     {
         for (size_t j = 0; j < w; j++)
@@ -3360,21 +3378,21 @@ std::vector<std::vector<int>> orthogonal_polygon_fitting(const std::vector<std::
 
     //cv::Point p0 = find_centroid(floor_plan_mat);
 
-    //ÕÒ×îÍâ²¿ÂÖÀª
+    //æ‰¾æœ€å¤–éƒ¨è½®å»“
     std::vector<std::vector<cv::Point>> contours;
     cv::findContours(floor_plan_mat, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
-    //»æÖÆÊµĞÄÂÖÀª
+    //ç»˜åˆ¶å®å¿ƒè½®å»“
     cv::Mat centroid_mat = cv::Mat::zeros(h, w, CV_8UC1);
     cv::drawContours(centroid_mat, contours, -1, cv::Scalar(255), cv::FILLED);
 
-    std::cout <<"²âÊÔµ¥µãÏñËØÖµ£º "<< static_cast<int>(centroid_mat.at<uchar>(0, 0)) << std::endl;
+    std::cout <<"æµ‹è¯•å•ç‚¹åƒç´ å€¼ï¼š "<< static_cast<int>(centroid_mat.at<uchar>(0, 0)) << std::endl;
     cv::imshow("centroid_mat", centroid_mat);
 
-    //ÕÒµ½ÖØĞÄ
+    //æ‰¾åˆ°é‡å¿ƒ
     cv::Point p0 = find_centroid(centroid_mat);
 
-    //ÕÏ°­Îï½«ÓÉÊµĞÄÂÖÀª¸¯Ê´µÃµ½
+    //éšœç¢ç‰©å°†ç”±å®å¿ƒè½®å»“è…èš€å¾—åˆ°
     for (size_t u = 0; u < h; u++)
     {
         for (size_t v = 0; v < w; v++)
@@ -3383,7 +3401,7 @@ std::vector<std::vector<int>> orthogonal_polygon_fitting(const std::vector<std::
         }
     }
     printBinaryImage(mask, 2, "fitting_mask1");
-    //¸¯Ê´
+    //è…èš€
     std::vector<std::vector<int>> kernel(3, std::vector<int>(3, 1));
     mask = customize_erode(mask, kernel);
 
@@ -3392,7 +3410,7 @@ std::vector<std::vector<int>> orthogonal_polygon_fitting(const std::vector<std::
     std::vector<cv::Point> approx_contour;
     std::vector<cv::Point> result;
 
-    //ÉèÖÃ¶à±ßĞÎ½üËÆãĞÖµ
+    //è®¾ç½®å¤šè¾¹å½¢è¿‘ä¼¼é˜ˆå€¼
     double epsilon = 5;
     //double epsilon = 0.05 * cv::arcLength(contours[0], true);
     cv::approxPolyDP(contours[0], approx_contour, epsilon, true);
@@ -3405,18 +3423,18 @@ std::vector<std::vector<int>> orthogonal_polygon_fitting(const std::vector<std::
     for (int i = 0; i < n; i++)
     {
         cv::Point p1 = approx_contour[i];
-        cv::Point p2 = approx_contour[(i + 1) % n]; // Ñ­»··ÃÎÊµã¶Ô£¬×îºóÒ»¶ÔÎª×îºóÒ»¸öµãºÍµÚÒ»¸öµã
+        cv::Point p2 = approx_contour[(i + 1) % n]; // å¾ªç¯è®¿é—®ç‚¹å¯¹ï¼Œæœ€åä¸€å¯¹ä¸ºæœ€åä¸€ä¸ªç‚¹å’Œç¬¬ä¸€ä¸ªç‚¹
 
         if (p1.x == p2.x || p1.y == p2.y)
         {
-            // Èç¹ûÁ½µã¿ÉÒÔÖ±½ÓÏàÁ¬£¬ÔòÌí¼Óµ½½á¹ûÖĞ
+            // å¦‚æœä¸¤ç‚¹å¯ä»¥ç›´æ¥ç›¸è¿ï¼Œåˆ™æ·»åŠ åˆ°ç»“æœä¸­
             result.push_back(p1);
         }
         else
         {
-            // Èç¹ûÁ½µã²»ÄÜÖ±½ÓÏàÁ¬£¬ÔòĞèÒª¼ÆËã¹Õµã²¢Ìí¼Óµ½½á¹ûÖĞ
+            // å¦‚æœä¸¤ç‚¹ä¸èƒ½ç›´æ¥ç›¸è¿ï¼Œåˆ™éœ€è¦è®¡ç®—æ‹ç‚¹å¹¶æ·»åŠ åˆ°ç»“æœä¸­
 
-            // ÕÒ³öÁ½¸ö¿ÉÄÜµÄ¹Õµã£¬²¢ÅĞ¶ÏÄÄ¸öÓëp0ÔÚÍ¬Ò»²à²¢ÇÒÔÚfloor_plan_matrixÖĞ¶ÔÓ¦µÄÖµÎª0
+            // æ‰¾å‡ºä¸¤ä¸ªå¯èƒ½çš„æ‹ç‚¹ï¼Œå¹¶åˆ¤æ–­å“ªä¸ªä¸p0åœ¨åŒä¸€ä¾§å¹¶ä¸”åœ¨floor_plan_matrixä¸­å¯¹åº”çš„å€¼ä¸º0
             cv::Point bend_point_1(p1.x, p2.y);
             cv::Point bend_point_2(p2.x, p1.y);
 
@@ -3494,7 +3512,7 @@ void expanded_room_renew(std::vector<Room>& expanded_rooms, const std::vector<st
 
     std::vector<std::vector<int>> transfer(h, std::vector<int>(w, 0));
 
-    //Ç°¾°±³¾°ÖÃ»»
+    //å‰æ™¯èƒŒæ™¯ç½®æ¢
     for (size_t i = 0; i < h; i++)
     {
         for (size_t j = 0; j < w; j++)
@@ -3503,13 +3521,13 @@ void expanded_room_renew(std::vector<Room>& expanded_rooms, const std::vector<st
         }
     }
 
-    std::vector<std::pair<int, int>> directions = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };//ËÄÁ¬Í¨
+    std::vector<std::pair<int, int>> directions = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };//å››è¿é€š
 
     std::stack<std::pair<int, int>> background_stack;
     background_stack.push(std::make_pair(0, 0));
     transfer[0][0] = 0;
 
-    //½«×îÍâÈ¦ÉèÎª±³¾°
+    //å°†æœ€å¤–åœˆè®¾ä¸ºèƒŒæ™¯
     while (!background_stack.empty())
     {
         std::pair<int, int> background_pixel = background_stack.top();
@@ -3531,7 +3549,7 @@ void expanded_room_renew(std::vector<Room>& expanded_rooms, const std::vector<st
         }
     }
 
-    //·¿¼äid¼Ì³Ğ
+    //æˆ¿é—´idç»§æ‰¿
     int room_id = 1;
     bool hasChanged = true;
 
@@ -3554,7 +3572,7 @@ void expanded_room_renew(std::vector<Room>& expanded_rooms, const std::vector<st
         room_id++;
     }
 
-    //·¿¼äidÀ©É¢
+    //æˆ¿é—´idæ‰©æ•£
     for (int id = 2; id < room_id - 1; id++)
     {
         for (size_t i = 0; i < h; i++)
@@ -3588,14 +3606,14 @@ void expanded_room_renew(std::vector<Room>& expanded_rooms, const std::vector<st
         }
     }
 
-    //ÅĞ¶Ï·¿¼äÊıÊÇ·ñ¶ÔµÃÉÏ
+    //åˆ¤æ–­æˆ¿é—´æ•°æ˜¯å¦å¯¹å¾—ä¸Š
     if (expanded_rooms.size() != room_id - 2)
     {
         std::cerr << "In the expanded_room_renew function, the number of rooms found does not match the vector length" << std::endl;
         throw std::runtime_error("Invalid line found.");
     }
 
-    //¸üĞÂexpanded_roomsÁĞ±í
+    //æ›´æ–°expanded_roomsåˆ—è¡¨
     for (auto& expanded_room : expanded_rooms)
     {
         int id_room = expanded_room.get_room_id();
@@ -3635,12 +3653,14 @@ void expanded_room_renew(std::vector<Room>& expanded_rooms, const std::vector<st
 
 int expanded_room_renew(std::map<int, Room>& expanded_rooms, const Matrix<int>& segmented_matrix, const Matrix<int>& floor_plan_optimization_matrix)
 {
+    std::cout << "å¼€å§‹åå‘æ›´æ–°expanded_rooms" << std::endl;
+
     size_t h = segmented_matrix.size();
     size_t w = segmented_matrix[0].size();
 
     Matrix<int> transfer(h, std::vector<int>(w, 0));
 
-    //Ç°¾°±³¾°ÖÃ»»
+    //å‰æ™¯èƒŒæ™¯ç½®æ¢
     for (size_t i = 0; i < h; i++)
     {
         for (size_t j = 0; j < w; j++)
@@ -3652,13 +3672,13 @@ int expanded_room_renew(std::map<int, Room>& expanded_rooms, const Matrix<int>& 
         }
     }
 
-    std::vector<p64> directions = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };//ËÄÁ¬Í¨
+    std::vector<p64> directions = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };//å››è¿é€š
 
     std::stack<p64> background_stack;
     background_stack.push(std::make_pair(0, 0));
     transfer[0][0] = -1;
 
-    //½«×îÍâÈ¦ÉèÎª±³¾°
+    //å°†æœ€å¤–åœˆè®¾ä¸ºèƒŒæ™¯
     while (!background_stack.empty())
     {
         p64 background_pixel = background_stack.top();
@@ -3680,7 +3700,7 @@ int expanded_room_renew(std::map<int, Room>& expanded_rooms, const Matrix<int>& 
         }
     }
 
-    //·¿¼äid¼Ì³Ğ
+    //æˆ¿é—´idç»§æ‰¿
     int room_id = 1;
     bool hasChanged = true;
 
@@ -3703,7 +3723,7 @@ int expanded_room_renew(std::map<int, Room>& expanded_rooms, const Matrix<int>& 
         room_id++;
     }
 
-    //·¿¼äidÀ©É¢
+    //æˆ¿é—´idæ‰©æ•£
     for (int id = 1; id < room_id - 1; id++)
     {
         for (size_t i = 0; i < h; i++)
@@ -3737,7 +3757,7 @@ int expanded_room_renew(std::map<int, Room>& expanded_rooms, const Matrix<int>& 
         }
     }
 
-    //ÅĞ¶Ï·¿¼äÊıÊÇ·ñ¶ÔµÃÉÏ
+    //åˆ¤æ–­æˆ¿é—´æ•°æ˜¯å¦å¯¹å¾—ä¸Š
     if (expanded_rooms.size() != room_id - 2)
     {
         std::cerr << "GRS ERROR:In the expanded_room_renew function, the number of rooms found does not match the vector length" << std::endl;
@@ -3746,7 +3766,7 @@ int expanded_room_renew(std::map<int, Room>& expanded_rooms, const Matrix<int>& 
         return 2;
     }
 
-    //¸üĞÂexpanded_roomsÁĞ±í
+    //æ›´æ–°expanded_roomsåˆ—è¡¨
     for (auto& expanded_room : expanded_rooms)
     {
         int id_room = expanded_room.first;
@@ -3781,6 +3801,8 @@ int expanded_room_renew(std::map<int, Room>& expanded_rooms, const Matrix<int>& 
     cv::imshow("new_expanded_rooms_mat", new_expanded_rooms_mat);
     cv::imwrite("C:\\Users\\13012\\Desktop\\result\\new_expanded_rooms_mat.png", new_expanded_rooms_mat);
 
+    std::cout << "åå‘æ›´æ–°expanded_roomså®Œæˆ" << std::endl;
+
     return 0;
 
 }
@@ -3789,7 +3811,7 @@ int expanded_room_renew(std::map<int, Room>& expanded_rooms, const Matrix<int>& 
 
 std::vector<std::vector<int>> floor_plan_alignment(const std::vector<Room>& expanded_rooms, const std::vector<std::vector<int>>& floor_plan_optimization_matrix)
 {
-    //ÉèÖÃ±äĞÎ³¤¶ÈãĞÖµ
+    //è®¾ç½®å˜å½¢é•¿åº¦é˜ˆå€¼
     int threshold = 70;
 
     size_t h = floor_plan_optimization_matrix.size();
@@ -3799,7 +3821,7 @@ std::vector<std::vector<int>> floor_plan_alignment(const std::vector<Room>& expa
     cv::Mat dst_mat(h, w, CV_8UC1, cv::Scalar(0));
 
 
-    //¹¹½¨È«·¿¼ä×ªÕÛµãÁĞ±í
+    //æ„å»ºå…¨æˆ¿é—´è½¬æŠ˜ç‚¹åˆ—è¡¨
     std::vector<std::pair<int, std::vector<cv::Point>>> rooms_contours;
 
     /*
@@ -3855,7 +3877,7 @@ std::vector<std::vector<int>> floor_plan_alignment(const std::vector<Room>& expa
 
     }
 
-    //Öğ¼¶±äĞÎ
+    //é€çº§å˜å½¢
     bool has_changed = true;
 
     while (has_changed)
@@ -3872,7 +3894,7 @@ std::vector<std::vector<int>> floor_plan_alignment(const std::vector<Room>& expa
             std::vector<std::vector<int>> mask(h, std::vector<int>(w, 0));
             cv::Mat mask_mat(h, w, CV_8UC1, cv::Scalar(0));
 
-            //±³¾°ÏŞÖÆ¾ØÕóÉú³É
+            //èƒŒæ™¯é™åˆ¶çŸ©é˜µç”Ÿæˆ
             for (auto& mask_cnt : rooms_contours)
             {
                 if (mask_cnt.first == room_id) continue;
@@ -3891,12 +3913,12 @@ std::vector<std::vector<int>> floor_plan_alignment(const std::vector<Room>& expa
 
             int length = cnt.size();
 
-            //µ¥·¿¼ä±äĞÎ
+            //å•æˆ¿é—´å˜å½¢
             for (int m = 0; m < length; m++)
             {
-                //µ¥±ß±äĞÎ
+                //å•è¾¹å˜å½¢
 
-                //´Ë·¿¼äµÄÄÚ²¿Ìî³ä 
+                //æ­¤æˆ¿é—´çš„å†…éƒ¨å¡«å…… 
                 std::vector<std::vector<int>> inside_mask = cvPoint_to_matrix(cnt, h, w);
 
                 std::pair<int, int> p1 = std::make_pair(cnt[m].y, cnt[m].x);
@@ -3906,18 +3928,18 @@ std::vector<std::vector<int>> floor_plan_alignment(const std::vector<Room>& expa
 
                 bool stop_run = false;
 
-                //ÉÏÏÂÒÆ¶¯
+                //ä¸Šä¸‹ç§»åŠ¨
                 if (p1.first == p2.first)
                 {
-                    //¼ÇÂ¼³õÊ¼Á½¶¥µã×´Ì¬
+                    //è®°å½•åˆå§‹ä¸¤é¡¶ç‚¹çŠ¶æ€
                     int mask_flag = mask[p1.first][p1.second] + mask[p2.first][p2.second];
                     
-                    //ÏòÉÏ
+                    //å‘ä¸Š
                     if (p1.first - 1 >= 0 && inside_mask[p1.first - 1][(p1.second + p2.second) / 2] == 0)
                     {
                         for (int x = p1.first; x >= p1.first - threshold && x >= 0; x--)
                         {
-                            //Èç¹ûÓĞ±ß¿ÉÒÔÑØÇÒ×´Ì¬Î»Ã»±ä
+                            //å¦‚æœæœ‰è¾¹å¯ä»¥æ²¿ä¸”çŠ¶æ€ä½æ²¡å˜
                             if (mask[x][p1.second] + mask[x][p2.second] >= mask_flag && mask[x][p1.second] + mask[x][p2.second] != 0)
                             {
                                 for (int y = 1 + std::min(p1.second, p2.second); y < std::max(p1.second, p2.second); y++)
@@ -3946,12 +3968,12 @@ std::vector<std::vector<int>> floor_plan_alignment(const std::vector<Room>& expa
                             }
                         }
                     }
-                    //ÏòÏÂ
+                    //å‘ä¸‹
                     else if (p1.first + 1 < h && inside_mask[p1.first + 1][(p1.second + p2.second) / 2] == 0)
                     {
                         for (int x = p1.first; x <= p1.first + threshold && x < h; x++)
                         {
-                            //Èç¹ûÓĞ±ß¿ÉÒÔÑØ
+                            //å¦‚æœæœ‰è¾¹å¯ä»¥æ²¿
                             if (mask[x][p1.second] + mask[x][p2.second] >= mask_flag && mask[x][p1.second] + mask[x][p2.second] != 0)
                             {
                                 for (int y = 1 + std::min(p1.second, p2.second); y < std::max(p1.second, p2.second); y++)
@@ -3981,18 +4003,18 @@ std::vector<std::vector<int>> floor_plan_alignment(const std::vector<Room>& expa
                         }
                     }
                 }
-                //×óÓÒÒÆ¶¯
+                //å·¦å³ç§»åŠ¨
                 else if (p1.second == p2.second)
                 {
-                    //¼ÇÂ¼×´Ì¬Î»
+                    //è®°å½•çŠ¶æ€ä½
                     int mask_flag = mask[p1.first][p1.second] + mask[p2.first][p2.second];
                     
-                    //Ïò×ó
+                    //å‘å·¦
                     if (p1.second - 1 >= 0 && inside_mask[(p1.first + p2.first) / 2][p1.second - 1] == 0)
                     {
                         for (int y = p1.second; y >= p1.second - threshold && y >= 0; y--)
                         {
-                            //ÊÇ·ñ¿ÉÑØ±ß
+                            //æ˜¯å¦å¯æ²¿è¾¹
                             if (mask[p1.first][y] + mask[p2.first][y] >= mask_flag && mask[p1.first][y] + mask[p2.first][y] != 0)
                             {
                                 for (int x = 1 + std::min(p1.first, p2.first); x < std::max(p1.first, p2.first); x++)
@@ -4021,12 +4043,12 @@ std::vector<std::vector<int>> floor_plan_alignment(const std::vector<Room>& expa
                             }
                         }
                     }
-                    //ÏòÓÒ
+                    //å‘å³
                     else if (p1.second + 1 < w && inside_mask[(p1.first + p2.first) / 2][p1.second + 1] == 0)
                     {
                         for (int y = p1.second; y <= p1.second + threshold && y < w; y++)
                         {
-                            //ÊÇ·ñ¿ÉÑØ±ß
+                            //æ˜¯å¦å¯æ²¿è¾¹
                             if (mask[p1.first][y] + mask[p2.first][y] >= mask_flag && mask[p1.first][y] + mask[p2.first][y] != 0)
                             {
                                 for (int x = 1 + std::min(p1.first, p2.first); x < std::max(p1.first, p2.first); x++)
@@ -4058,18 +4080,18 @@ std::vector<std::vector<int>> floor_plan_alignment(const std::vector<Room>& expa
                 }
                 else
                 {
-                    std::cerr << "ÔÚµ¥¸ö·¿¼äµÄ»§ĞÍÍ¼¶ÔÆë±äĞÎÖĞ£¬ÕÒµ½µÄÁ½¸öµãxy¶¼²»ÏàµÈ" << std::endl;
+                    std::cerr << "åœ¨å•ä¸ªæˆ¿é—´çš„æˆ·å‹å›¾å¯¹é½å˜å½¢ä¸­ï¼Œæ‰¾åˆ°çš„ä¸¤ä¸ªç‚¹xyéƒ½ä¸ç›¸ç­‰" << std::endl;
                     throw std::runtime_error("Invalid line found.");
                 }
 
-                //µ¥¸ö·¿¼äµÄµ¥±ß±äĞÎÍê³É
-            }//µ¥¸ö·¿¼ä±äĞÎÍê³É
+                //å•ä¸ªæˆ¿é—´çš„å•è¾¹å˜å½¢å®Œæˆ
+            }//å•ä¸ªæˆ¿é—´å˜å½¢å®Œæˆ
 
             rooms_contours[n].second = cnt;
 
-        }//È«·¿¼ä±äĞÎÍêÒ»ÂÖ
+        }//å…¨æˆ¿é—´å˜å½¢å®Œä¸€è½®
 
-        //Çé¿ö²¹Â©
+        //æƒ…å†µè¡¥æ¼
         for (size_t n = 0; n < rooms_contours.size(); n++)
         {
             int room_id = rooms_contours[n].first;
@@ -4080,7 +4102,7 @@ std::vector<std::vector<int>> floor_plan_alignment(const std::vector<Room>& expa
             std::vector<std::vector<int>> mask(h, std::vector<int>(w, 0));
             cv::Mat mask_mat(h, w, CV_8UC1, cv::Scalar(0));
 
-            //±³¾°ÏŞÖÆ¾ØÕóÉú³É
+            //èƒŒæ™¯é™åˆ¶çŸ©é˜µç”Ÿæˆ
             for (auto& mask_cnt : rooms_contours)
             {
                 if (mask_cnt.first == room_id) continue;
@@ -4099,12 +4121,12 @@ std::vector<std::vector<int>> floor_plan_alignment(const std::vector<Room>& expa
 
             int length = cnt.size();
 
-            //µ¥·¿¼ä±äĞÎ
+            //å•æˆ¿é—´å˜å½¢
             for (int m = 0; m < length; m++)
             {
-                //µ¥±ß±äĞÎ
+                //å•è¾¹å˜å½¢
 
-                //´Ë·¿¼äµÄÄÚ²¿Ìî³ä 
+                //æ­¤æˆ¿é—´çš„å†…éƒ¨å¡«å…… 
                 std::vector<std::vector<int>> inside_mask = cvPoint_to_matrix(cnt, h, w);
 
                 std::pair<int, int> p1 = std::make_pair(cnt[m].y, cnt[m].x);
@@ -4114,18 +4136,18 @@ std::vector<std::vector<int>> floor_plan_alignment(const std::vector<Room>& expa
 
                 bool stop_run = false;
 
-                //ÉÏÏÂÒÆ¶¯
+                //ä¸Šä¸‹ç§»åŠ¨
                 if (p1.first == p2.first)
                 {
-                    //¼ÇÂ¼³õÊ¼Á½¶¥µã×´Ì¬
+                    //è®°å½•åˆå§‹ä¸¤é¡¶ç‚¹çŠ¶æ€
                     //int mask_flag = mask[p1.first][p1.second] + mask[p2.first][p2.second];
 
-                    //ÏòÉÏ
+                    //å‘ä¸Š
                     if (p1.first - 1 >= 0 && inside_mask[p1.first - 1][(p1.second + p2.second) / 2] == 0)
                     {
                         for (int x = p1.first; x >= p1.first - threshold && x >= 0; x--)
                         {
-                            //Èç¹ûÓĞ±ß¿ÉÒÔÑØÇÒ×´Ì¬Î»Ã»±ä
+                            //å¦‚æœæœ‰è¾¹å¯ä»¥æ²¿ä¸”çŠ¶æ€ä½æ²¡å˜
                             if (mask[x][p1.second] + mask[x][p2.second] != 0)
                             {
                                 for (int y = 1 + std::min(p1.second, p2.second); y < std::max(p1.second, p2.second); y++)
@@ -4154,12 +4176,12 @@ std::vector<std::vector<int>> floor_plan_alignment(const std::vector<Room>& expa
                             }
                         }
                     }
-                    //ÏòÏÂ
+                    //å‘ä¸‹
                     else if (p1.first + 1 < h && inside_mask[p1.first + 1][(p1.second + p2.second) / 2] == 0)
                     {
                         for (int x = p1.first; x <= p1.first + threshold && x < h; x++)
                         {
-                            //Èç¹ûÓĞ±ß¿ÉÒÔÑØ
+                            //å¦‚æœæœ‰è¾¹å¯ä»¥æ²¿
                             if (mask[x][p1.second] + mask[x][p2.second] != 0)
                             {
                                 for (int y = 1 + std::min(p1.second, p2.second); y < std::max(p1.second, p2.second); y++)
@@ -4189,18 +4211,18 @@ std::vector<std::vector<int>> floor_plan_alignment(const std::vector<Room>& expa
                         }
                     }
                 }
-                //×óÓÒÒÆ¶¯
+                //å·¦å³ç§»åŠ¨
                 else if (p1.second == p2.second)
                 {
-                    //¼ÇÂ¼×´Ì¬Î»
+                    //è®°å½•çŠ¶æ€ä½
                     //int mask_flag = mask[p1.first][p1.second] + mask[p2.first][p2.second];
 
-                    //Ïò×ó
+                    //å‘å·¦
                     if (p1.second - 1 >= 0 && inside_mask[(p1.first + p2.first) / 2][p1.second - 1] == 0)
                     {
                         for (int y = p1.second; y >= p1.second - threshold && y >= 0; y--)
                         {
-                            //ÊÇ·ñ¿ÉÑØ±ß
+                            //æ˜¯å¦å¯æ²¿è¾¹
                             if (mask[p1.first][y] + mask[p2.first][y] != 0)
                             {
                                 for (int x = 1 + std::min(p1.first, p2.first); x < std::max(p1.first, p2.first); x++)
@@ -4229,12 +4251,12 @@ std::vector<std::vector<int>> floor_plan_alignment(const std::vector<Room>& expa
                             }
                         }
                     }
-                    //ÏòÓÒ
+                    //å‘å³
                     else if (p1.second + 1 < w && inside_mask[(p1.first + p2.first) / 2][p1.second + 1] == 0)
                     {
                         for (int y = p1.second; y <= p1.second + threshold && y < w; y++)
                         {
-                            //ÊÇ·ñ¿ÉÑØ±ß
+                            //æ˜¯å¦å¯æ²¿è¾¹
                             if (mask[p1.first][y] + mask[p2.first][y] != 0)
                             {
                                 for (int x = 1 + std::min(p1.first, p2.first); x < std::max(p1.first, p2.first); x++)
@@ -4266,18 +4288,18 @@ std::vector<std::vector<int>> floor_plan_alignment(const std::vector<Room>& expa
                 }
                 else
                 {
-                    std::cerr << "ÔÚµ¥¸ö·¿¼äµÄ»§ĞÍÍ¼¶ÔÆë±äĞÎÖĞ£¬ÕÒµ½µÄÁ½¸öµãxy¶¼²»ÏàµÈ" << std::endl;
+                    std::cerr << "åœ¨å•ä¸ªæˆ¿é—´çš„æˆ·å‹å›¾å¯¹é½å˜å½¢ä¸­ï¼Œæ‰¾åˆ°çš„ä¸¤ä¸ªç‚¹xyéƒ½ä¸ç›¸ç­‰" << std::endl;
                     throw std::runtime_error("Invalid line found.");
                 }
 
-                //µ¥¸ö·¿¼äµÄµ¥±ß±äĞÎÍê³É
-            }//µ¥¸ö·¿¼ä±äĞÎÍê³É
+                //å•ä¸ªæˆ¿é—´çš„å•è¾¹å˜å½¢å®Œæˆ
+            }//å•ä¸ªæˆ¿é—´å˜å½¢å®Œæˆ
 
             rooms_contours[n].second = cnt;
 
-        }//È«·¿¼ä±äĞÎÍêÒ»ÂÖ2
+        }//å…¨æˆ¿é—´å˜å½¢å®Œä¸€è½®2
 
-    }//²»ÔÙ·¢Éú¸Ä±ä
+    }//ä¸å†å‘ç”Ÿæ”¹å˜
 
     for (auto& dst_cnt : rooms_contours)
     {
@@ -4297,8 +4319,10 @@ std::vector<std::vector<int>> floor_plan_alignment(const std::vector<Room>& expa
 
 Matrix<int> floor_plan_alignment(const std::map<int, Room>& expanded_rooms, const Matrix<int>& floor_plan_optimization_matrix)
 {
-    //ÉèÖÃ±äĞÎ³¤¶ÈãĞÖµ
-    int threshold = 70;
+    std::cout << "å¼€å§‹æˆ·å‹å›¾å¯¹é½" << std::endl;
+
+    //è®¾ç½®å˜å½¢é•¿åº¦é˜ˆå€¼
+    int threshold = 20;
 
     size_t h = floor_plan_optimization_matrix.size();
     size_t w = floor_plan_optimization_matrix[0].size();
@@ -4306,7 +4330,7 @@ Matrix<int> floor_plan_alignment(const std::map<int, Room>& expanded_rooms, cons
     Matrix<int> dst(h, std::vector<int>(w, 0));
     cv::Mat dst_mat(h, w, CV_8UC1, cv::Scalar(0));
 
-    //¹¹½¨È«·¿¼ä×ªÕÛµãÁĞ±í
+    //æ„å»ºå…¨æˆ¿é—´è½¬æŠ˜ç‚¹åˆ—è¡¨
     std::vector<std::pair<int, std::vector<cv::Point>>> rooms_contours;
 
     for (auto& room : expanded_rooms)
@@ -4337,7 +4361,7 @@ Matrix<int> floor_plan_alignment(const std::map<int, Room>& expanded_rooms, cons
 
     }
 
-    //Öğ¼¶±äĞÎ
+    //é€çº§å˜å½¢
     bool has_changed = true;
 
     while (has_changed)
@@ -4354,7 +4378,7 @@ Matrix<int> floor_plan_alignment(const std::map<int, Room>& expanded_rooms, cons
             std::vector<std::vector<int>> mask(h, std::vector<int>(w, 0));
             cv::Mat mask_mat(h, w, CV_8UC1, cv::Scalar(0));
 
-            //±³¾°ÏŞÖÆ¾ØÕóÉú³É
+            //èƒŒæ™¯é™åˆ¶çŸ©é˜µç”Ÿæˆ
             for (auto& mask_cnt : rooms_contours)
             {
                 if (mask_cnt.first == room_id) continue;
@@ -4373,12 +4397,12 @@ Matrix<int> floor_plan_alignment(const std::map<int, Room>& expanded_rooms, cons
 
             int length = cnt.size();
 
-            //µ¥·¿¼ä±äĞÎ
+            //å•æˆ¿é—´å˜å½¢
             for (int m = 0; m < length; m++)
             {
-                //µ¥±ß±äĞÎ
+                //å•è¾¹å˜å½¢
 
-                //´Ë·¿¼äµÄÄÚ²¿Ìî³ä 
+                //æ­¤æˆ¿é—´çš„å†…éƒ¨å¡«å…… 
                 std::vector<std::vector<int>> inside_mask = cvPoint_to_matrix(cnt, h, w);
 
                 std::pair<int, int> p1 = std::make_pair(cnt[m].y, cnt[m].x);
@@ -4388,18 +4412,18 @@ Matrix<int> floor_plan_alignment(const std::map<int, Room>& expanded_rooms, cons
 
                 bool stop_run = false;
 
-                //ÉÏÏÂÒÆ¶¯
+                //ä¸Šä¸‹ç§»åŠ¨
                 if (p1.first == p2.first)
                 {
-                    //¼ÇÂ¼³õÊ¼Á½¶¥µã×´Ì¬
+                    //è®°å½•åˆå§‹ä¸¤é¡¶ç‚¹çŠ¶æ€
                     int mask_flag = mask[p1.first][p1.second] + mask[p2.first][p2.second];
 
-                    //ÏòÉÏ
+                    //å‘ä¸Š
                     if (p1.first - 1 >= 0 && inside_mask[p1.first - 1][(p1.second + p2.second) / 2] == 0)
                     {
                         for (int x = p1.first; x >= p1.first - threshold && x >= 0; x--)
                         {
-                            //Èç¹ûÓĞ±ß¿ÉÒÔÑØÇÒ×´Ì¬Î»Ã»±ä
+                            //å¦‚æœæœ‰è¾¹å¯ä»¥æ²¿ä¸”çŠ¶æ€ä½æ²¡å˜
                             if (mask[x][p1.second] + mask[x][p2.second] >= mask_flag && mask[x][p1.second] + mask[x][p2.second] != 0)
                             {
                                 for (int y = 1 + std::min(p1.second, p2.second); y < std::max(p1.second, p2.second); y++)
@@ -4428,12 +4452,12 @@ Matrix<int> floor_plan_alignment(const std::map<int, Room>& expanded_rooms, cons
                             }
                         }
                     }
-                    //ÏòÏÂ
+                    //å‘ä¸‹
                     else if (p1.first + 1 < h && inside_mask[p1.first + 1][(p1.second + p2.second) / 2] == 0)
                     {
                         for (int x = p1.first; x <= p1.first + threshold && x < h; x++)
                         {
-                            //Èç¹ûÓĞ±ß¿ÉÒÔÑØ
+                            //å¦‚æœæœ‰è¾¹å¯ä»¥æ²¿
                             if (mask[x][p1.second] + mask[x][p2.second] >= mask_flag && mask[x][p1.second] + mask[x][p2.second] != 0)
                             {
                                 for (int y = 1 + std::min(p1.second, p2.second); y < std::max(p1.second, p2.second); y++)
@@ -4463,18 +4487,18 @@ Matrix<int> floor_plan_alignment(const std::map<int, Room>& expanded_rooms, cons
                         }
                     }
                 }
-                //×óÓÒÒÆ¶¯
+                //å·¦å³ç§»åŠ¨
                 else if (p1.second == p2.second)
                 {
-                    //¼ÇÂ¼×´Ì¬Î»
+                    //è®°å½•çŠ¶æ€ä½
                     int mask_flag = mask[p1.first][p1.second] + mask[p2.first][p2.second];
 
-                    //Ïò×ó
+                    //å‘å·¦
                     if (p1.second - 1 >= 0 && inside_mask[(p1.first + p2.first) / 2][p1.second - 1] == 0)
                     {
                         for (int y = p1.second; y >= p1.second - threshold && y >= 0; y--)
                         {
-                            //ÊÇ·ñ¿ÉÑØ±ß
+                            //æ˜¯å¦å¯æ²¿è¾¹
                             if (mask[p1.first][y] + mask[p2.first][y] >= mask_flag && mask[p1.first][y] + mask[p2.first][y] != 0)
                             {
                                 for (int x = 1 + std::min(p1.first, p2.first); x < std::max(p1.first, p2.first); x++)
@@ -4503,12 +4527,12 @@ Matrix<int> floor_plan_alignment(const std::map<int, Room>& expanded_rooms, cons
                             }
                         }
                     }
-                    //ÏòÓÒ
+                    //å‘å³
                     else if (p1.second + 1 < w && inside_mask[(p1.first + p2.first) / 2][p1.second + 1] == 0)
                     {
                         for (int y = p1.second; y <= p1.second + threshold && y < w; y++)
                         {
-                            //ÊÇ·ñ¿ÉÑØ±ß
+                            //æ˜¯å¦å¯æ²¿è¾¹
                             if (mask[p1.first][y] + mask[p2.first][y] >= mask_flag && mask[p1.first][y] + mask[p2.first][y] != 0)
                             {
                                 for (int x = 1 + std::min(p1.first, p2.first); x < std::max(p1.first, p2.first); x++)
@@ -4540,20 +4564,20 @@ Matrix<int> floor_plan_alignment(const std::map<int, Room>& expanded_rooms, cons
                 }
                 else
                 {
-                    std::cerr << "GRS ERROR:ÔÚµ¥¸ö·¿¼äµÄ»§ĞÍÍ¼¶ÔÆë±äĞÎÖĞ£¬ÕÒµ½µÄÁ½¸öµãxy¶¼²»ÏàµÈ" << std::endl;
+                    std::cerr << "GRS ERROR:åœ¨å•ä¸ªæˆ¿é—´çš„æˆ·å‹å›¾å¯¹é½å˜å½¢ä¸­ï¼Œæ‰¾åˆ°çš„ä¸¤ä¸ªç‚¹xyéƒ½ä¸ç›¸ç­‰" << std::endl;
                     throw std::runtime_error("Invalid line found.");
 
                     return {};
                 }
 
-                //µ¥¸ö·¿¼äµÄµ¥±ß±äĞÎÍê³É
-            }//µ¥¸ö·¿¼ä±äĞÎÍê³É
+                //å•ä¸ªæˆ¿é—´çš„å•è¾¹å˜å½¢å®Œæˆ
+            }//å•ä¸ªæˆ¿é—´å˜å½¢å®Œæˆ
 
             rooms_contours[n].second = cnt;
 
-        }//È«·¿¼ä±äĞÎÍêÒ»ÂÖ
+        }//å…¨æˆ¿é—´å˜å½¢å®Œä¸€è½®
 
-        //Çé¿ö²¹Â©
+        //æƒ…å†µè¡¥æ¼
         for (size_t n = 0; n < rooms_contours.size(); n++)
         {
             int room_id = rooms_contours[n].first;
@@ -4564,7 +4588,7 @@ Matrix<int> floor_plan_alignment(const std::map<int, Room>& expanded_rooms, cons
             std::vector<std::vector<int>> mask(h, std::vector<int>(w, 0));
             cv::Mat mask_mat(h, w, CV_8UC1, cv::Scalar(0));
 
-            //±³¾°ÏŞÖÆ¾ØÕóÉú³É
+            //èƒŒæ™¯é™åˆ¶çŸ©é˜µç”Ÿæˆ
             for (auto& mask_cnt : rooms_contours)
             {
                 if (mask_cnt.first == room_id) continue;
@@ -4583,12 +4607,12 @@ Matrix<int> floor_plan_alignment(const std::map<int, Room>& expanded_rooms, cons
 
             int length = cnt.size();
 
-            //µ¥·¿¼ä±äĞÎ
+            //å•æˆ¿é—´å˜å½¢
             for (int m = 0; m < length; m++)
             {
-                //µ¥±ß±äĞÎ
+                //å•è¾¹å˜å½¢
 
-                //´Ë·¿¼äµÄÄÚ²¿Ìî³ä 
+                //æ­¤æˆ¿é—´çš„å†…éƒ¨å¡«å…… 
                 std::vector<std::vector<int>> inside_mask = cvPoint_to_matrix(cnt, h, w);
 
                 std::pair<int, int> p1 = std::make_pair(cnt[m].y, cnt[m].x);
@@ -4598,18 +4622,18 @@ Matrix<int> floor_plan_alignment(const std::map<int, Room>& expanded_rooms, cons
 
                 bool stop_run = false;
 
-                //ÉÏÏÂÒÆ¶¯
+                //ä¸Šä¸‹ç§»åŠ¨
                 if (p1.first == p2.first)
                 {
-                    //¼ÇÂ¼³õÊ¼Á½¶¥µã×´Ì¬
+                    //è®°å½•åˆå§‹ä¸¤é¡¶ç‚¹çŠ¶æ€
                     //int mask_flag = mask[p1.first][p1.second] + mask[p2.first][p2.second];
 
-                    //ÏòÉÏ
+                    //å‘ä¸Š
                     if (p1.first - 1 >= 0 && inside_mask[p1.first - 1][(p1.second + p2.second) / 2] == 0)
                     {
                         for (int x = p1.first; x >= p1.first - threshold && x >= 0; x--)
                         {
-                            //Èç¹ûÓĞ±ß¿ÉÒÔÑØÇÒ×´Ì¬Î»Ã»±ä
+                            //å¦‚æœæœ‰è¾¹å¯ä»¥æ²¿ä¸”çŠ¶æ€ä½æ²¡å˜
                             if (mask[x][p1.second] + mask[x][p2.second] != 0)
                             {
                                 for (int y = 1 + std::min(p1.second, p2.second); y < std::max(p1.second, p2.second); y++)
@@ -4638,12 +4662,12 @@ Matrix<int> floor_plan_alignment(const std::map<int, Room>& expanded_rooms, cons
                             }
                         }
                     }
-                    //ÏòÏÂ
+                    //å‘ä¸‹
                     else if (p1.first + 1 < h && inside_mask[p1.first + 1][(p1.second + p2.second) / 2] == 0)
                     {
                         for (int x = p1.first; x <= p1.first + threshold && x < h; x++)
                         {
-                            //Èç¹ûÓĞ±ß¿ÉÒÔÑØ
+                            //å¦‚æœæœ‰è¾¹å¯ä»¥æ²¿
                             if (mask[x][p1.second] + mask[x][p2.second] != 0)
                             {
                                 for (int y = 1 + std::min(p1.second, p2.second); y < std::max(p1.second, p2.second); y++)
@@ -4673,18 +4697,18 @@ Matrix<int> floor_plan_alignment(const std::map<int, Room>& expanded_rooms, cons
                         }
                     }
                 }
-                //×óÓÒÒÆ¶¯
+                //å·¦å³ç§»åŠ¨
                 else if (p1.second == p2.second)
                 {
-                    //¼ÇÂ¼×´Ì¬Î»
+                    //è®°å½•çŠ¶æ€ä½
                     //int mask_flag = mask[p1.first][p1.second] + mask[p2.first][p2.second];
 
-                    //Ïò×ó
+                    //å‘å·¦
                     if (p1.second - 1 >= 0 && inside_mask[(p1.first + p2.first) / 2][p1.second - 1] == 0)
                     {
                         for (int y = p1.second; y >= p1.second - threshold && y >= 0; y--)
                         {
-                            //ÊÇ·ñ¿ÉÑØ±ß
+                            //æ˜¯å¦å¯æ²¿è¾¹
                             if (mask[p1.first][y] + mask[p2.first][y] != 0)
                             {
                                 for (int x = 1 + std::min(p1.first, p2.first); x < std::max(p1.first, p2.first); x++)
@@ -4713,12 +4737,12 @@ Matrix<int> floor_plan_alignment(const std::map<int, Room>& expanded_rooms, cons
                             }
                         }
                     }
-                    //ÏòÓÒ
+                    //å‘å³
                     else if (p1.second + 1 < w && inside_mask[(p1.first + p2.first) / 2][p1.second + 1] == 0)
                     {
                         for (int y = p1.second; y <= p1.second + threshold && y < w; y++)
                         {
-                            //ÊÇ·ñ¿ÉÑØ±ß
+                            //æ˜¯å¦å¯æ²¿è¾¹
                             if (mask[p1.first][y] + mask[p2.first][y] != 0)
                             {
                                 for (int x = 1 + std::min(p1.first, p2.first); x < std::max(p1.first, p2.first); x++)
@@ -4750,20 +4774,20 @@ Matrix<int> floor_plan_alignment(const std::map<int, Room>& expanded_rooms, cons
                 }
                 else
                 {
-                    std::cerr << "GRS ERROR:ÔÚµ¥¸ö·¿¼äµÄ»§ĞÍÍ¼¶ÔÆë±äĞÎÖĞ£¬ÕÒµ½µÄÁ½¸öµãxy¶¼²»ÏàµÈ" << std::endl;
+                    std::cerr << "GRS ERROR:åœ¨å•ä¸ªæˆ¿é—´çš„æˆ·å‹å›¾å¯¹é½å˜å½¢ä¸­ï¼Œæ‰¾åˆ°çš„ä¸¤ä¸ªç‚¹xyéƒ½ä¸ç›¸ç­‰" << std::endl;
                     throw std::runtime_error("Invalid line found.");
 
                     return {};
                 }
 
-                //µ¥¸ö·¿¼äµÄµ¥±ß±äĞÎÍê³É
-            }//µ¥¸ö·¿¼ä±äĞÎÍê³É
+                //å•ä¸ªæˆ¿é—´çš„å•è¾¹å˜å½¢å®Œæˆ
+            }//å•ä¸ªæˆ¿é—´å˜å½¢å®Œæˆ
 
             rooms_contours[n].second = cnt;
 
-        }//È«·¿¼ä±äĞÎÍêÒ»ÂÖ2
+        }//å…¨æˆ¿é—´å˜å½¢å®Œä¸€è½®2
 
-    }//²»ÔÙ·¢Éú¸Ä±ä
+    }//ä¸å†å‘ç”Ÿæ”¹å˜
 
     for (auto& dst_cnt : rooms_contours)
     {
@@ -4777,6 +4801,8 @@ Matrix<int> floor_plan_alignment(const std::map<int, Room>& expanded_rooms, cons
             dst[i][j] = static_cast<int>(dst_mat.at<uchar>(i, j) / 255);
         }
     }
+
+    std::cout << "æˆ·å‹å›¾å¯¹é½å®Œæˆ" << std::endl;
 
     return dst;
 }
@@ -4812,10 +4838,10 @@ void draw_final_map(std::vector<std::vector<int>>& segmented_matrix,
     int h = segmented_matrix.size();
     int w = segmented_matrix[0].size();
 
-    // ´´½¨Ò»¸öRGB»­²¼£¬°×É«±³¾°
+    // åˆ›å»ºä¸€ä¸ªRGBç”»å¸ƒï¼Œç™½è‰²èƒŒæ™¯
     cv::Mat final_map(h, w, CV_8UC3, cv::Scalar(255, 255, 255));
 
-    // Ëæ»úÉú³ÉRGBÑÕÉ«
+    // éšæœºç”ŸæˆRGBé¢œè‰²
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> dis(0, 255);
@@ -4871,14 +4897,14 @@ void draw_final_map(std::vector<std::vector<int>>& segmented_matrix,
         }
     }
 
-    // »æÖÆÃÅµÄÏß¶Î
+    // ç»˜åˆ¶é—¨çš„çº¿æ®µ
     for (auto& door : door_pixels)
     {
-        cv::line(final_map, cv::Point(door.first.second, door.first.first), cv::Point(door.second.second, door.second.first), cv::Scalar(0, 0, 255), 2);  // ºìÉ«
+        cv::line(final_map, cv::Point(door.first.second, door.first.first), cv::Point(door.second.second, door.second.first), cv::Scalar(0, 0, 255), 2);  // çº¢è‰²
     }
 
 
-    // ÏÔÊ¾×îÖÕµØÍ¼
+    // æ˜¾ç¤ºæœ€ç»ˆåœ°å›¾
     cv::imshow("Final Map", final_map);
     cv::imwrite("C:\\Users\\13012\\Desktop\\result\\final_map.png", final_map);
 
@@ -4894,15 +4920,18 @@ void draw_final_map(Matrix<int>& segmented_matrix,
     int h = segmented_matrix.size();
     int w = segmented_matrix[0].size();
 
-    // ´´½¨Ò»¸öRGB»­²¼£¬°×É«±³¾°
+    // åˆ›å»ºä¸€ä¸ªRGBç”»å¸ƒï¼Œç™½è‰²èƒŒæ™¯
     cv::Mat final_map(h, w, CV_8UC3, cv::Scalar(255, 255, 255));
 
-    // Ëæ»úÉú³ÉRGBÑÕÉ«
+    // éšæœºç”ŸæˆRGBé¢œè‰²
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> dis(0, 255);
     std::vector<cv::Vec3b> colors;
-    for (int i = 0; i < expanded_rooms.size(); i++)
+
+    auto lastroom = expanded_rooms.rbegin();
+
+    for (int i = 0; i < lastroom->first; i++)
     {
         colors.push_back(cv::Vec3b(dis(gen), dis(gen), dis(gen)));
     }
@@ -4949,7 +4978,7 @@ void draw_final_map(Matrix<int>& segmented_matrix,
         }
     }
 
-    // »æÖÆÃÅµÄÏß¶Î
+    // ç»˜åˆ¶é—¨çš„çº¿æ®µ
     for (auto& door : doorMap)
     {
         for (auto& p : door.second.path)
@@ -4959,7 +4988,7 @@ void draw_final_map(Matrix<int>& segmented_matrix,
     }
 
 
-    // ÏÔÊ¾×îÖÕµØÍ¼
+    // æ˜¾ç¤ºæœ€ç»ˆåœ°å›¾
     cv::imshow("Final Map", final_map);
     cv::imwrite("C:\\Users\\13012\\Desktop\\result\\final_map.png", final_map);
 
@@ -4998,12 +5027,12 @@ std::vector<cv::Point> findTurnPoints(std::vector<std::vector<int>>& outline_mat
         return turnPoints;
     }
 
-    //´¢´æ³õÊ¼µã²¢¿ªÊ¼ËÑË÷
+    //å‚¨å­˜åˆå§‹ç‚¹å¹¶å¼€å§‹æœç´¢
     allPoints = { start_pixel };
     std::stack<std::pair<int, int>> stack;
     stack.push(start_pixel);
 
-    // ËÄÁ¬Í¨·½Ïò£ºÏÂ£¬×ó£¬ÉÏ£¬ÓÒ£¬±£Ö¤ÄæÊ±ÕëÑ°ÕÒ
+    // å››è¿é€šæ–¹å‘ï¼šä¸‹ï¼Œå·¦ï¼Œä¸Šï¼Œå³ï¼Œä¿è¯é€†æ—¶é’ˆå¯»æ‰¾
     std::vector<std::pair<int, int>> directions = { {1, 0}, {0, -1}, {-1, 0}, {0, 1} };
 
     while (!stack.empty())
@@ -5019,7 +5048,7 @@ std::vector<cv::Point> findTurnPoints(std::vector<std::vector<int>>& outline_mat
                 allPoints.push_back(std::make_pair(nx, ny));
                 stack.push(std::make_pair(nx, ny));
                 outline_matrix[nx][ny] = 0;
-                break;  // Ö»Ñ¹ÈëÒ»¸öÁÚ¾Óµ½Õ»ÖĞ
+                break;  // åªå‹å…¥ä¸€ä¸ªé‚»å±…åˆ°æ ˆä¸­
             }
         }
     }
@@ -5062,13 +5091,13 @@ int room_merge(int room1, int room2, std::map<int, Room>& rooms, std::map<int, R
 
         std::set<p64> deleted_ci;
 
-        auto c_info1 = r1.get_connection_info();
-        auto c_info2 = r2.get_connection_info();
+        std::vector<std::pair<int, p64>> c_info1 = r1.get_connection_info();
+        std::vector<std::pair<int, p64>> c_info2 = r2.get_connection_info();
 
-        auto ci_it = std::remove_if(c_info1.begin(), c_info1.end(),
+        auto ci_it = std::stable_partition(c_info1.begin(), c_info1.end(),
             [&room2](const std::pair<int, p64>& element)
             {
-                return element.first == room2;
+                return element.first != room2;
             });
 
         if (ci_it != c_info1.end())
@@ -5120,7 +5149,7 @@ int room_merge(int room1, int room2, std::map<int, Room>& rooms, std::map<int, R
         }
 
 
-        //ĞÂ·¿¼ä¾ØÕó
+        //æ–°æˆ¿é—´çŸ©é˜µ
         Matrix<int> new_room(h, std::vector<int>(w, 0));
 
         for (auto& p : r1.get_pixels())
@@ -5161,7 +5190,7 @@ int room_merge(int room1, int room2, std::map<int, Room>& rooms, std::map<int, R
             }
         }
 
-        //¸üĞÂË«ÏñËØµã
+        //æ›´æ–°åŒåƒç´ ç‚¹
         r1.clear_pixels();
         for (int u = 0; u < h; u++)
         {
@@ -5197,7 +5226,7 @@ int room_merge(int room1, int room2, std::map<int, Room>& rooms, std::map<int, R
 
         r1.clear_connection_info();
 
-        //ĞÂ»§ĞÍ¾ØÕó
+        //æ–°æˆ·å‹çŸ©é˜µ
         Matrix<int> new_eroom(h, std::vector<int>(w, 0));
 
         for (auto& p : r1.get_outline_pixels())
@@ -5214,7 +5243,7 @@ int room_merge(int room1, int room2, std::map<int, Room>& rooms, std::map<int, R
         Matrix<int> kernel(3, std::vector<int>(3, 1));
         new_eroom = customize_erode(sc_rm, kernel);
 
-        //¸üĞÂË«ÏñËØµã
+        //æ›´æ–°åŒåƒç´ ç‚¹
         r1.clear_pixels();
         for (int u = 0; u < h; u++)
         {
@@ -5236,7 +5265,7 @@ int room_merge(int room1, int room2, std::map<int, Room>& rooms, std::map<int, R
         return 4;
     }
 
-    //ÒÆ³ıroom2
+    //ç§»é™¤room2
     rooms.erase(room2);
     expanded_rooms.erase(room2);
 
@@ -5399,12 +5428,12 @@ void test_final_map()
 {
     const char* filename = "D:\\files\\mapfile\\dataset_occ\\seg_ori_20230519_012513_24.debug";
 
-    // ¶ÁÈ¡µØÍ¼ÎÄ¼ş²¢×ª»¯Îª01¾ØÕó
+    // è¯»å–åœ°å›¾æ–‡ä»¶å¹¶è½¬åŒ–ä¸º01çŸ©é˜µ
     std::vector<std::vector<uint8_t>> binaryMatrix = readMapFile(filename);
 
     std::vector<std::vector<int>> origin_map = ConvertMatrixToInt(binaryMatrix);
 
-    // ½«01¾ØÕó×ª»¯Îª¶şÖµÍ¼Ïñ²¢´òÓ¡
+    // å°†01çŸ©é˜µè½¬åŒ–ä¸ºäºŒå€¼å›¾åƒå¹¶æ‰“å°
     printBinaryImage(origin_map, 1, "origin_map");
 
     cv::Mat cv_kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
@@ -5466,12 +5495,12 @@ void test_final_map()
         room.print_connected_rooms();
     }
 
-    //°¼½ÇÅòÕÍ³õÊ¼»§ĞÍÍ¼Éú³É
+    //å‡¹è§’è†¨èƒ€åˆå§‹æˆ·å‹å›¾ç”Ÿæˆ
     auto expanded = expand_rooms(segmented_matrix, rooms);
     auto& expanded_matrix = expanded.first;
     auto& expanded_rooms = expanded.second;
 
-    //ÓÅ»¯
+    //ä¼˜åŒ–
 
     std::vector<std::vector<int>> tidy_room(segmented_matrix.size(), std::vector<int>(segmented_matrix[0].size(), 0));
     floor_plan_optimizer(expanded_matrix, tidy_room, expanded_rooms, segmented_matrix, rooms, door_pixels);
@@ -5485,36 +5514,43 @@ void test_final_map()
 
 int test_new_map()
 {
-    const char* filename = "D:\\files\\mapfile\\dataset_occ\\seg_ori_20230519_012513_24.debug";
+    //const char* filename = "D:\\files\\mapfile\\dataset_occ\\seg_ori_20230519_012513_24.debug";
 
-    // ¶ÁÈ¡µØÍ¼ÎÄ¼ş²¢×ª»¯Îª01¾ØÕó
-    std::vector<std::vector<uint8_t>> binaryMatrix = readMapFile(filename);
+    // è¯»å–åœ°å›¾æ–‡ä»¶å¹¶è½¬åŒ–ä¸º01çŸ©é˜µ
+    //std::vector<std::vector<uint8_t>> binaryMatrix = readMapFile(filename);
 
-    std::vector<std::vector<int>> origin_map = ConvertMatrixToInt(binaryMatrix);
+    //std::vector<std::vector<int>> origin_map = ConvertMatrixToInt(binaryMatrix);
+
+    // è¯»å–æ–‡ä»¶è·¯å¾„
+    std::string filename = "C:\\Users\\13012\\Desktop\\æµ‹è¯•1.png";
+
+    Matrix<int> origin_map = ConvertImageToMatrix(filename);
 
     int h = origin_map.size();
     int w = origin_map[0].size();
 
-    // ½«01¾ØÕó×ª»¯Îª¶şÖµÍ¼Ïñ²¢´òÓ¡
+    // å°†01çŸ©é˜µè½¬åŒ–ä¸ºäºŒå€¼å›¾åƒå¹¶æ‰“å°
     printBinaryImage(origin_map, 1, "origin_map");
 
     Matrix<int> kernel(3, std::vector<int>(3, 1));
 
-    Matrix<int> optimization_map = customize_closing(extract_filled_image(origin_map), kernel);
+    //Matrix<int> optimization_map = customize_closing(extract_filled_image(origin_map), kernel);
+    Matrix<int> optimization_map = customize_closing(origin_map, kernel);
+
     printBinaryImage(optimization_map, 1, "optimization_map");
 
+    //cv::waitKey(0);
 
     std::vector<std::pair<p64, p64>> door_pixels =
     {
-        {{216, 41}, {216,73}},
-        {{111, 161}, {140, 161}},
-        {{110, 175}, {110, 190}},
-        {{110, 244}, {110, 258}},
-        {{136, 244}, {136, 259}},
-        {{115, 263}, {130, 263}},
-        {{83, 315}, {83, 332}},
-        {{178, 324}, {178, 338}},
-        {{111, 42}, {213, 147}}
+        {{176, 73}, {70, 193}},
+        {{354, 71}, {71, 357}},
+        {{465, 206}, {71, 586}},
+        {{465, 434}, {225, 634}},
+        {{356, 73}, {465, 203}},
+        {{130, 73}, {466, 358}},
+        {{71, 225}, {465, 579}},
+        {{69, 446}, {332, 634}}
     };
 
     std::map<p64, Door> doorMap = doorVector2Map(door_pixels);
@@ -5525,6 +5561,10 @@ int test_new_map()
     auto result = segment_rooms(optimization_map, doorMap, bgmask);
     auto& segmented_matrix = result.first;
     auto& rooms = result.second;
+
+    printBinaryImage(segmented_matrix, 1, "segmented_matrix");
+
+    //cv::waitKey(0);
 
     for (auto& room : rooms)
     {
@@ -5573,12 +5613,14 @@ int test_new_map()
     }
 
 
-    //°¼½ÇÅòÕÍ³õÊ¼»§ĞÍÍ¼Éú³É
+    //å‡¹è§’è†¨èƒ€åˆå§‹æˆ·å‹å›¾ç”Ÿæˆ
     auto expanded = expand_rooms(segmented_matrix, rooms);
     auto& expanded_matrix = expanded.first;
     auto& expanded_rooms = expanded.second;
 
-    //ÓÅ»¯
+    //printBinaryImage(expanded_matrix, 1, "expanded_matrix");
+
+    //ä¼˜åŒ–
 
     Matrix<int> tidy_room(h, std::vector<int>(w, 0));
     int op_flag = floor_plan_optimizer(expanded_matrix, tidy_room, expanded_rooms, segmented_matrix, rooms, doorMap);
@@ -5586,8 +5628,12 @@ int test_new_map()
     if (op_flag == 2)return 2;
     if (op_flag == 3)return 3;
 
+    room_merge(1, 2, rooms, expanded_rooms, doorMap, segmented_matrix, expanded_matrix);
 
-    draw_final_map(segmented_matrix, expanded_matrix, tidy_room, expanded_rooms, doorMap);
+
+    draw_final_map(segmented_matrix, expanded_matrix, segmented_matrix, expanded_rooms, doorMap);
+
+
 
     return 0;
 

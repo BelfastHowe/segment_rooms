@@ -75,3 +75,40 @@ void printBinaryMatrix(const std::vector<std::vector<uint8_t>>& binaryMatrix)
     return 0;
 }
 */
+
+
+std::vector<std::vector<int>> ConvertImageToMatrix(const std::string& imagePath) 
+{
+    // Load the image
+    cv::Mat img = cv::imread(imagePath, cv::IMREAD_COLOR);
+
+    // Check if image is loaded successfully
+    if (img.empty()) 
+    {
+        std::cerr << "Failed to load image: " << imagePath << std::endl;
+        return {};
+    }
+
+    // Convert the image to grayscale
+    cv::Mat img_gray;
+    cv::cvtColor(img, img_gray, cv::COLOR_BGR2GRAY);
+
+    // Binarize the image
+    cv::Mat img_binary;
+    cv::threshold(img_gray, img_binary, 128, 1, cv::THRESH_BINARY_INV);
+
+    // Convert the binary image to a 2D vector
+    std::vector<std::vector<int>> matrix;
+    matrix.resize(img_binary.rows, std::vector<int>(img_binary.cols));
+
+    for (int i = 0; i < img_binary.rows; ++i) 
+    {
+        for (int j = 0; j < img_binary.cols; ++j) 
+        {
+            matrix[i][j] = img_binary.at<uchar>(i, j);
+        }
+    }
+
+    return matrix;
+}
+

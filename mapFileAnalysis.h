@@ -15,5 +15,8 @@ std::vector<std::vector<uint8_t>> readMapFile(const char* filename);
 // 函数声明：将01矩阵转化为二值图像并打印
 void printBinaryMatrix(const std::vector<std::vector<uint8_t>>& binaryMatrix);
 
+//png读取
+std::vector<std::vector<int>> ConvertImageToMatrix(const std::string& imagePath);
+
 #endif  // MAP_FILE_ANALYSIS_H
 
