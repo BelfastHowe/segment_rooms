@@ -5352,6 +5352,61 @@ int room_merge(int room1, int room2, std::map<int, Room>& rooms, std::map<int, R
 }
 
 
+int map_renew(Matrix<int>& new_map, p64 offset_xy, Matrix<int>& segmented_matrix, std::map<int, Room>& rooms, std::map<int, Room>& expanded_rooms, std::map<p64, Door>& doorMap)
+{
+
+    //画布大小确定
+    std::vector<p64> all_points;
+
+    for (int i = 0; i < new_map.size(); i++)
+    {
+        for (int j = 0; j < new_map[0].size(); j++)
+        {
+            if (new_map[i][j] == 0) continue;
+
+            all_points.push_back(std::make_pair(i + offset_xy.first, j + offset_xy.second));
+        }
+    }
+
+    for (int i = 0; i < segmented_matrix.size(); i++)
+    {
+        for (int j = 0; j < segmented_matrix[0].size(); j++)
+        {
+            if (segmented_matrix[i][j] == 0) continue;
+
+            all_points.push_back(std::make_pair(i, j));
+        }
+    }
+
+    int min_nx = new_map.size() + segmented_matrix.size(), min_ny = new_map[0].size() + segmented_matrix[0].size(), max_nx = 0, max_ny = 0;
+
+    for (auto& p : all_points)
+    {
+        min_nx = std::min(min_nx, p.first);
+        min_ny = std::min(min_ny, p.second);
+        max_nx = std::max(max_nx, p.first);
+        max_ny = std::max(max_ny, p.second);
+    }
+
+
+    int h = max_nx - min_nx + 20;
+    int w = max_ny - min_ny + 20;
+
+    Matrix<int> nsm(h, std::vector<int>(w, 0));
+    Matrix<int> nnm(h, std::vector<int>(w, 0));
+
+    //segmented_matrix转换
+    for (int i = 0; i < segmented_matrix.size(); i++)
+    {
+        for (int j = 0; j < segmented_matrix[0].size(); j++)
+        {
+            nsm[i + 10 - min_nx][j + 10 - min_ny] = segmented_matrix[i][j];
+        }
+    }
+
+
+}
+
 
 
 
