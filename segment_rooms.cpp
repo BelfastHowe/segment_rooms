@@ -5352,8 +5352,18 @@ int room_merge(int room1, int room2, std::map<int, Room>& rooms, std::map<int, R
 }
 
 
-int map_renew(Matrix<int>& new_map, p64 offset_xy, Matrix<int>& segmented_matrix, std::map<int, Room>& rooms, std::map<int, Room>& expanded_rooms, std::map<p64, Door>& doorMap)
+int map_renew(Matrix<int>& new_map,
+    p64 offset_xy,
+    Matrix<int>& segmented_matrix,
+    std::map<int, Room>& rooms,
+    //std::map<int,Room>&expanded_rooms,
+    std::vector<std::pair<p64, p64>>& doors,
+    std::vector<std::pair<p64, p64>>& new_doors)
 {
+    //输入的segmented_matrix应该已经染色
+
+    //逆时针四连通
+    std::vector<p64> directions = { {1, 0}, {0, -1}, {-1, 0}, {0, 1} };
 
     //画布大小确定
     std::vector<p64> all_points;
@@ -5393,7 +5403,9 @@ int map_renew(Matrix<int>& new_map, p64 offset_xy, Matrix<int>& segmented_matrix
     int w = max_ny - min_ny + 20;
 
     Matrix<int> nsm(h, std::vector<int>(w, 0));
+
     Matrix<int> nnm(h, std::vector<int>(w, 0));
+    Matrix<bool> visited_nnm(h, std::vector<bool>(w, false));
 
     //segmented_matrix转换
     for (int i = 0; i < segmented_matrix.size(); i++)
@@ -5404,6 +5416,423 @@ int map_renew(Matrix<int>& new_map, p64 offset_xy, Matrix<int>& segmented_matrix
         }
     }
 
+    //new_map转换
+    for (int i = 0; i < new_map.size(); i++)
+    {
+        for (int j = 0; j < new_map[0].size(); j++)
+        {
+            nnm[i + 10 - min_nx + offset_xy.first][j + 10 - min_ny + offset_xy.second] = new_map[i][j];
+        }
+    }
+
+    //doors转换
+    std::vector<std::pair<p64, p64>> dst_doors;
+
+    for (auto& door : doors)
+    {
+        int x0 = door.first.first + 10 - min_nx;
+        int y0 = door.first.second + 10 - min_ny;
+        int x1 = door.second.first + 10 - min_nx;
+        int y1 = door.second.second + 10 - min_ny;
+
+        dst_doors.push_back({ {x0,y0},{x1,y1} });
+    }
+
+    for (auto& door : new_doors)
+    {
+        int x0 = door.first.first + 10 - min_nx + offset_xy.first;
+        int y0 = door.first.second + 10 - min_ny + offset_xy.second;
+        int x1 = door.second.first + 10 - min_nx + offset_xy.first;
+        int y1 = door.second.second + 10 - min_ny + offset_xy.second;
+
+        dst_doors.push_back({ {x0,y0},{x1,y1} });
+    }
+
+    //doors=dst_doors;
+
+    //过滤重合区域
+    for (int i = 0; i < h; i++)
+    {
+        for (int j = 0; j < w; j++)
+        {
+            if (nsm[i][j] != 0)
+            {
+                nnm[i][j] = 0;
+            }
+        }
+    }
+
+    //待更新区域标记dfs
+    std::function<void(int, int, int, Matrix<int>&)> update_dfs = [&](int x, int y, int nid, Matrix<int>& nnm)
+    {
+            std::stack<p64> stack;
+            stack.push(std::make_pair(x, y));
+
+            //染色
+            nnm[x][y] = nid;
+            //标记为已访问
+            visited_nnm[x][y] = true;
+
+            while (!stack.empty())
+            {
+                p64 current = stack.top();
+                stack.pop();
+
+                int cx = current.first;
+                int cy = current.second;
+
+                for (const auto& dir : directions)
+                {
+                    int nx = cx + dir.first;
+                    int ny = cx + dir.second;
+
+                    if (is_valid_pixel(nx, ny, h, w) && nnm[nx][ny] == 1 && !visited_nnm[nx][ny])
+                    {
+                        stack.push(std::make_pair(nx, ny));
+                        nnm[nx][ny] = nid;
+                        visited_nnm[nx][ny] = true;
+                    }
+                }
+            }
+
+    };
+
+    //旧区域与新区域的连通关系标记，中间表
+    std::set<std::pair<int, int>> relationship;
+
+    //新区域面积
+    std::vector<p64> narea_table;
+
+    //搜索标记待更新区域
+    int naid = 1;
+    bool hc = true;
+
+    while (hc)
+    {
+        hc = false;
+        for (int i = 0; i < h; i++)
+        {
+            for (int j = 0; j < w; j++)
+            {
+                if (nnm[i][j] != 0 && !visited_nnm[i][j])
+                {
+                    update_dfs(i, j, naid, nnm);
+                    hc = true;
+                    break;
+                }
+            }
+            if (hc) break;
+        }
+
+        naid++;
+    }
+
+    naid -= 2;
+
+    //记录面积列表
+    for (int nid = 1; nid <= naid; nid++)
+    {
+        int size = 0;
+        for (const auto& row : nnm)
+        {
+            for (const auto& element : row)
+            {
+                if (element == nid)
+                {
+                    size++;
+                }
+            }
+        }
+
+        narea_table.push_back(std::make_pair(nid, size));
+    }
+
+    //记录新旧区域连通关系中间表
+    for (auto& room : rooms)
+    {
+        int rid = room.first;
+
+        Matrix<int> rmat(h, std::vector<int>(w, 0));
+
+        for (int i = 0; i < h; i++)
+        {
+            for (int j = 0; j < w; j++)
+            {
+                if (segmented_matrix[i][j] == rid)
+                {
+                    rmat[i][j] = 1;
+                }
+            }
+        }
+
+        //四连通连接的所有可能
+        std::vector<p64> junction;
+        for (int i = 1; i < h - 1; i++)
+        {
+            for (int j = 1; j < w - 1; j++)
+            {
+                if (rmat[i][j] == 0 && (rmat[i - 1][j] + rmat[i][j - 1] + rmat[i][j + 1] + rmat[i + 1][j]) > 0)
+                {
+                    junction.push_back(std::make_pair(i, j));
+                }
+            }
+        }
+
+        for (auto& p : junction)
+        {
+            int jx = p.first;
+            int jy = p.second;
+
+            if (nnm[jx][jy] == 0) continue;
+
+            relationship.insert(std::make_pair(rid, nnm[jx][jy]));
+        }
+
+
+    }
+
+    //某个新区域与多个旧区域相邻时，先粗暴地判断为打滑，删除这个区域
+    std::map<int, int> narea_count;
+    std::set<int> slippery;
+
+    for (const auto& r : relationship)
+    {
+        narea_count[r.second]++;
+    }
+
+    for (auto it = relationship.begin(); it != relationship.end(); )
+    {
+        if (narea_count[it->second] > 1)
+        {
+            slippery.insert(it->second);
+            it = relationship.erase(it);
+        }
+        else
+        {
+            ++it;
+        }
+    }
+
+    //删除打滑区域
+    for (auto& nid : slippery)
+    {
+        for (auto& row : nnm)
+        {
+            for (auto& element : row)
+            {
+                if (element == nid) element = 0;
+            }
+        }
+    }
+
+    //删除打滑区域面积
+    narea_table.erase(std::remove_if(narea_table.begin(), narea_table.end(),
+        [&](const p64& p)
+        {
+            return slippery.find(p.first) != slippery.end();
+        }),
+        narea_table.end());
+
+
+    //历史地图总面积，单位平方米
+    double total_historical_map_area = 0;
+
+    //地图更新阈值
+    double map_update_threshold = 0;
+
+    for (const auto& row : nsm)
+    {
+        for (const auto& element : row)
+        {
+            if (element == 0) continue;
+
+            total_historical_map_area += 0.0025;
+        }
+    }
+
+
+    //地图更新条件阈值计算
+    std::function<double(double)> mapUpdateThresholdConversion = [](double area) -> double
+    {
+            if (area <= 30.0)
+            {
+                return 2.0;
+            }
+            else if (area <= 80.0)
+            {
+                return 2.0 + 0.04 * (area - 30.0);
+            }
+            else
+            {
+                return 4.0;
+            }
+    };
+
+    map_update_threshold = mapUpdateThresholdConversion(total_historical_map_area);
+
+
+    //单个区域的有效新增面积阈值计算
+    std::function<double(double)> effectivelyAddedAreaThresholdTransformation = [](double area) -> double
+    {
+            if (area <= 10.0)
+            {
+                return 1.5;
+            }
+            else if (area <= 30.0)
+            {
+                return 1.5 + 0.075 * (area - 10.0);
+            }
+            else
+            {
+                return 3.0;
+            }
+    };
+
+    //relationship的map重组，这样更直观
+    std::map<int, std::set<int>> relationmap;
+
+    //有效区域池
+    std::map<int, std::set<int>> valid_new_map;
+
+    for (const auto& rel : relationship)
+    {
+        relationmap[rel.first].insert(rel.second);
+    }
+
+    for (const auto& rm : relationmap)
+    {
+        int orid = rm.first;
+        double or_as = static_cast<double>(rooms[orid].get_pixel_count()) / 400.0;
+
+        double S = effectivelyAddedAreaThresholdTransformation(or_as);
+
+        //相关新区域面积map
+        std::map<int, double> nr_as;
+
+        for (const auto& nr : rm.second)
+        {
+            for (const auto& nt : narea_table)
+            {
+                if (nt.first == nr)
+                {
+                    double this_nsize = static_cast<double>(nt.second) / 400.0;
+                    nr_as.insert(std::map<int, double>::value_type(nr, this_nsize));
+                }
+            }
+        }
+
+        if (nr_as.size() == 1)
+        {
+            S = 1.5;
+        }
+
+        //累加面积y
+        double accumulate_y = 0.0;
+
+        for (const auto& nra : nr_as)
+        {
+            if (nra.second <= 1.5) continue;
+
+            accumulate_y += nra.second;
+            //valid_new_as.insert(std::map<int,double>::value_type(nra.first,nra.second));
+        }
+
+        if (accumulate_y > S)
+        {
+            for (const auto& nra : nr_as)
+            {
+                if (nra.second <= 1.5) continue;
+
+                valid_new_map[orid].insert(nra.first);
+            }
+        }
+
+    }
+
+    //判断地图更新条件
+
+    //有效新增区域数量
+    int valid_number_of_newly_added_areas = 0;
+
+    //有效区域面积列表
+    std::vector<double> vsl;
+
+    for (auto& vm : valid_new_map)
+    {
+        for (auto& vr : vm.second)
+        {
+            valid_number_of_newly_added_areas++;
+
+            for (auto& s : narea_table)
+            {
+                if (s.first == vr)
+                {
+                    vsl.push_back(static_cast<double>(s.second) / 400.0);
+                }
+            }
+        }
+    }
+
+    std::sort(vsl.begin(), vsl.end(), std::greater<>());
+
+    if (valid_number_of_newly_added_areas < 2) return 1;
+
+    //开始地图更新
+
+    //门的更新
+    doors = dst_doors;
+
+    //合并房间图
+
+    //valid_new_map中的set更换为relationmap中的set，因为小于1.5平方米的区域也会更新
+
+    for (auto it = valid_new_map.begin(); it != valid_new_map.end(); it++)
+    {
+        it->second = relationmap[it->first];
+    }
+
+    for (auto& change : valid_new_map)
+    {
+        int oid = change.first;
+        for (auto& nid : change.second)
+        {
+            for (int u = 0; u < h; u++)
+            {
+                for (int v = 0; v < w; v++)
+                {
+                    if (nnm[u][v] == nid)
+                    {
+                        nsm[u][v] = oid;
+                    }
+                }
+            }
+        }
+    }
+
+    for (auto iter = rooms.begin(); iter != rooms.end(); iter++)
+    {
+        int room_id = iter->first;
+
+        iter->second.clear_pixels();
+
+        for (int u = 0; u < h; u++)
+        {
+            for (int v = 0; v < w; v++)
+            {
+                if (nsm[u][v] == room_id)
+                {
+                    iter->second.add_pixel(std::make_pair(u, v));
+                }
+            }
+        }
+
+        //iter->second.calculate_outline(nsm);
+
+    }
+
+    segmented_matrix = nsm;
+
+    return 0;
 
 }
 
