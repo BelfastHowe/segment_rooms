@@ -145,6 +145,9 @@ std::vector<std::pair<int, int>> bresenham_line(int x1, int y1, int x2, int y2);
 //四连通光栅化直线绘制
 std::vector<p64> bresenham4(int x0, int y0, int x1, int y1);
 
+//门框的规则化
+int door_regularization(const Matrix<int>& current_map, std::vector<std::pair<p64, p64>>& src_doors);
+
 //门框字典构造
 std::map<p64, Door> doorVector2Map(std::vector<std::pair<p64, p64>>& doors);
 

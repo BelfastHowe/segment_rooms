@@ -240,6 +240,70 @@ std::vector<p64> bresenham4(int x0, int y0, int x1, int y1)
     return points;
 }
 
+int door_regularization(const Matrix<int>& current_map, std::vector<std::pair<p64, p64>>& src_doors)
+{
+    //src_doors不能为空
+
+
+    int h = current_map.size();
+    int w = current_map[0].size();
+
+    //开始正则化所有的门框
+    for (auto it = src_doors.begin(); it != src_doors.end();)
+    {
+        p64 sp = it->first;
+        p64 ep = it->second;
+
+        std::vector<p64> path = bresenham4(sp.first, sp.second, ep.first, ep.second);
+
+        //切入切出点缓存
+        std::vector<std::pair<bool, p64>> cut_io;
+
+        for (int i = 0; i < path.size() - 1; i++)
+        {
+            p64 p1 = path[i], p2 = path[i + 1];
+
+            int v1 = current_map[p1.first][p1.second];
+            int v2 = current_map[p1.first][p2.second];
+
+            if (v1 == 0 && v2 == 1)
+            {
+                //0-1跳变，切入点
+                cut_io.push_back(std::make_pair(false, p1));
+            }
+
+            if (v1 == 1 && v2 == 0)
+            {
+                //1-0跳变，切出点
+                cut_io.push_back(std::make_pair(true, p2));
+            }
+        }
+
+        //待加入的新门框
+        std::vector<std::pair<p64, p64>> new_doors;
+        for (int i = 0; i < cut_io.size() - 1; i++)
+        {
+            std::pair<bool, p64> fe1 = cut_io[i];
+            std::pair<bool, p64> fe2 = cut_io[i + 1];
+
+            if (!fe1.first && fe2.first)
+            {
+                new_doors.push_back(std::make_pair(fe1.second, fe2.second));
+            }
+        }
+
+        //删除当前门框
+        it = src_doors.erase(it);
+
+        src_doors.insert(it, new_doors.begin(), new_doors.end());
+
+
+    }
+
+
+    return 0;
+}
+
 std::map<p64, Door> doorVector2Map(std::vector<std::pair<p64, p64>>& doors)
 {
     std::cout << "开始初始化doorMap" << std::endl;
