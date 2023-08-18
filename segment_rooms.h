@@ -339,7 +339,17 @@ std::vector<cv::Point> findTurnPoints(std::vector<std::vector<int>>& outline_mat
 //双房间手动合并
 int room_merge(int room1, int room2, std::map<int, Room>& rooms, std::map<int, Room>& expanded_rooms, std::map<p64, Door>& doorMap, Matrix<int>& segmented_matrix, Matrix<int>& expanded_matrix);
 
+//地图更新
+int map_renew(Matrix<int>& new_map,
+    p64 offset_xy,
+    Matrix<int>& segmented_matrix,
+    std::map<int, Room>& rooms,
+    //std::map<int,Room>&expanded_rooms,
+    std::vector<std::pair<p64, p64>>& doors,
+    std::vector<std::pair<p64, p64>>& new_doors);
 
+//正确的后分割id分配
+int post_segment(Matrix<int>& segmented_matrix, std::map<int, Room>& rooms, std::map<p64, Door>& doorMap, const Matrix<int>& bgmask);
 
 
 

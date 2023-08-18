@@ -5902,6 +5902,205 @@ int map_renew(Matrix<int>& new_map,
 
 
 
+int post_segment(Matrix<int>& segmented_matrix, std::map<int, Room>& rooms, std::map<p64, Door>& doorMap, const Matrix<int>& bgmask)
+{
+    //后分割
+    //segmented_matrix应该染色
+
+    int h = segmented_matrix.size();
+    int w = segmented_matrix[0].size();
+
+    std::vector<p64> directions = { {1, 0}, {0, -1}, {-1, 0}, {0, 1} };
+
+    //bgmask门框背景置零
+    for (int i = 0; i < h; i++)
+    {
+        for (int j = 0; j < w; j++)
+        {
+            if (bgmask[i][j] == 1)
+            {
+                segmented_matrix[i][j] = 0;
+            }
+        }
+    }
+
+    //门框切除
+    for (int i = 0; i < h; i++)
+    {
+        for (int j = 0; j < w; j++)
+        {
+            for (auto& door : doorMap)
+            {
+                for (auto& p : door.second.path)
+                {
+                    segmented_matrix[p.first][p.second];
+                }
+            }
+        }
+    }
+
+
+    //房间号的确定
+    std::function<int(const std::map<int, Room>&)> getNewRoomId =
+        [](const std::map<int, Room>& rooms) ->int
+    {
+            if (rooms.empty())
+            {
+                return 1;
+            }
+
+            int lastNumber = 0;
+            for (const auto& pair : rooms)
+            {
+                if (pair.first - lastNumber > 1)
+                {
+                    return lastNumber + 1;
+                }
+                lastNumber = pair.first;
+            }
+
+            return lastNumber + 1;
+    };
+
+
+    //专属bfs
+    std::function<void(int, int, int, Matrix<int>&, Matrix<bool>&, std::vector<p64>&)> ps_bfs;
+    ps_bfs = [&](int x, int y, int value, Matrix<int>& matrix, Matrix<bool>& visited, std::vector<p64>& region)
+    {
+            std::queue<p64> stk;
+            stk.push({ x,y });
+
+            visited[x][y] = true;
+            region.push_back({ x,y });
+
+            while (!stk.empty())
+            {
+                p64 current = stk.front();
+                stk.pop();
+
+                for (auto& dir : directions)
+                {
+                    int nx = current.first + dir.first;
+                    int ny = current.second + dir.second;
+
+                    if (is_valid_pixel(nx, ny, h, w) && !visited[nx][ny] && matrix[nx][ny] == value)
+                    {
+                        stk.push({ nx,ny });
+                        visited[nx][ny] = true;
+                        region.push_back({ nx,ny });
+                    }
+                }
+            }
+    };
+
+    //房间具体情况总和
+    std::map<p64, std::vector<p64>> actual_situation;
+
+    std::function<void(Matrix<int>&)> as_make;
+    as_make = [&](Matrix<int>& matrix)
+    {
+            Matrix<bool> visited(h, std::vector<bool>(w, 0));
+
+            //复合id的生成
+            std::map<int, int> num;
+
+            for (int i = 0; i < h; i++)
+            {
+                for (int j = 0; j < w; j++)
+                {
+                    if (!visited[i][j] && matrix[i][j] != 0)
+                    {
+                        std::vector<p64> region;
+                        ps_bfs(i, j, matrix[i][j], matrix, visited, region);
+
+                        p64 id = { matrix[i][j],num[matrix[i][j]]++ };
+                        actual_situation[id] = region;
+                    }
+                }
+            }
+    };
+
+    as_make(segmented_matrix);
+
+    //嫡长子继承制
+    std::function<void()> reorderSubId = [&]()
+    {
+            // 首先，将连通域按主ID进行分组
+            std::map<int, std::vector<std::pair<int, int>>> grouped; // <mainID, <subID, size>>
+            for (const auto& entry : actual_situation)
+            {
+                int mainId = entry.first.first;
+                int subId = entry.first.second;
+                int size = entry.second.size();
+                grouped[mainId].push_back({ subId,size });
+
+            }
+
+            // 对每个主ID下的连通域按面积进行排序
+            for (auto& entry : grouped)
+            {
+                std::sort(entry.second.begin(), entry.second.end(), [](const std::pair<int, int>& a, const std::pair<int, int>& b)
+                    {
+                        return b.second < a.second; // 降序排序
+                    });
+            }
+
+            // 创建新的actual_situation
+            std::map<p64, std::vector<p64>> new_situation;
+            for (const auto& entry : grouped)
+            {
+                int mainId = entry.first;
+                for (int i = 0; i < entry.second.size(); i++)
+                {
+                    int oldSubId = entry.second[i].first;
+                    new_situation[{mainId, i}] = actual_situation[{mainId, oldSubId}];
+                }
+            }
+
+            actual_situation = new_situation;
+    };
+
+    //是否实行嫡长子继承制
+    reorderSubId();
+
+    /****************************权力再分配**************************/
+
+    //嫡长子继承
+    for (auto& sas : actual_situation)
+    {
+        if (sas.first.second != 0) continue;
+
+        int room_id = sas.first.first;
+        rooms[room_id].clear_pixels();
+
+        std::vector<p64> points = sas.second;
+        for (auto& p : points)
+        {
+            rooms[room_id].add_pixel(p);
+        }
+    }
+
+    //分封非嫡长子
+    for (auto& sas : actual_situation)
+    {
+        if (sas.first.second == 0) continue;
+        int nid = getNewRoomId(rooms);
+        Room nroom(nid);
+
+        std::vector<p64> points = sas.second;
+        for (auto& p : points)
+        {
+            nroom.add_pixel(p);
+        }
+        rooms.insert(std::map<int, Room>::value_type(nid, nroom));
+    }
+
+    return 0;
+}
+
+
+
+
 
 /*
 int main() 
