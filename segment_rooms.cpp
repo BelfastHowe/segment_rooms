@@ -53,6 +53,9 @@ void Room::print_connected_rooms() const
 
 void Room::calculate_outline(const std::vector<std::vector<int>>& matrix)
 {
+    int h = matrix.size();
+    int w = matrix[0].size();
+
     // 初始化空房间矩阵
     std::vector<std::vector<int>> room_matrix(matrix.size(), std::vector<int>(matrix[0].size(), 0));
 
@@ -65,14 +68,18 @@ void Room::calculate_outline(const std::vector<std::vector<int>>& matrix)
     }
 
     // 计算轮廓
-    std::vector<std::vector<int>> room_filled = extract_filled_image(room_matrix);
-    std::vector<std::vector<int>> room_outline = extract_edges(room_filled);
+    
+    Matrix<int> kernel(3, std::vector<int>(3, 1));
+    room_matrix = customize_closing(room_matrix, kernel);
+
+    //std::vector<std::vector<int>> room_filled = extract_filled_image(room_matrix);
+    std::vector<std::vector<int>> room_outline = extract_edges(room_matrix);
 
     // 寻找初始点
     std::pair<int, int> start_pixel = { -1, -1 };
     for (int i = 0; i < room_outline.size(); ++i)
     {
-        for (int j = 0; j < room_outline[i].size(); ++j)
+        for (int j = 0; j < room_outline[0].size(); ++j)
         {
             if (room_outline[i][j] == 1)
             {
@@ -119,6 +126,48 @@ void Room::calculate_outline(const std::vector<std::vector<int>>& matrix)
             }
         }
     }
+
+    //障碍物构造
+    obstacle_pixels.clear();
+    for (int i = 0; i < h; i++)
+    {
+        for (int j = 0; j < w; j++)
+        {
+            if (room_outline[i][j] == 1)
+            {
+                stack.push({ i,j });
+                std::vector<p64> tob;
+                tob.push_back({ i,j });
+
+                room_outline[i][j] = 0;
+
+                while (!stack.empty())
+                {
+                    p64 p = stack.top();
+                    stack.pop();
+
+                    for (const auto& d : directions)
+                    {
+                        int nx = p.first + d.first;
+                        int ny = p.second + d.second;
+
+                        if (is_valid_pixel(nx, ny, h, w) && room_outline[nx][ny] == 1)
+                        {
+                            stack.push({ nx,ny });
+                            room_outline[nx][ny] = 0;
+                            tob.push_back({ nx,ny });
+                            break;
+                        }
+                    }
+                }
+
+                obstacle_pixels.push_back(tob);
+            }
+        }
+    }
+
+
+
 }
 
 const std::vector<std::pair<int, int>>& Room::get_outline_pixels() const
@@ -154,6 +203,11 @@ void Room::delete_connection_info(int id)
 void Room::clear_connection_info()
 {
     connection_info.clear();
+}
+
+const std::vector<std::vector<p64>>& Room::get_obstacle_pixels() const
+{
+    return obstacle_pixels;
 }
 
 
@@ -256,6 +310,21 @@ int door_regularization(const Matrix<int>& current_map, std::vector<std::pair<p6
 
         std::vector<p64> path = bresenham4(sp.first, sp.second, ep.first, ep.second);
 
+        //去除矩阵外的点
+        path.erase(std::remove_if(path.begin(), path.end(),
+            [&](const p64& point)
+            {
+                return point.first < 0 || point.first >= current_map.size() || point.second < 0 || point.second >= current_map[0].size();
+            }),
+            path.end());
+
+        if (path.size() < 3)
+        {
+            it = src_doors.erase(it);
+
+            continue;
+        }
+
         //切入切出点缓存
         std::vector<std::pair<bool, p64>> cut_io;
 
@@ -264,7 +333,7 @@ int door_regularization(const Matrix<int>& current_map, std::vector<std::pair<p6
             p64 p1 = path[i], p2 = path[i + 1];
 
             int v1 = current_map[p1.first][p1.second];
-            int v2 = current_map[p1.first][p2.second];
+            int v2 = current_map[p2.first][p2.second];
 
             if (v1 == 0 && v2 == 1)
             {
@@ -295,7 +364,8 @@ int door_regularization(const Matrix<int>& current_map, std::vector<std::pair<p6
         //删除当前门框
         it = src_doors.erase(it);
 
-        src_doors.insert(it, new_doors.begin(), new_doors.end());
+        it = src_doors.insert(it, new_doors.begin(), new_doors.end());
+        it += new_doors.size();
 
 
     }
@@ -1148,6 +1218,8 @@ void find_connected_rooms(std::map<int, Room>& rooms, const std::map<p64, Door>&
 {
     std::cout << "开始连通性搜索" << std::endl;
 
+    int intersection_threshold = 5;
+
     //对于每一对房间
     for (auto it1 = rooms.begin(); it1 != rooms.end(); ++it1)
     {
@@ -1166,21 +1238,31 @@ void find_connected_rooms(std::map<int, Room>& rooms, const std::map<p64, Door>&
                 p64 door_id = door.first;
                 std::vector<p64> door_segment = door.second.path;
 
-                bool room1_connected = false;
-                bool room2_connected = false;
+                std::vector<p64> common_intersection;
+
+                //bool room1_connected = false;
+                //bool room2_connected = false;
 
                 //检查门的每个像素是否连接到房间的轮廓
                 for (const auto& pixel : door_segment)
                 {
-                    if (std::find(room1_outline_pixels.begin(), room1_outline_pixels.end(), pixel) != room1_outline_pixels.end())
-                        room1_connected = true;
+                    //if (std::find(room1_outline_pixels.begin(), room1_outline_pixels.end(), pixel) != room1_outline_pixels.end())
+                        //room1_connected = true;
 
-                    if (std::find(room2_outline_pixels.begin(), room2_outline_pixels.end(), pixel) != room2_outline_pixels.end())
-                        room2_connected = true;
+                    //if (std::find(room2_outline_pixels.begin(), room2_outline_pixels.end(), pixel) != room2_outline_pixels.end())
+                        //room2_connected = true;
+
+                    if (std::find(room1_outline_pixels.begin(), room1_outline_pixels.end(), pixel) != room1_outline_pixels.end() &&
+                        std::find(room2_outline_pixels.begin(), room2_outline_pixels.end(), pixel) != room2_outline_pixels.end())
+                    {
+                        common_intersection.push_back(pixel);
+                    }
+
                 }
 
                 //如果两个房间都与门相连，则添加到连接的房间列表
-                if (room1_connected && room2_connected)
+                //if (room1_connected && room2_connected)
+                if (common_intersection.size() >= intersection_threshold)
                 {
                     room1.add_connection_info(room2.get_room_id(), door_id);
                     room2.add_connection_info(room1.get_room_id(), door_id);
@@ -5925,19 +6007,16 @@ int post_segment(Matrix<int>& segmented_matrix, std::map<int, Room>& rooms, std:
     }
 
     //门框切除
-    for (int i = 0; i < h; i++)
+
+    for (auto& door : doorMap)
     {
-        for (int j = 0; j < w; j++)
+        for (auto& p : door.second.path)
         {
-            for (auto& door : doorMap)
-            {
-                for (auto& p : door.second.path)
-                {
-                    segmented_matrix[p.first][p.second];
-                }
-            }
+            segmented_matrix[p.first][p.second] = 0;
         }
     }
+        
+    
 
 
     //房间号的确定
@@ -6098,7 +6177,64 @@ int post_segment(Matrix<int>& segmented_matrix, std::map<int, Room>& rooms, std:
     return 0;
 }
 
+void keepLargesComponent(Matrix<int>& image)
+{
+    int h = image.size();
+    int w = image[0].size();
 
+    Matrix<bool> visited(h, std::vector<bool>(w, false));
+    Matrix<int> result(h, std::vector<int>(w, 0));
+
+    int maxSize = 0;
+    std::vector<p64> directions{ {-1,0},{1,0},{0,-1},{0,1} };
+
+    for (int i = 0; i < h; i++)
+    {
+        for (int j = 0; j < w; j++)
+        {
+            if (image[i][j] == 1 && !visited[i][j])
+            {
+                int size = 0;
+                Matrix<int> temp(h, std::vector<int>(w, 0));
+
+                std::stack<p64> dfsStack;
+                dfsStack.push({ i,j });
+
+                visited[i][j] = true;
+                size++;
+                temp[i][j] = 1;
+
+                while (!dfsStack.empty())
+                {
+                    p64 p = dfsStack.top();
+                    dfsStack.pop();
+
+                    for (const auto& d : directions)
+                    {
+                        int nx = p.first + d.first;
+                        int ny = p.second + d.second;
+
+                        if (is_valid_pixel(nx, ny, h, w) && image[nx][ny] == 1 && !visited[nx][ny])
+                        {
+                            dfsStack.push({ nx,ny });
+                            visited[nx][ny] = true;
+                            size++;
+                            temp[nx][ny] = 1;
+                        }
+                    }
+                }
+
+                if (size > maxSize)
+                {
+                    maxSize = size;
+                    result = temp;
+                }
+            }
+        }
+    }
+
+    image = result;
+}
 
 
 
@@ -6323,6 +6459,8 @@ int test_new_map()
     //Matrix<int> optimization_map = customize_closing(extract_filled_image(origin_map), kernel);
     Matrix<int> optimization_map = customize_closing(origin_map, kernel);
 
+    keepLargesComponent(optimization_map);
+
     printBinaryImage(optimization_map, 1, "optimization_map");
 
     //cv::waitKey(0);
@@ -6338,6 +6476,11 @@ int test_new_map()
         {{71, 225}, {465, 579}},
         {{69, 446}, {332, 634}}
     };
+
+    if (door_pixels.size() != 0)
+    {
+        door_regularization(optimization_map, door_pixels);
+    }
 
     std::map<p64, Door> doorMap = doorVector2Map(door_pixels);
     Matrix<int> bgmask(h, std::vector<int>(w, 0));
@@ -6414,7 +6557,7 @@ int test_new_map()
     if (op_flag == 2)return 2;
     if (op_flag == 3)return 3;
 
-    room_merge(4, 5, rooms, expanded_rooms, doorMap, segmented_matrix, expanded_matrix);
+    //room_merge(4, 5, rooms, expanded_rooms, doorMap, segmented_matrix, expanded_matrix);
 
     // Print the connected rooms
     for (auto& room : rooms)

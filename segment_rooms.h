@@ -43,6 +43,7 @@ private:
     std::vector<std::pair<int, p64>> connection_info;//新连通信息
 
     std::vector<std::pair<int, int>> outline_pixels;//外轮廓像素点列表
+    std::vector<std::vector<p64>> obstacle_pixels;//障碍物列表
 
 public:
     Room(int room_id = 0);//构造函数
@@ -73,7 +74,9 @@ public:
 
     void delete_connection_info(int id);//删除连通信息（输入房间id来删除）
 
-    void clear_connection_info();
+    void clear_connection_info();//清除连通信息
+
+    const std::vector<std::vector<p64>>& get_obstacle_pixels() const;//获取障碍物列表
 };
 
 
@@ -350,6 +353,9 @@ int map_renew(Matrix<int>& new_map,
 
 //正确的后分割id分配
 int post_segment(Matrix<int>& segmented_matrix, std::map<int, Room>& rooms, std::map<p64, Door>& doorMap, const Matrix<int>& bgmask);
+
+//去除孤岛
+void keepLargesComponent(Matrix<int>& image);
 
 
 
