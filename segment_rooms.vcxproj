@@ -137,7 +137,11 @@
   <ItemGroup>
     <ClInclude Include="generate_connected_region.h" />
     <ClInclude Include="mapFileAnalysis.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="segment_rooms.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="segment_rooms.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

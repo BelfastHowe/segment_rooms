@@ -374,6 +374,341 @@ int door_regularization(const Matrix<int>& current_map, std::vector<std::pair<p6
     return 0;
 }
 
+int door_regularization_skid(Matrix<int>& current_map, std::vector<std::pair<p64, p64>>& src_doors)
+{
+    //src_doors不能为空
+    //找到此时的绝对背景，此函数将会改变输入的地图
+    Matrix<int> background(current_map.size(), std::vector<int>(current_map[0].size(), 0));
+
+    std::function<void(void)> generate_background = [&]()
+        {
+            int h = current_map.size();
+            int w = current_map[0].size();
+
+            //四连通
+            std::vector<p64> directions = { {1,0},{0,-1},{-1,0},{0,1} };
+
+            Matrix<bool> visited(h, std::vector<bool>(w, false));
+
+            std::queue<p64> queue;
+
+            queue.push({ 0,0 });
+            visited[0][0] = true;
+            background[0][0] = 1;
+
+            while (!queue.empty())
+            {
+                p64 cur = queue.front();
+                queue.pop();
+
+                for (const auto& d : directions)
+                {
+                    int nx = cur.first + d.first;
+                    int ny = cur.second + d.second;
+
+                    if (is_valid_pixel(nx, ny, h, w) && current_map[nx][ny] == 0 && !visited[nx][ny])
+                    {
+                        queue.push(std::make_pair(nx, ny));
+
+                        visited[nx][ny] = true;
+                        background[nx][ny] = 1;
+                    }
+                }
+            }
+
+        };
+
+    //找到曼哈顿距离最近的绝对背景，指定搜寻方向
+    std::function<p64(const Matrix<int>&, const p64, const p64)> findNearestBackground =
+        [](const Matrix<int>& background, const p64 start, const p64 specify)->p64
+        {
+            int h = background.size();
+            int w = background[0].size();
+
+            Matrix<bool> visited(h, std::vector<bool>(w, false));
+
+            std::queue<p64> q;
+
+            q.push(start);
+            visited[start.first][start.second] = true;
+
+            std::vector<p64> directions = { {1,0},{0,-1},{-1,0},{0,1} };
+
+            //删除的方向就是指定方向的反向
+            p64 pointRemove = std::make_pair(-specify.first, -specify.second);
+            directions.erase(std::remove_if(directions.begin(), directions.end(),
+                [&pointRemove](const p64& tp)
+                {
+                    return tp == pointRemove;
+                }), directions.end());
+
+            while (!q.empty())
+            {
+                p64 cur = q.front();
+                q.pop();
+
+                for (const auto& d : directions)
+                {
+                    int nx = cur.first + d.first;
+                    int ny = cur.second + d.second;
+
+                    if (is_valid_pixel(nx, ny, h, w) && !visited[nx][ny])
+                    {
+                        if (background[nx][ny] == 1)
+                        {
+                            return std::make_pair(nx, ny);
+                        }
+
+                        q.push({ nx,ny });
+                        visited[nx][ny] = true;
+                    }
+                }
+            }
+
+            return std::make_pair(-1, -1);
+        };
+
+    generate_background();
+
+    //开始正则化所有切割线
+    for (auto it = src_doors.begin(); it != src_doors.end();)
+    {
+        p64 sp = it->first;
+        p64 ep = it->second;
+
+        std::vector<p64> path = bresenham4(sp.first, sp.second, ep.first, ep.second);
+
+        path.erase(std::remove_if(path.begin(), path.end(),
+            [&](const p64& point)
+            {
+                return point.first < 0 || point.second < 0 || point.first >= current_map.size() || point.second >= current_map[0].size();
+            }),
+            path.end());
+
+        if (path.size() < 3)
+        {
+            it = src_doors.erase(it);
+
+            continue;
+        }
+
+        //切入切出点缓存
+        std::vector<std::pair<bool, p64>> cut_io;
+
+        for (int i = 0; i < path.size() - 1; i++)
+        {
+            p64 p1 = path[i], p2 = path[i + 1];
+
+            int v1 = current_map[p1.first][p1.second];
+            int v2 = current_map[p2.first][p2.second];
+
+            if (v1 == 0 && v2 == 1)
+            {
+                //0-1跳变，切入点
+                cut_io.push_back(std::make_pair(false, p1));
+            }
+
+            if (v1 == 1 && v2 == 0)
+            {
+                //1-0跳变，切出点
+                cut_io.push_back(std::make_pair(true, p2));
+
+            }
+
+        }
+
+        //待加入的新门框
+        std::vector<std::pair<p64, p64>> new_doors;
+
+        //处理打滑
+        if (cut_io.size() == 1)
+        {
+            p64 cur_sp = path[0];
+            p64 cur_ep = path.back();
+
+            if (cur_sp.first == cur_ep.first)
+            {
+                //x
+                if (!cut_io[0].first)
+                {
+                    //0-1
+                    p64 fixed_p = cut_io[0].second;
+                    p64 pending_p = cur_ep;
+
+                    //more than 5
+                    if ((std::abs(fixed_p.first - pending_p.first) + std::abs(fixed_p.second - pending_p.second)) >= 5)
+                    {
+                        //方向
+                        int sdir = (pending_p.second - fixed_p.second) > 0 ? 1 : -1;
+                        p64 dir = std::make_pair(0, sdir);
+
+                        p64 target_p = findNearestBackground(background, pending_p, dir);
+
+                        //计算距离，需要小于阈值
+                        int distance = std::abs(pending_p.first - target_p.first) + std::abs(pending_p.second - target_p.second);
+                        if (distance <= 7)
+                        {
+                            //中转点
+                            p64 middle_p = std::make_pair(pending_p.first, target_p.second);
+
+                            //切除粘连
+                            for (int u = std::min(pending_p.second, target_p.second); u <= std::max(pending_p.second, target_p.second); u++)
+                            {
+                                current_map[pending_p.first][u] = 0;
+                            }
+                            for (int v = std::min(pending_p.first, target_p.first); v <= std::max(pending_p.first, target_p.first); v++)
+                            {
+                                current_map[v][target_p.second] = 0;
+                            }
+
+                            new_doors.push_back(std::make_pair(fixed_p, pending_p));
+                        }
+                    }
+                }
+                else
+                {
+                    //1-0
+                    p64 fixed_p = cut_io[0].second;
+                    p64 pending_p = cur_sp;
+
+                    //短的不要
+                    if ((std::abs(fixed_p.first - pending_p.first) + std::abs(fixed_p.second - pending_p.second)) >= 5)
+                    {
+                        //方向
+                        int sdir = (pending_p.second - fixed_p.second) > 0 ? 1 : -1;
+                        p64 dir = std::make_pair(0, sdir);
+
+                        p64 target_p = findNearestBackground(background, pending_p, dir);
+
+                        //计算距离，需要小于阈值
+                        int distance = std::abs(pending_p.first - target_p.first) + std::abs(pending_p.second - target_p.second);
+                        if (distance <= 7)
+                        {
+                            //中转点
+                            p64 middle_p = std::make_pair(pending_p.first, target_p.second);
+
+                            //切除粘连
+                            for (int u = std::min(pending_p.second, target_p.second); u <= std::max(pending_p.second, target_p.second); u++)
+                            {
+                                current_map[pending_p.first][u] = 0;
+                            }
+                            for (int v = std::min(pending_p.first, target_p.first); v <= std::max(pending_p.first, target_p.first); v++)
+                            {
+                                current_map[v][target_p.second] = 0;
+                            }
+
+                            new_doors.push_back(std::make_pair(fixed_p, pending_p));
+                        }
+                    }
+                }
+            }
+            else if (cur_sp.second == cur_ep.second)
+            {
+                //y
+                if (!cut_io[0].first)
+                {
+                    //0-1
+                    p64 fixed_p = cut_io[0].second;
+                    p64 pending_p = cur_ep;
+
+                    //短的不要
+                    if ((std::abs(fixed_p.first - pending_p.first) + std::abs(fixed_p.second - pending_p.second)) >= 5)
+                    {
+                        //搜寻方向
+                        int sdir = (pending_p.first - fixed_p.first) > 0 ? 1 : -1;
+                        p64 dir = std::make_pair(sdir, 0);
+
+                        p64 target_p = findNearestBackground(background, pending_p, dir);
+
+                        //限制距离
+                        int distance = std::abs(pending_p.first - target_p.first) + std::abs(pending_p.second - target_p.second);
+                        if (distance <= 7)
+                        {
+                            //中转点
+                            p64 middle_p = std::make_pair(target_p.first, pending_p.second);
+
+                            //切除粘连
+                            for (int u = std::min(pending_p.first, target_p.first); u <= std::max(pending_p.first, target_p.first); u++)
+                            {
+                                current_map[u][pending_p.second] = 0;
+                            }
+                            for (int v = std::min(pending_p.second, target_p.second); v <= std::max(pending_p.second, target_p.second); v++)
+                            {
+                                current_map[target_p.first][v] = 0;
+                            }
+
+                            new_doors.push_back(std::make_pair(fixed_p, pending_p));
+                        }
+                    }
+                }
+                else
+                {
+                    //1-0
+                    p64 fixed_p = cut_io[0].second;
+                    p64 pending_p = cur_sp;
+
+                    //短的不要
+                    if ((std::abs(fixed_p.first - pending_p.first) + std::abs(fixed_p.second - pending_p.second)) >= 5)
+                    {
+                        //搜寻方向
+                        int sdir = (pending_p.first - fixed_p.first) > 0 ? 1 : -1;
+                        p64 dir = std::make_pair(sdir, 0);
+
+                        p64 target_p = findNearestBackground(background, pending_p, dir);
+
+                        //距离少于阈值
+                        int distance = std::abs(pending_p.first - target_p.first) + std::abs(pending_p.second - target_p.second);
+                        if (distance <= 7)
+                        {
+                            //中转点
+                            p64 middle_p = std::make_pair(target_p.first, pending_p.second);
+
+                            //切除粘连
+                            for (int u = std::min(pending_p.first, target_p.first); u <= std::max(pending_p.first, target_p.first); u++)
+                            {
+                                current_map[u][pending_p.second] = 0;
+                            }
+                            for (int v = std::min(pending_p.second, target_p.second); v <= std::max(pending_p.second, target_p.second); v++)
+                            {
+                                current_map[target_p.first][v] = 0;
+                            }
+
+                            new_doors.push_back(std::make_pair(fixed_p, pending_p));
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            for (int i = 0; i < static_cast<int>(cut_io.size()) - 1; i++)
+            {
+                std::pair<bool, p64> fe1 = cut_io[i];
+                std::pair<bool, p64> fe2 = cut_io[i + 1];
+
+                if (!fe1.first && fe2.first)
+                {
+                    if ((std::abs(fe1.second.first - fe2.second.first) + std::abs(fe1.second.second - fe2.second.second)) >= 5)
+                    {
+                        new_doors.push_back(std::make_pair(fe1.second, fe2.second));
+                    }
+                }
+            }
+        }
+
+        //替换
+        it = src_doors.erase(it);
+
+        it = src_doors.insert(it, new_doors.begin(), new_doors.end());
+        it += new_doors.size();
+    }
+
+    
+
+    return 0;
+}
+
+
 std::map<p64, Door> doorVector2Map(std::vector<std::pair<p64, p64>>& doors)
 {
     std::cout << "开始初始化doorMap" << std::endl;
@@ -556,7 +891,36 @@ void door_frame_interaction(MatrixInt& src, std::map<p64, Door>& doorMap)
 
 }
 
+int filter_unassociated_doors(std::map<int, Room>& rooms, std::map<p64, Door>& doorMap)
+{
+    //记录关联信息中出现过的门
 
+    std::set<p64> doorids;
+
+    for (auto& room : rooms)
+    {
+        for (const auto& coninfo : room.second.get_connection_info())
+        {
+            p64 did = coninfo.second;
+
+            doorids.insert(did);
+        }
+    }
+
+    //删除多余的键
+    for (auto it = doorMap.begin(); it != doorMap.end();)
+    {
+        if (doorids.find(it->first) == doorids.end())
+        {
+            it = doorMap.erase(it);
+        }
+        else
+        {
+            ++it;
+        }
+    }
+    return 0;
+}
 
 
 std::pair<std::vector<std::vector<int>>, std::vector<Room>> segment_rooms(const std::vector<std::vector<int>>& matrix, const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels) 
@@ -786,7 +1150,7 @@ std::vector<std::vector<int>> extract_filled_image(const std::vector<std::vector
     cv::drawContours(filled_image, contours, largest_contour_index, cv::Scalar(1), cv::FILLED);
 
     // 将结果转换为二维数组
-    std::vector<std::vector<int>> filled_image_arr(filled_image.rows, std::vector<int>(filled_image.cols));
+    std::vector<std::vector<int>> filled_image_arr(filled_image.rows, std::vector<int>(filled_image.cols, 0));
     for (int i = 0; i < filled_image.rows; i++) 
     {
         for (int j = 0; j < filled_image.cols; j++) 
@@ -3172,12 +3536,12 @@ void tidy_room_Conditional_Morphological_Transformation(Matrix<int>& src,
         {
             cache3 = cache1;
 
-            //do
-            //{
+            do
+            {
                 /* code */
-            //    cache1 = cache2;
-            //    tidy_room_Conditional_Dilation_Transformation(cache1, cache2, mask);
-            //} while (cache1 != cache2);
+                cache1 = cache2;
+                tidy_room_Conditional_Dilation_Transformation(cache1, cache2, mask);
+            } while (cache1 != cache2);
 
             do
             {
@@ -6436,17 +6800,17 @@ void test_final_map()
 
 int test_new_map()
 {
-    //const char* filename = "D:\\files\\mapfile\\dataset_occ\\seg_ori_20230519_012513_24.debug";
+    const char* filename = "D:\\files\\mapfile\\0921_occ\\seg_ori_20230912_155552_959_.debug";
 
     // 读取地图文件并转化为01矩阵
-    //std::vector<std::vector<uint8_t>> binaryMatrix = readMapFile(filename);
+    std::vector<std::vector<uint8_t>> binaryMatrix = readMapFile(filename);
 
-    //std::vector<std::vector<int>> origin_map = ConvertMatrixToInt(binaryMatrix);
+    std::vector<std::vector<int>> origin_map = ConvertMatrixToInt(binaryMatrix);
 
     // 读取文件路径
-    std::string filename = "C:\\Users\\13012\\Desktop\\测试1.png";
+    //std::string filename = "D:\\files\\mapfile\\0921_occ\\seg_ori_20230826_160543_118_.debug";
 
-    Matrix<int> origin_map = ConvertImageToMatrix(filename);
+    //Matrix<int> origin_map = ConvertImageToMatrix(filename);
 
     int h = origin_map.size();
     int w = origin_map[0].size();
@@ -6455,7 +6819,6 @@ int test_new_map()
     printBinaryImage(origin_map, 1, "origin_map");
 
     Matrix<int> kernel(3, std::vector<int>(3, 1));
-
     //Matrix<int> optimization_map = customize_closing(extract_filled_image(origin_map), kernel);
     Matrix<int> optimization_map = customize_closing(origin_map, kernel);
 
@@ -6467,14 +6830,14 @@ int test_new_map()
 
     std::vector<std::pair<p64, p64>> door_pixels =
     {
-        {{176, 73}, {70, 193}},
+        /*{{176, 73}, {70, 193}},
         {{354, 71}, {71, 357}},
         {{465, 206}, {71, 586}},
         {{465, 434}, {225, 634}},
         {{356, 73}, {465, 203}},
         {{130, 73}, {466, 358}},
         {{71, 225}, {465, 579}},
-        {{69, 446}, {332, 634}}
+        {{69, 446}, {332, 634}}*/
     };
 
     if (door_pixels.size() != 0)
@@ -6512,6 +6875,8 @@ int test_new_map()
             segmented_matrix[x][y] = room.first;
         }
     }
+
+    filter_unassociated_doors(rooms, doorMap);
 
     // Print the connected rooms
     for (auto& room : rooms)
@@ -6559,36 +6924,36 @@ int test_new_map()
 
     //room_merge(4, 5, rooms, expanded_rooms, doorMap, segmented_matrix, expanded_matrix);
 
-    // Print the connected rooms
-    for (auto& room : rooms)
-    {
-        int room_id = room.first;
-        for (const auto& coninfo : room.second.get_connection_info())
-        {
-            int conroomid = coninfo.first;
-            p64 doorid = coninfo.second;
+    //// Print the connected rooms
+    //for (auto& room : rooms)
+    //{
+    //    int room_id = room.first;
+    //    for (const auto& coninfo : room.second.get_connection_info())
+    //    {
+    //        int conroomid = coninfo.first;
+    //        p64 doorid = coninfo.second;
 
-            auto iter = doorMap.find(doorid);
-            if (iter != doorMap.end())
-            {
-                const Door& door = iter->second;
+    //        auto iter = doorMap.find(doorid);
+    //        if (iter != doorMap.end())
+    //        {
+    //            const Door& door = iter->second;
 
-                std::cout << "Room " << room_id << " is connected to Room " << conroomid << " through door "
-                    << doorid.first << "." << doorid.second << "("
-                    << door.startPoint.first << ", " << door.startPoint.second << ") to ("
-                    << door.endPoint.first << ", " << door.endPoint.second << ")" << std::endl;
-            }
-            else
-            {
-                std::cerr << "GRS ERROR:No connected door found in doorMap" << std::endl;
-                return 1;
-            }
+    //            std::cout << "Room " << room_id << " is connected to Room " << conroomid << " through door "
+    //                << doorid.first << "." << doorid.second << "("
+    //                << door.startPoint.first << ", " << door.startPoint.second << ") to ("
+    //                << door.endPoint.first << ", " << door.endPoint.second << ")" << std::endl;
+    //        }
+    //        else
+    //        {
+    //            std::cerr << "GRS ERROR:No connected door found in doorMap" << std::endl;
+    //            return 1;
+    //        }
 
-        }
-    }
+    //    }
+    //}
 
 
-    draw_final_map(segmented_matrix, expanded_matrix, segmented_matrix, expanded_rooms, doorMap);
+    draw_final_map(segmented_matrix, expanded_matrix, tidy_room, expanded_rooms, doorMap);
 
 
 

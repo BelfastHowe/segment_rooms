@@ -151,6 +151,9 @@ std::vector<p64> bresenham4(int x0, int y0, int x1, int y1);
 //门框的规则化
 int door_regularization(const Matrix<int>& current_map, std::vector<std::pair<p64, p64>>& src_doors);
 
+//带有粘连处理的门框规则化
+int door_regularization_skid(Matrix<int>& current_map, std::vector<std::pair<p64, p64>>& src_doors);
+
 //门框字典构造
 std::map<p64, Door> doorVector2Map(std::vector<std::pair<p64, p64>>& doors);
 
@@ -162,6 +165,9 @@ std::map<p64, Door> findDoorFrames(MatrixInt& matrix);
 
 //门框干涉，复合id门框字典重构
 void door_frame_interaction(MatrixInt& src, std::map<p64, Door>& doorMap);
+
+//去除无关的门
+int filter_unassociated_doors(std::map<int, Room>& rooms, std::map<p64, Door>& doorMap);
 
 
 //房间分割函数
