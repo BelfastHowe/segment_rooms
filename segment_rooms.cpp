@@ -922,6 +922,42 @@ int filter_unassociated_doors(std::map<int, Room>& rooms, std::map<p64, Door>& d
     return 0;
 }
 
+int show_cv_points(const Matrix<cv::Point>& pointSets, int h, int w, const std::string& windowName)
+{
+    //创建白色画布
+    cv::Mat canvas(h, w, CV_8UC3, cv::Scalar(255, 255, 255));
+
+    //创建随机颜色
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, 255);
+
+    std::vector<cv::Vec3b> colors;
+
+    for (int i = 0; i < pointSets.size(); i++)
+    {
+        colors.push_back(cv::Vec3b(dis(gen), dis(gen), dis(gen)));
+    }
+
+    for (int i = 0; i < pointSets.size(); i++)
+    {
+
+        std::vector<cv::Point> points = pointSets[i];
+        cv::Vec3b color = colors[i];
+
+        for (const auto& p : points)
+        {
+            canvas.at<cv::Vec3b>(p) = color;
+        }
+    }
+
+    //显示图像
+    cv::imshow(windowName, canvas);
+    cv::imwrite("C:\\Users\\13012\\Desktop\\result\\" + windowName + ".png", canvas);
+
+    return 0;
+}
+
 
 std::pair<std::vector<std::vector<int>>, std::vector<Room>> segment_rooms(const std::vector<std::vector<int>>& matrix, const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels) 
 {
@@ -2031,6 +2067,330 @@ std::pair<Matrix<int>, std::map<int, Room>> expand_rooms(const Matrix<int>& segm
     return std::make_pair(expanded_matrix, expanded_rooms);
 }
 
+std::pair<Matrix<int>, std::map<int, Room>> expand_rooms_simple(const Matrix<int>& segmented_matrix, const std::map<int, Room>& rooms)
+{
+    //凹角膨胀存在运行过慢和边缘紧贴房间图的情况，这里采用通用膨胀方法。
+
+    //创建副本，默认染色
+    std::map<int, Room> expanded_rooms = rooms;
+    Matrix<int> expanded_matrix = segmented_matrix;
+
+    int h = segmented_matrix.size();
+    int w = segmented_matrix[0].size();
+
+    //首先确定膨胀边界
+    struct Boundary
+    {
+        int min_x;
+        int min_y;
+        int max_x;
+        int max_y;
+
+        Boundary(int x0 = -1, int y0 = -1, int x1 = -1, int y1 = -1)
+            :min_x(x0), min_y(y0), max_x(x1), max_y(y1)
+        {}
+    };
+
+    std::map<int, Boundary> all_boundary;
+
+    for (const auto& room : rooms)
+    {
+        int room_id = room.first;
+
+        int min_x = h, min_y = w, max_x = 0, max_y = 0;
+        for (const auto& p : room.second.get_pixels())
+        {
+            min_x = std::min(min_x, p.first);
+            min_y = std::min(min_y, p.second);
+            max_x = std::max(max_x, p.first);
+            max_y = std::max(max_y, p.second);
+        }
+        min_x -= 10;
+        min_y -= 10;
+        max_x += 10;
+        max_y += 10;
+
+        Boundary boundary(min_x, min_y, max_x, max_y);
+
+        all_boundary.insert(std::map<int, Boundary>::value_type(room_id, boundary));
+
+    }
+
+    std::function<bool(int, int, int)> is_in_boundary = [&](int i, int j, int roomid)->bool
+        {
+            //找到当前边界
+            Boundary curb = all_boundary[roomid];
+
+            bool tar = i >= curb.min_x && i <= curb.max_x && j >= curb.min_y && j <= curb.max_y;
+
+            return tar;
+        };
+
+    bool expansion_occurred = true;
+
+    while (expansion_occurred)
+    {
+        expansion_occurred = false;
+
+        //待膨胀栈
+        std::stack<std::pair<p64, int>> expansion;
+
+        for (int i = 1; i < h - 1; i++)
+        {
+            for (int j = 1; j < w - 1; j++)
+            {
+                if (expanded_matrix[i][j] == 0)
+                {
+                    //获取周围八个点的像素值
+                    int p[9];
+                    p[0] = expanded_matrix[i][j];     // P1
+                    p[1] = expanded_matrix[i - 1][j];   // P2
+                    p[2] = expanded_matrix[i - 1][j + 1]; // P3
+                    p[3] = expanded_matrix[i][j + 1];   // P4
+                    p[4] = expanded_matrix[i + 1][j + 1]; // P5
+                    p[5] = expanded_matrix[i + 1][j];   // P6
+                    p[6] = expanded_matrix[i + 1][j - 1]; // P7
+                    p[7] = expanded_matrix[i][j - 1];   // P8
+                    p[8] = expanded_matrix[i - 1][j - 1]; // P9
+
+                    //四连通的值
+                    std::set<int> con4 = { p[1],p[3],p[5],p[7] };
+
+                    if (con4.size() == 2 && *con4.begin() == 0)
+                    {
+                        int trid = *con4.rbegin();
+
+                        //d邻域的值
+                        std::set<int> cond = { p[2],p[4],p[6],p[8] };
+
+                        if (std::all_of(cond.begin(), cond.end(), [trid](int pn)
+                            {
+                                return pn == 0 || pn == trid;
+                            }))
+                        {
+                            if (is_in_boundary(i, j, trid))
+                            {
+                                expansion.push(std::make_pair(std::make_pair(i, j), trid));
+
+                                expansion_occurred = true;
+                            }
+
+                        }
+
+                    }
+
+
+
+                }
+            }
+        }
+
+        while (!expansion.empty())
+        {
+            std::pair<p64, int> pending = expansion.top();
+            expansion.pop();
+
+            p64 p = pending.first;
+            int id = pending.second;
+
+            std::set<int> judgment;
+            for (int u = -1; u <= 1; u++)
+            {
+                for (int v = -1; v <= 1; v++)
+                {
+                    int nx = p.first + u;
+                    int ny = p.second + v;
+                    judgment.insert(expanded_matrix[nx][ny]);
+                }
+            }
+
+            if (judgment.size() == 2 && *judgment.begin() == 0 && *judgment.rbegin() == id)
+            {
+                expanded_matrix[p.first][p.second] = id;
+                expanded_rooms[id].add_pixel(p);
+            }
+
+
+        }
+    }
+
+
+    //计算拓展后的房间轮廓
+    for (auto& room : expanded_rooms)
+    {
+        room.second.calculate_outline(expanded_matrix);
+    }
+
+    return std::make_pair(expanded_matrix, expanded_rooms);
+}
+
+std::pair<Matrix<int>, std::map<int, Room>> expand_rooms_queue(const Matrix<int>& segmented_matrix, const std::map<int, Room>& rooms)
+{
+    //经典凹角膨胀，队列或者堆栈版，期望优化速度
+    //别的方法都很一般，还得是初版
+
+    //创建双副本
+    std::map<int, Room> expanded_rooms = rooms;
+    Matrix<int> expanded_matrix = segmented_matrix;
+
+    //四邻域
+    std::vector<p64> directions4 = { {-1,0},{1,0},{0,-1},{0,1} };
+
+
+    int h = segmented_matrix.size();
+    int w = segmented_matrix[0].size();
+
+    //访问矩阵
+    Matrix<bool> visited(h, std::vector<bool>(w, false));
+
+    //膨胀判断函数
+    std::function<int(int, int, Matrix<int>&)> isValidExpansionPoint = [&h, &w](int i, int j, Matrix<int>& src)->int
+        {
+            //四邻域和八邻域中的值
+            std::vector<int> four_neighbours;
+            std::vector<int> eight_neighbours;
+
+            for (int dx = -1; dx <= 1; dx++)
+            {
+                for (int dy = -1; dy <= 1; dy++)
+                {
+                    if (dx == 0 && dy == 0) continue;
+                    int nx = i + dx;
+                    int ny = j + dy;
+
+                    if (is_valid_pixel(nx, ny, h, w))
+                    {
+                        int neighbour_value = src[nx][ny];
+                        if (dx == 0 || dy == 0)
+                        {
+                            four_neighbours.push_back(neighbour_value);
+                        }
+                        eight_neighbours.push_back(neighbour_value);
+                    }
+                }
+            }
+
+            int non_zero_value = 0;  // 用于保存四邻域内的非零值
+            for (int value : four_neighbours)
+            {
+                if (value != 0)
+                {
+                    if (non_zero_value == 0)
+                    {
+                        non_zero_value = value;
+                    }
+                    else if (non_zero_value != value)
+                    {
+                        return 0;  // 说明四邻域内有两种不同的非零值，不满足条件
+                    }
+                }
+            }
+
+            if (non_zero_value == 0) return 0;
+
+            if (std::count(four_neighbours.begin(), four_neighbours.end(), non_zero_value) < 2)
+            {
+                return 0;  // 四邻域内非零值的数量不足2
+            }
+
+            for (int value : eight_neighbours)
+            {
+                if (value != 0 && value != non_zero_value)
+                {
+                    return 0;  // 八邻域内存在与四邻域非零值不同的其他非零值
+                }
+            }
+
+            return non_zero_value;  // 所有条件都满足，返回true
+
+
+
+        };
+
+
+    std::queue<std::pair<p64, int>> expansion;
+
+    //找到膨胀种子
+    for (int i = 0; i < h; i++)
+    {
+        for (int j = 0; j < w; j++)
+        {
+            if (expanded_matrix[i][j] == 0)
+            {
+                int room_id = isValidExpansionPoint(i, j, expanded_matrix);
+
+                if (room_id == 0) continue;
+
+                expansion.push(std::make_pair(std::make_pair(i, j), room_id));
+                visited[i][j] = true;
+            }
+        }
+    }
+
+    //开始依序膨胀
+    while (!expansion.empty())
+    {
+        std::pair<p64, int> pending = expansion.front();
+        expansion.pop();
+
+        p64 p = pending.first;
+        int id = pending.second;
+
+        //二次判定待膨胀点，防止不同房间的两个点同时膨胀让房间相连通
+        std::vector<int> judgment2;
+        for (int d = -1; d <= 1; d++)
+        {
+            for (int f = -1; f <= 1; f++)
+            {
+                int u = p.first + d;
+                int v = p.second + f;
+                if (is_valid_pixel(u, v, h, w))
+                {
+                    judgment2.push_back(expanded_matrix[u][v]);
+                }
+            }
+        }
+
+        if (std::all_of(judgment2.begin(), judgment2.end(), [id](int pixel) {return pixel == id || pixel == 0; }))
+        {
+            expanded_matrix[p.first][p.second] = id;
+            expanded_rooms[id].add_pixel(p);
+
+
+
+            //从成功膨胀的点中拓展下线
+            for (const auto& d : directions4)
+            {
+                int nx = p.first + d.first;
+                int ny = p.second + d.second;
+
+                if (expanded_matrix[nx][ny] == 0 && !visited[nx][ny])
+                {
+                    int room_id = isValidExpansionPoint(nx, ny, expanded_matrix);
+
+                    if (room_id == 0) continue;
+
+                    expansion.push(std::make_pair(std::make_pair(nx, ny), room_id));
+                    visited[nx][ny] = true;
+                }
+            }
+              
+        }
+
+
+    }
+
+
+    //计算拓展后的房间轮廓
+    for (auto& room : expanded_rooms)
+    {
+        room.second.calculate_outline(expanded_matrix);
+    }
+
+    return std::make_pair(expanded_matrix, expanded_rooms);
+
+
+}
 
 
 
@@ -2402,7 +2762,7 @@ std::vector<Line> extractIntersections(std::vector<std::vector<int>>& img)
 
 void extractOrthogonalLines(std::vector<std::vector<int>>& img, std::vector<Line>& lines)
 {
-    int threshold = 10;//设置线段长度阈值
+    int threshold = 30;//设置线段长度阈值
 
 
     //第一步，提取水平线
@@ -3112,8 +3472,11 @@ std::vector<std::vector<int>> tidy_room_dilate(std::vector<std::vector<int>>& ro
 
 void polygon_fitting(std::vector<std::vector<int>>& room_matrix, double epsilon)
 {
+    int h = room_matrix.size();
+    int w = room_matrix[0].size();
+
     //将输入的矩阵转化为opencv的Mat格式
-    cv::Mat binary_image(room_matrix.size(), room_matrix[0].size(), CV_8U);
+    cv::Mat binary_image(room_matrix.size(), room_matrix[0].size(), CV_8U, cv::Scalar(0));
     for (size_t i = 0; i < room_matrix.size(); i++)
     {
         for (size_t j = 0; j < room_matrix[0].size(); j++)
@@ -3127,16 +3490,20 @@ void polygon_fitting(std::vector<std::vector<int>>& room_matrix, double epsilon)
     //使用findContours找出外部轮廓
     cv::findContours(binary_image, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
+    show_cv_points(contours, h, w, "contours_mat");
+
     std::vector<cv::Point> approx_contour;
 
     // 对找到的轮廓进行多边形拟合
     cv::approxPolyDP(contours[0], approx_contour, epsilon, true);
 
+    show_cv_points(Matrix<cv::Point> {approx_contour}, h, w, "approx_contour_mat");
+
     // 创建一个空白图像，用于绘制拟合后的图像
     cv::Mat result = cv::Mat::zeros(binary_image.size(), CV_8U);
 
     // 使用drawContours绘制拟合后的图像
-    cv::drawContours(result, std::vector<std::vector<cv::Point>>{approx_contour}, -1, cv::Scalar(255), cv::FILLED);
+    cv::drawContours(result, std::vector<std::vector<cv::Point>>{approx_contour}, -1, cv::Scalar(255), 1);
 
     // 将原矩阵全部置0
     for (auto& row : room_matrix)
@@ -3849,8 +4216,8 @@ int floor_plan_optimizer(Matrix<int>& expanded_matrix,
 
 
 
-    //expanded_matrix = floor_plan_alignment(expanded_rooms, floor_plan_optimization_matrix);
-    expanded_matrix = floor_plan_optimization_matrix;
+    expanded_matrix = floor_plan_alignment(expanded_rooms, floor_plan_optimization_matrix);
+    //expanded_matrix = floor_plan_optimization_matrix;
 
 
     if (expanded_matrix.size() == 0)
@@ -4211,6 +4578,7 @@ int expanded_room_renew(std::map<int, Room>& expanded_rooms, const Matrix<int>& 
     }
 
     //房间id继承
+    /*
     int room_id = 1;
     bool hasChanged = true;
 
@@ -4232,9 +4600,34 @@ int expanded_room_renew(std::map<int, Room>& expanded_rooms, const Matrix<int>& 
         }
         room_id++;
     }
+    */
+
+    int max_room_id = static_cast<int>(expanded_rooms.rbegin()->first);
+
+    int rooms_num = 0;
+
+    for (int room_id = 1; room_id <= max_room_id; room_id++)
+    {
+        bool hasChanged = false;
+        for (int u = 0; u < h; u++)
+        {
+            for (int v = 0; v < w; v++)
+            {
+                if (segmented_matrix[u][v] == room_id && transfer[u][v] == 0)
+                {
+                    transfer[u][v] = room_id;
+                    rooms_num++;
+
+                    hasChanged = true;
+                    break;
+                }
+            }
+            if (hasChanged) break;
+        }
+    }
 
     //房间id扩散
-    for (int id = 1; id < room_id - 1; id++)
+    for (int id = 1; id <= max_room_id; id++)
     {
         for (size_t i = 0; i < h; i++)
         {
@@ -4268,8 +4661,10 @@ int expanded_room_renew(std::map<int, Room>& expanded_rooms, const Matrix<int>& 
     }
 
     //判断房间数是否对得上
-    if (expanded_rooms.size() != room_id - 2)
+    if (expanded_rooms.size() != rooms_num)
     {
+        std::cerr << expanded_rooms.size() << std::endl;
+        std::cerr << rooms_num << std::endl;
         std::cerr << "GRS ERROR:In the expanded_room_renew function, the number of rooms found does not match the vector length" << std::endl;
         //throw std::runtime_error("Invalid line found.");
 
@@ -4832,7 +5227,7 @@ Matrix<int> floor_plan_alignment(const std::map<int, Room>& expanded_rooms, cons
     std::cout << "开始户型图对齐" << std::endl;
 
     //设置变形长度阈值
-    int threshold = 20;
+    int threshold = 50;
 
     size_t h = floor_plan_optimization_matrix.size();
     size_t w = floor_plan_optimization_matrix[0].size();
@@ -5446,8 +5841,24 @@ void draw_final_map(Matrix<int>& segmented_matrix,
         colors.push_back(cv::Vec3b(dis(gen), dis(gen), dis(gen)));
     }
 
+    cv::Mat sm_mat(h, w, CV_8UC3, cv::Scalar(255, 255, 255));
     cv::Mat expanded_mat(h, w, CV_8UC3, cv::Scalar(255, 255, 255));
     cv::Mat tidy_room_mat(h, w, CV_8UC3, cv::Scalar(255, 255, 255));
+
+
+    for (int x = 0; x < h; x++)
+    {
+        for (int y = 0; y < w; y++)
+        {
+            if (segmented_matrix[x][y] != 0)
+            {
+                sm_mat.at<cv::Vec3b>(x, y) = colors[segmented_matrix[x][y] - 1];
+            }
+        }
+    }
+
+    cv::imshow("sm_mat", sm_mat);
+    cv::imwrite("C:\\Users\\13012\\Desktop\\result\\sm_mat.png", sm_mat);
 
     for (int x = 0; x < h; x++)
     {
@@ -6600,6 +7011,240 @@ void keepLargesComponent(Matrix<int>& image)
     image = result;
 }
 
+int fill_small_holes(Matrix<int>& src, int threshold)
+{
+    int h = src.size();
+    int w = src[0].size();
+
+    Matrix<bool> visited(h, std::vector<bool>(w, false));
+
+    std::vector<p64> directions = { {1,0},{0,-1},{-1,0},{0,1} };
+
+    auto bfs = [&](int x, int y)
+        {
+            //int area=0;
+            std::set<p64> holePixels;//孔洞的像素集
+            std::queue<p64> q;
+
+            q.push(std::make_pair(x, y));
+            visited[x][y] = true;
+            //area++;
+            holePixels.insert(std::make_pair(x, y));
+
+            while (!q.empty())
+            {
+                p64 cur = q.front();
+                q.pop();
+
+                for (const auto& d : directions)
+                {
+                    int nx = cur.first + d.first;
+                    int ny = cur.second + d.second;
+
+                    if (is_valid_pixel(nx, ny, h, w) && !visited[nx][ny] && src[nx][ny] == 0)
+                    {
+                        q.push(std::make_pair(nx, ny));
+                        visited[nx][ny] = true;
+                        //area++;
+                        holePixels.insert(std::make_pair(nx, ny));
+                    }
+                }
+            }
+
+            return holePixels;
+        };
+
+    for (int i = 0; i < h; i++)
+    {
+        for (int j = 0; j < w; j++)
+        {
+            if (!visited[i][j] && src[i][j] == 0)
+            {
+                std::set<p64> holePixels = bfs(i, j);
+                if (holePixels.size() < threshold)
+                {
+                    for (auto& p : holePixels)
+                    {
+                        src[p.first][p.second] = 1;
+                    }
+                }
+            }
+        }
+    }
+
+    return 0;
+
+}
+
+int resize_matrix(Matrix<int>& src)
+{
+    int minRow = src.size(), maxRow = 0;
+    int minCol = src[0].size(), maxCol = 0;
+
+    for (int i = 0; i < src.size(); ++i) 
+    {
+        for (int j = 0; j < src[0].size(); ++j)
+        {
+            if (src[i][j] == 1)
+            {
+                minRow = std::min(minRow, i);
+                maxRow = std::max(maxRow, i);
+                minCol = std::min(minCol, j);
+                maxCol = std::max(maxCol, j);
+            }
+        }
+    }
+
+    //计算新尺寸
+    int h = maxRow - minRow + 41;
+    int w = maxCol - minCol + 41;
+
+    //创建新的画布
+    Matrix<int> dst(h, std::vector<int>(w, 0));
+
+    for (int i = minRow; i <= maxRow; ++i) 
+    {
+        for (int j = minCol; j <= maxCol; ++j)
+        {
+            dst[i - minRow + 20][j - minCol + 20] = src[i][j];
+        }
+    }
+
+    src = dst;
+
+    return 0;
+
+}
+
+Matrix<int> map_pre_optimization(const char* filename, std::vector<std::pair<p64, p64>>& doors)
+{
+    Matrix<int> init_map_h = ConvertMatrixToInt(readMapFile(filename));
+    Matrix<int> init_map_hl = ConvertMatrixToInt(readMapFile_0x81(filename));
+
+    int minRow = init_map_hl.size(), maxRow = 0;
+    int minCol = init_map_hl[0].size(), maxCol = 0;
+
+    for (int i = 0; i < init_map_hl.size(); i++)
+    {
+        for (int j = 0; j < init_map_hl[0].size(); j++)
+        {
+            if (init_map_hl[i][j] == 1)
+            {
+                minRow = std::min(minRow, i);
+                maxRow = std::max(maxRow, i);
+                minCol = std::min(minCol, j);
+                maxCol = std::max(maxCol, j);
+            }
+        }
+    }
+
+    //计算新尺寸
+    int h = maxRow - minRow + 41;
+    int w = maxCol - minCol + 41;
+
+    int wax = 20 - minRow;
+    int way = 20 - minCol;
+
+    Matrix<int> map_h(h, std::vector<int>(w, 0));
+    Matrix<int> map_hl(h, std::vector<int>(w, 0));
+
+    for (int i = minRow; i <= maxRow; ++i)
+    {
+        for (int j = minCol; j <= maxCol; ++j)
+        {
+            map_h[i + wax][j + way] = init_map_h[i][j];
+            map_hl[i + wax][j + way] = init_map_hl[i][j];
+        }
+    }
+
+    //从高低置信度地图获取绝对可靠的背景
+    for (auto& row : map_hl)
+    {
+        for (auto& element : row)
+        {
+            element = element == 1 ? 0 : 1;
+        }
+    }
+
+    printBinaryImage(map_h, 1, "map_h");
+    printBinaryImage(map_hl, 1, "bg_mat");
+
+    Matrix<int> kernel3(3, std::vector<int>(3, 1));
+    Matrix<int> kernel5(5, std::vector<int>(5, 1));
+    Matrix<int> kernel7(7, std::vector<int>(7, 1));
+
+    Matrix<int> optimization_map = customize_closing(map_h, kernel5);
+
+    map_hl = customize_dilate(map_hl, kernel3);
+
+    for (int i = 0; i < h; i++)
+    {
+        for (int j = 0; j < w; j++)
+        {
+            if (map_hl[i][j] == 1)
+            {
+                optimization_map[i][j] = 0;
+            }
+        }
+    }
+
+    optimization_map = customize_erode(optimization_map, kernel3);
+    optimization_map = customize_dilate(optimization_map, kernel3);
+
+    optimization_map = customize_dilate(optimization_map, kernel3);
+    optimization_map = customize_erode(optimization_map, kernel3);
+
+    fill_small_holes(optimization_map, 100);
+
+    keepLargesComponent(optimization_map);
+
+    printBinaryImage(optimization_map, 1, "optimization_map");
+
+    //门框变化
+    for (auto& d : doors)
+    {
+        p64& d1 = d.first;
+        p64& d2 = d.second;
+
+        if (d1.first == d2.first)
+        {
+            if (d1.second < d2.second)
+            {
+                d1.second -= 2;
+                d2.second += 2;
+            }
+            else if (d1.second > d2.second)
+            {
+                d1.second += 2;
+                d2.second -= 2;
+            }
+        }
+        else if (d1.second == d2.second)
+        {
+            if (d1.first < d2.first)
+            {
+                d1.first -= 2;
+                d2.first += 2;
+            }
+            else if (d1.first > d2.first)
+            {
+                d1.first += 2;
+                d2.first -= 2;
+            }
+
+        }
+
+        d1.first += wax;
+        d1.second += way;
+        d2.first += wax;
+        d2.second += way;
+
+
+    }
+
+    return optimization_map;
+}
+
 
 
 /*
@@ -6800,12 +7445,30 @@ void test_final_map()
 
 int test_new_map()
 {
-    const char* filename = "D:\\files\\mapfile\\0921_occ\\seg_ori_20230912_155552_959_.debug";
+    const char* filename = "D:\\files\\mapfile\\dataset_occ\\seg_ori_20230518_151431_442_.debug";
 
-    // 读取地图文件并转化为01矩阵
+    /*
+    // 读取地图文件并转化为01矩阵，高置信度
     std::vector<std::vector<uint8_t>> binaryMatrix = readMapFile(filename);
 
     std::vector<std::vector<int>> origin_map = ConvertMatrixToInt(binaryMatrix);
+
+    //resize_matrix(origin_map);
+
+    //同时获取高低置信度同时存在的地图
+    Matrix<uint8_t> binaryMatrixHL = readMapFile_0x81(filename);
+    Matrix<int> hl_map = ConvertMatrixToInt(binaryMatrixHL);
+    
+
+    //从高低置信度地图获取绝对可靠的背景
+    for (auto& row : hl_map)
+    {
+        for (auto& element : row)
+        {
+            element = element == 1 ? 0 : 1;
+        }
+    }
+
 
     // 读取文件路径
     //std::string filename = "D:\\files\\mapfile\\0921_occ\\seg_ori_20230826_160543_118_.debug";
@@ -6818,31 +7481,78 @@ int test_new_map()
     // 将01矩阵转化为二值图像并打印
     printBinaryImage(origin_map, 1, "origin_map");
 
-    Matrix<int> kernel(3, std::vector<int>(3, 1));
+    printBinaryImage(hl_map, 1, "bg_mat");
+
+    Matrix<int> kernel3(3, std::vector<int>(3, 1));
+    Matrix<int> kernel5(5, std::vector<int>(5, 1));
+    Matrix<int> kernel7(7, std::vector<int>(7, 1));
+
     //Matrix<int> optimization_map = customize_closing(extract_filled_image(origin_map), kernel);
-    Matrix<int> optimization_map = customize_closing(origin_map, kernel);
+    Matrix<int> optimization_map = customize_closing(origin_map, kernel5);
+
+    hl_map = customize_dilate(hl_map, kernel3);
+
+    for (int i = 0; i < h; i++)
+    {
+        for (int j = 0; j < w; j++)
+        {
+            if (hl_map[i][j] == 1)
+            {
+                optimization_map[i][j] = 0;
+            }
+        }
+    }
+
+    
+    optimization_map = customize_erode(optimization_map, kernel3);
+    optimization_map = customize_dilate(optimization_map, kernel3);
+
+    optimization_map = customize_dilate(optimization_map, kernel3);
+    optimization_map = customize_erode(optimization_map, kernel3);
+
+    fill_small_holes(optimization_map, 100);
 
     keepLargesComponent(optimization_map);
 
     printBinaryImage(optimization_map, 1, "optimization_map");
 
+    //Matrix<int> fmat = optimization_map;
+   // polygon_fitting(fmat, 5);
+
+    //printBinaryImage(fmat, 1, "fmat");
+
     //cv::waitKey(0);
+    //return 0;
+    */
 
     std::vector<std::pair<p64, p64>> door_pixels =
     {
-        /*{{176, 73}, {70, 193}},
-        {{354, 71}, {71, 357}},
-        {{465, 206}, {71, 586}},
-        {{465, 434}, {225, 634}},
-        {{356, 73}, {465, 203}},
-        {{130, 73}, {466, 358}},
-        {{71, 225}, {465, 579}},
-        {{69, 446}, {332, 634}}*/
+        {{119,  45}, {144,  45}},
+        {{228,  53}, {228,  77}},
+        //{{301,  31}, {301,  42}},
+        {{116, 168}, {143, 168}},
+        {{112, 183}, {112, 196}},
+        {{148, 173}, {148, 184}},
+        {{113, 205}, {136, 205}},
+        {{112, 252}, {112, 268}},
+        {{139, 251}, {139, 265}},
+        {{116, 269}, {133, 269}},
+        {{155, 272}, {178, 272}},
+        {{180, 277}, {180, 288}},
+        {{ 75, 323}, { 75, 341}},
+        {{139, 319}, {139, 348}},
+        {{178, 332}, {178, 347}},
+        {{139, 351}, {175, 351}}
     };
+
+    Matrix<int> optimization_map = map_pre_optimization(filename, door_pixels);
+
+    int h = optimization_map.size();
+    int w = optimization_map[0].size();
 
     if (door_pixels.size() != 0)
     {
-        door_regularization(optimization_map, door_pixels);
+        door_regularization_skid(optimization_map, door_pixels);
     }
 
     std::map<p64, Door> doorMap = doorVector2Map(door_pixels);
@@ -6908,11 +7618,13 @@ int test_new_map()
 
 
     //凹角膨胀初始户型图生成
-    auto expanded = expand_rooms(segmented_matrix, rooms);
+    auto expanded = expand_rooms_queue(segmented_matrix, rooms);
     auto& expanded_matrix = expanded.first;
     auto& expanded_rooms = expanded.second;
 
-    //printBinaryImage(expanded_matrix, 1, "expanded_matrix");
+    printBinaryImage(expanded_matrix, 1, "first_expanded_matrix");
+
+    cv::waitKey(1);
 
     //优化
 

@@ -169,6 +169,9 @@ void door_frame_interaction(MatrixInt& src, std::map<p64, Door>& doorMap);
 //去除无关的门
 int filter_unassociated_doors(std::map<int, Room>& rooms, std::map<p64, Door>& doorMap);
 
+//多边形拟合所用的观测函数
+int show_cv_points(const Matrix<cv::Point>& pointSets, int h, int w, const std::string& windowName);
+
 
 //房间分割函数
 std::pair<std::vector<std::vector<int>>, std::vector<Room>> segment_rooms(const std::vector<std::vector<int>>& matrix, const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels);
@@ -197,6 +200,12 @@ void find_connected_rooms(std::map<int, Room>& rooms, const std::map<p64, Door>&
 //凹角膨胀函数
 std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const std::vector<std::vector<int>>& segmented_matrix, const std::vector<Room>& rooms);
 std::pair<Matrix<int>, std::map<int, Room>> expand_rooms(const Matrix<int>& segmented_matrix, const std::map<int, Room>& rooms);
+
+//简化的户型图生成函数，简单膨胀
+std::pair<Matrix<int>, std::map<int, Room>> expand_rooms_simple(const Matrix<int>& segmented_matrix, const std::map<int, Room>& rooms);
+
+//凹角膨胀，使用队列思路
+std::pair<Matrix<int>, std::map<int, Room>> expand_rooms_queue(const Matrix<int>& segmented_matrix, const std::map<int, Room>& rooms);
 
 //成品地图绘制
 void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>& rooms, std::vector<Room>& expanded_rooms, std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels);
@@ -362,6 +371,15 @@ int post_segment(Matrix<int>& segmented_matrix, std::map<int, Room>& rooms, std:
 
 //去除孤岛
 void keepLargesComponent(Matrix<int>& image);
+
+//填补面积小于阈值的二值图像孔洞
+int fill_small_holes(Matrix<int>& src, int threshold);
+
+//改变画布大小
+int resize_matrix(Matrix<int>& src);
+
+//预处理输入数据
+Matrix<int> map_pre_optimization(const char* filename, std::vector<std::pair<p64, p64>>& doors);
 
 
 

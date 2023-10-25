@@ -73,7 +73,7 @@ void printBinaryImage(const std::vector<std::vector<int>>& matrix, int scale, co
     {
         for (int j = 0; j < width; j++) 
         {
-            if (matrix[i][j] == 1) 
+            if (matrix[i][j] > 0) 
             {
                 image.at<uchar>(i, j) = 255;
             }
