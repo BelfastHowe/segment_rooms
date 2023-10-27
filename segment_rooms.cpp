@@ -275,7 +275,7 @@ std::vector<p64> bresenham4(int x0, int y0, int x1, int y1)
     int sgnX = x0 < x1 ? 1 : -1;
     int sgnY = y0 < y1 ? 1 : -1;
     int e = 0;
-    for (int i = 0; i < dx + dy; ++i)
+    for (int i = 0; i <= dx + dy; ++i)
     {
         points.push_back(std::make_pair(x0, y0));
         int e1 = e + dy;
@@ -7245,6 +7245,244 @@ Matrix<int> map_pre_optimization(const char* filename, std::vector<std::pair<p64
     return optimization_map;
 }
 
+int gap_enlargement(Matrix<int>& expanded_matrix, std::map<int, Room>& expanded_rooms)
+{
+    int h = expanded_matrix.size();
+    int w = expanded_matrix[0].size();
+
+    std::function<Matrix<int>(std::vector<p64>&, int, int)> cnt_to_matrix = [](std::vector<p64>& cnt, int h, int w)->Matrix<int>
+        {
+            std::vector<cv::Point> cv_cnt;
+            for (auto& p : cnt)
+            {
+                cv_cnt.push_back(cv::Point(p.second, p.first));
+            }
+
+            cv::Mat cache(h, w, CV_8UC1, cv::Scalar(0));
+            cv::drawContours(cache, Matrix<cv::Point>{cv_cnt}, -1, cv::Scalar(255), -1);
+
+            Matrix<int> dst(h, std::vector<int>(w, 0));
+            for (int i = 0; i < h; i++)
+            {
+                for (int j = 0; j < w; j++)
+                {
+                    dst[i][j] = cache.at<uchar>(i, j) / 255;
+                }
+            }
+
+            Matrix<int> kernel(3, std::vector<int>(3, 1));
+            dst = customize_erode(dst, kernel);
+
+            return dst;
+        };
+
+    //构建全房间转折点列表
+    std::vector<std::pair<int, std::vector<p64>>> fpc;
+
+    for (auto& room : expanded_rooms)
+    {
+        int rd = room.first;
+
+        std::vector<p64> allPoints = room.second.get_outline_pixels();
+        std::vector<p64> turnPoints;
+
+        int n = allPoints.size();
+        for (int i = 0; i < n; i++)
+        {
+            p64 p1 = allPoints[i];
+            p64 p2 = allPoints[(i + 1) % n];
+            p64 p3 = allPoints[(i + 2) % n];
+
+            int dir1 = getDirection(p1, p2);
+            int dir2 = getDirection(p2, p3);
+
+            if (dir1 != dir2)
+            {
+                turnPoints.push_back(p2);
+            }
+        }
+        fpc.push_back(std::make_pair(rd, turnPoints));
+
+    }
+
+    //逐级变形十次
+    for (int getime = 0; getime < 10; getime++)
+    {
+        //单个房间
+        for (int fpcn = 0; fpcn < fpc.size(); fpcn++)
+        {
+            int room_id = fpc[fpcn].first;
+            std::vector<p64> cnt = fpc[fpcn].second;
+
+            Matrix<int> mask(h, std::vector<int>(w, 0));
+
+            //背景限制矩阵
+            for (auto& mask_cnt : fpc)
+            {
+                if (mask_cnt.first == room_id) continue;
+
+                Matrix<int> single_mask = cnt_to_matrix(mask_cnt.second, h, w);
+
+                for (int i = 0; i < h; i++)
+                {
+                    for (int j = 0; j < w; j++)
+                    {
+                        if (single_mask[i][j] == 1)
+                        {
+                            mask[i][j] = 1;
+                        }
+                    }
+                }
+            }
+
+            int length = cnt.size();
+
+            //逐对转折点
+            for (int m = 0; m < length; m++)
+            {
+                //此房间的内部填充
+                Matrix<int> inside_mask = cnt_to_matrix(cnt, h, w);
+
+                p64 p1 = cnt[m];
+                p64 p2 = cnt[(m + 1) % length];
+
+                if (std::abs(p1.first - p2.first) + std::abs(p1.second - p2.second) == 1) continue;
+
+                //上下
+                if (p1.first == p2.first)
+                {
+                    //上
+                    if (p1.first - 1 >= 0 && inside_mask[p1.first - 1][(p1.second + p2.second) / 2] == 0)
+                    {
+                        int flag = 0;
+                        for (int y = std::min(p1.second, p2.second); y <= std::max(p1.second, p2.second); y++)
+                        {
+                            flag += mask[p1.first - 1][y];
+                        }
+
+                        if (flag == 0)
+                        {
+                            p64 np1 = std::make_pair(p1.first - 1, p1.second);
+                            p64 np2 = std::make_pair(p2.first - 1, p2.second);
+                            cnt[m] = np1;
+                            cnt[(m + 1) % length] = np2;
+                        }
+                    }
+                    else if (p1.first + 1 < h && inside_mask[p1.first + 1][(p1.second + p2.second) / 2] == 0)
+                    {
+                        int flag = 0;
+                        for (int y = std::min(p1.second, p2.second); y <= std::max(p1.second, p2.second); y++)
+                        {
+                            flag += mask[p1.first + 1][y];
+                        }
+
+                        if (flag == 0)
+                        {
+                            p64 np1 = std::make_pair(p1.first + 1, p1.second);
+                            p64 np2 = std::make_pair(p2.first + 1, p2.second);
+                            cnt[m] = np1;
+                            cnt[(m + 1) % length] = np2;
+                        }
+                    }
+                }
+                else if (p1.second == p2.second)
+                {
+                    //左
+                    if (p1.second - 1 >= 0 && inside_mask[(p1.first + p2.first) / 2][p1.second - 1] == 0)
+                    {
+                        int flag = 0;
+                        for (int x = std::min(p1.first, p2.first); x <= std::max(p1.first, p2.first); x++)
+                        {
+                            flag += mask[x][p1.second - 1];
+                        }
+
+                        if (flag == 0)
+                        {
+                            p64 np1 = std::make_pair(p1.first, p1.second - 1);
+                            p64 np2 = std::make_pair(p2.first, p2.second - 1);
+                            cnt[m] = np1;
+                            cnt[(m + 1) % length] = np2;
+                        }
+                    }
+                    else if (p1.second + 1 < w && inside_mask[(p1.first + p2.first) / 2][p1.second + 1] == 0)
+                    {
+                        int flag = 0;
+                        for (int x = std::min(p1.first, p2.first); x <= std::max(p1.first, p2.first); x++)
+                        {
+                            flag += mask[x][p1.second + 1];
+                        }
+
+                        if (flag == 0)
+                        {
+                            p64 np1 = std::make_pair(p1.first, p1.second + 1);
+                            p64 np2 = std::make_pair(p2.first, p2.second + 1);
+                            cnt[m] = np1;
+                            cnt[(m + 1) % length] = np2;
+                        }
+                    }
+                }
+                else
+                {
+                    return -1;
+                }
+            }
+
+            fpc[fpcn].second = cnt;
+
+        }
+    }
+
+    //开始还原
+    Matrix<int> em_dst(h, std::vector<int>(w, 0));
+    for (auto& dst_cnt : fpc)
+    {
+        
+        std::vector<p64> turn_dc = dst_cnt.second;
+        int tcn = turn_dc.size();
+        std::vector<p64> full_dc;
+
+        for (int tc = 0; tc < tcn; tc++)
+        {
+            const auto& cp1 = turn_dc[tc];
+            const auto& cp2 = turn_dc[(tc + 1) % tcn];
+            auto tfdc = bresenham4(cp1.first, cp1.second, cp2.first, cp2.second);
+            tfdc.pop_back();
+            full_dc.insert(full_dc.end(), tfdc.begin(), tfdc.end());
+        }
+
+        for (auto& p : full_dc)
+        {
+            em_dst[p.first][p.second] = 1;
+        }
+
+    }
+    printBinaryImage(em_dst, 1, "em_dst");
+
+    int ret = expanded_room_renew(expanded_rooms, expanded_matrix, em_dst);
+
+    if (ret != 0) return -1;
+
+    for (auto& row : expanded_matrix)
+    {
+        for (auto& element : row)
+        {
+            element = 0;
+        }
+    }
+
+    for (auto& room : expanded_rooms)
+    {
+        int trid = room.first;
+        for (auto& p : room.second.get_pixels())
+        {
+            expanded_matrix[p.first][p.second] = trid;
+        }
+    }
+
+    return 0;
+
+}
+
 
 
 /*
@@ -7621,6 +7859,8 @@ int test_new_map()
     auto expanded = expand_rooms_queue(segmented_matrix, rooms);
     auto& expanded_matrix = expanded.first;
     auto& expanded_rooms = expanded.second;
+
+    gap_enlargement(expanded_matrix, expanded_rooms);
 
     printBinaryImage(expanded_matrix, 1, "first_expanded_matrix");
 
