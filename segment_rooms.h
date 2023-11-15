@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #ifndef SEGMENT_ROOMS_H
 #define SEGMENT_ROOMS_H
@@ -24,11 +24,11 @@ using Matrix = std::vector<std::vector<T>>;
 
 
 
-//¶àÁ¬Í¨ÇøÓò×ª»¯Îªµ¥Á¬Í¨ÇøÓò
+//å¤šè¿é€šåŒºåŸŸè½¬åŒ–ä¸ºå•è¿é€šåŒºåŸŸ
 //cv::Mat extract_filled_image(const cv::Mat& connected_region);
 std::vector<std::vector<int>> extract_filled_image(const std::vector<std::vector<int>>& connected_region);
 
-//È«²¿ÍâÂÖÀªÌáÈ¡º¯Êı
+//å…¨éƒ¨å¤–è½®å»“æå–å‡½æ•°
 //cv::Mat extract_edges(const cv::Mat& filled_image);
 std::vector<std::vector<int>> extract_edges(const std::vector<std::vector<int>>& filled_image);
 
@@ -36,98 +36,98 @@ std::vector<std::vector<int>> extract_edges(const std::vector<std::vector<int>>&
 
 class Room {
 private:
-    int room_id;//·¿¼ä±àºÅ
-    std::vector<std::pair<int, int>> pixels;//·¿¼äÄÚµÄÏñËØµã
+    int room_id;//æˆ¿é—´ç¼–å·
+    std::vector<std::pair<int, int>> pixels;//æˆ¿é—´å†…çš„åƒç´ ç‚¹
 
-    std::vector<std::pair<int, std::pair<std::pair<int, int>, std::pair<int, int>>>> connected_rooms;//·¿¼ä¹ØÓÚÃÅµÄÁ¬Í¨ĞÅÏ¢
-    std::vector<std::pair<int, p64>> connection_info;//ĞÂÁ¬Í¨ĞÅÏ¢
+    std::vector<std::pair<int, std::pair<std::pair<int, int>, std::pair<int, int>>>> connected_rooms;//æˆ¿é—´å…³äºé—¨çš„è¿é€šä¿¡æ¯
+    std::vector<std::pair<int, p64>> connection_info;//æ–°è¿é€šä¿¡æ¯
 
-    std::vector<std::pair<int, int>> outline_pixels;//ÍâÂÖÀªÏñËØµãÁĞ±í
-    std::vector<std::vector<p64>> obstacle_pixels;//ÕÏ°­ÎïÁĞ±í
+    std::vector<std::pair<int, int>> outline_pixels;//å¤–è½®å»“åƒç´ ç‚¹åˆ—è¡¨
+    std::vector<std::vector<p64>> obstacle_pixels;//éšœç¢ç‰©åˆ—è¡¨
 
 public:
-    Room(int room_id = 0);//¹¹Ôìº¯Êı
+    Room(int room_id = 0);//æ„é€ å‡½æ•°
 
-    void add_pixel(std::pair<int, int> pixel);//Ìí¼ÓÏñËØµã
+    void add_pixel(std::pair<int, int> pixel);//æ·»åŠ åƒç´ ç‚¹
 
-    int get_pixel_count() const;//»ñÈ¡ÏñËØµãÊıÁ¿
+    int get_pixel_count() const;//è·å–åƒç´ ç‚¹æ•°é‡
 
-    void clear_pixels();// Çå¿Õ·¿¼äÄÚµÄÏñËØµã
+    void clear_pixels();// æ¸…ç©ºæˆ¿é—´å†…çš„åƒç´ ç‚¹
 
-    std::string to_string() const;//Êä³ö·¿¼äĞÅÏ¢
+    std::string to_string() const;//è¾“å‡ºæˆ¿é—´ä¿¡æ¯
 
-    int get_room_id() const;//»ñÈ¡·¿¼ä±àºÅ
+    int get_room_id() const;//è·å–æˆ¿é—´ç¼–å·
 
-    const std::vector<std::pair<int, int>>& get_pixels() const;//»ñÈ¡·¿¼äÄÚµÄÏñËØµã
+    const std::vector<std::pair<int, int>>& get_pixels() const;//è·å–æˆ¿é—´å†…çš„åƒç´ ç‚¹
 
-    void add_connected_room(int room_id, const std::pair<std::pair<int, int>, std::pair<int, int>>& door);//Ìí¼Ó·¿¼ä¹ØÓÚÃÅµÄÁ¬Í¨ĞÅÏ¢
+    void add_connected_room(int room_id, const std::pair<std::pair<int, int>, std::pair<int, int>>& door);//æ·»åŠ æˆ¿é—´å…³äºé—¨çš„è¿é€šä¿¡æ¯
 
-    void print_connected_rooms() const;//Êä³ö·¿¼ä¹ØÓÚÃÅµÄÁ¬Í¨ĞÅÏ¢
+    void print_connected_rooms() const;//è¾“å‡ºæˆ¿é—´å…³äºé—¨çš„è¿é€šä¿¡æ¯
 
-    void calculate_outline(const std::vector<std::vector<int>>& matrix);//¼ÆËã²¢±£´æÍâÂÖÀªÏñËØµã
+    void calculate_outline(const std::vector<std::vector<int>>& matrix);//è®¡ç®—å¹¶ä¿å­˜å¤–è½®å»“åƒç´ ç‚¹
 
-    const std::vector<std::pair<int, int>>& get_outline_pixels() const;//»ñÈ¡ÍâÂÖÀªÏñËØµãÁĞ±í
+    const std::vector<std::pair<int, int>>& get_outline_pixels() const;//è·å–å¤–è½®å»“åƒç´ ç‚¹åˆ—è¡¨
 
-    void add_connection_info(int room_id, p64 door_id);//Ìí¼ÓÁ¬Í¨ĞÅÏ¢
+    void add_connection_info(int room_id, p64 door_id);//æ·»åŠ è¿é€šä¿¡æ¯
 
-    const std::vector<std::pair<int, p64>>& get_connection_info() const;//»ñÈ¡Á¬Í¨ĞÅÏ¢
+    const std::vector<std::pair<int, p64>>& get_connection_info() const;//è·å–è¿é€šä¿¡æ¯
 
-    void delete_connection_info(int id);//É¾³ıÁ¬Í¨ĞÅÏ¢£¨ÊäÈë·¿¼äidÀ´É¾³ı£©
+    void delete_connection_info(int id);//åˆ é™¤è¿é€šä¿¡æ¯ï¼ˆè¾“å…¥æˆ¿é—´idæ¥åˆ é™¤ï¼‰
 
-    void clear_connection_info();//Çå³ıÁ¬Í¨ĞÅÏ¢
+    void clear_connection_info();//æ¸…é™¤è¿é€šä¿¡æ¯
 
-    const std::vector<std::vector<p64>>& get_obstacle_pixels() const;//»ñÈ¡ÕÏ°­ÎïÁĞ±í
+    const std::vector<std::vector<p64>>& get_obstacle_pixels() const;//è·å–éšœç¢ç‰©åˆ—è¡¨
 };
 
 
-struct Line //¸÷ÖÖÏßµÄ½á¹¹Ìå
+struct Line //å„ç§çº¿çš„ç»“æ„ä½“
 {
-    enum Direction { HORIZONTAL, VERTICAL, NONLINEAR, INTERSECTION };//Ë®Æ½Ïß£¬´¹Ö±Ïß£¬·ÇÏßĞÔ£¬½»µã
+    enum Direction { HORIZONTAL, VERTICAL, NONLINEAR, INTERSECTION };//æ°´å¹³çº¿ï¼Œå‚ç›´çº¿ï¼Œéçº¿æ€§ï¼Œäº¤ç‚¹
 
-    int id; //ÏßµÄ±àºÅ
-    Direction direction; //ÏßµÄ·½Ïò»òÕß·ÇÏßĞÔ
-    std::vector<std::pair<int, int>> points; //ÏßÉÏµÄµã
-    std::pair<int, int> startPoint; //ÏßµÄÆğµã
-    std::pair<int, int> endPoint; //ÏßµÄÖÕµã
+    int id; //çº¿çš„ç¼–å·
+    Direction direction; //çº¿çš„æ–¹å‘æˆ–è€…éçº¿æ€§
+    std::vector<std::pair<int, int>> points; //çº¿ä¸Šçš„ç‚¹
+    std::pair<int, int> startPoint; //çº¿çš„èµ·ç‚¹
+    std::pair<int, int> endPoint; //çº¿çš„ç»ˆç‚¹
 
-    //´øÓĞÄ¬ÈÏÖµµÄLine½á¹¹Ìå¹¹Ôìº¯Êı
+    //å¸¦æœ‰é»˜è®¤å€¼çš„Lineç»“æ„ä½“æ„é€ å‡½æ•°
     Line(int id = 0, Direction direction = NONLINEAR, std::vector<std::pair<int, int>> points = {}, std::pair<int, int> startPoint = std::make_pair(-1, -1), std::pair<int, int> endPoint = std::make_pair(-1, -1))
         : id(id), direction(direction), points(points), startPoint(startPoint), endPoint(endPoint) {}
 };
 
-struct Node //ÓÅ»¯²»¹æÔòÏßÌõÊ±ĞèÒªÓÃµ½µÄ½ÚµãÂ·¾¶½á¹¹Ìå
+struct Node //ä¼˜åŒ–ä¸è§„åˆ™çº¿æ¡æ—¶éœ€è¦ç”¨åˆ°çš„èŠ‚ç‚¹è·¯å¾„ç»“æ„ä½“
 {
-    std::pair<int, int> pos; // µ±Ç°Î»ÖÃ
-    std::vector<std::pair<int, int>> path; // ´ÓÆğµãµ½µ±Ç°Î»ÖÃµÄÂ·¾¶
-    int turns; // ÑØÍ¾×ªÍäµÄ´ÎÊı
+    std::pair<int, int> pos; // å½“å‰ä½ç½®
+    std::vector<std::pair<int, int>> path; // ä»èµ·ç‚¹åˆ°å½“å‰ä½ç½®çš„è·¯å¾„
+    int turns; // æ²¿é€”è½¬å¼¯çš„æ¬¡æ•°
 
-    // ½Úµã¹¹Ôìº¯Êı
+    // èŠ‚ç‚¹æ„é€ å‡½æ•°
     Node(const std::pair<int, int>& pos, const std::vector<std::pair<int, int>>& path, int turns)
         : pos(pos), path(path), turns(turns) {}
 
-    // ÓÅÏÈ¼¶¶ÓÁĞµÄ±È½ÏÔËËã·û
+    // ä¼˜å…ˆçº§é˜Ÿåˆ—çš„æ¯”è¾ƒè¿ç®—ç¬¦
     bool operator<(const Node& rhs) const
     {
         if (turns == rhs.turns)
         {
-            // µ±×ªÍä´ÎÊıÏàµÈÊ±£¬Â·¾¶½Ï¶ÌµÄ½ÚµãÓĞ¸ü¸ßµÄÓÅÏÈ¼¶
+            // å½“è½¬å¼¯æ¬¡æ•°ç›¸ç­‰æ—¶ï¼Œè·¯å¾„è¾ƒçŸ­çš„èŠ‚ç‚¹æœ‰æ›´é«˜çš„ä¼˜å…ˆçº§
             return path.size() > rhs.path.size();
         }
         else
         {
-            // ·ñÔò£¬×ªÍä´ÎÊıÉÙµÄ½ÚµãÓĞ¸ü¸ßµÄÓÅÏÈ¼¶
+            // å¦åˆ™ï¼Œè½¬å¼¯æ¬¡æ•°å°‘çš„èŠ‚ç‚¹æœ‰æ›´é«˜çš„ä¼˜å…ˆçº§
             return turns > rhs.turns;
         }
     }
 };
 
-struct Door  //ÃÅ¿ò½á¹¹Ìå
+struct Door  //é—¨æ¡†ç»“æ„ä½“
 {
     std::pair<int, int> startPoint;
     std::pair<int, int> endPoint;
     std::vector<std::pair<int, int>> path;
 
-    // ´øÓĞÄ¬ÈÏÖµµÄ¹¹Ôìº¯Êı
+    // å¸¦æœ‰é»˜è®¤å€¼çš„æ„é€ å‡½æ•°
     Door(std::pair<int, int> p1 = { -1, -1 }, std::pair<int, int> p2 = { -1, -1 }, std::vector<std::pair<int, int>> l = {})
         : startPoint(p1), endPoint(p2), path(l)
     {}
@@ -135,150 +135,150 @@ struct Door  //ÃÅ¿ò½á¹¹Ìå
 
 
 
-//½«uint8_t¾ØÕó×ª»¯Îªint¾ØÕó
+//å°†uint8_tçŸ©é˜µè½¬åŒ–ä¸ºintçŸ©é˜µ
 std::vector<std::vector<int>> ConvertMatrixToInt(const std::vector<std::vector<uint8_t>>& uint8_matrix);
 
-//ÅĞ¶ÏÏñËØµãÊÇ·ñÓĞĞ§
+//åˆ¤æ–­åƒç´ ç‚¹æ˜¯å¦æœ‰æ•ˆ
 bool is_valid_pixel(int x, int y, int rows, int cols);
 
-//ÕÒ³öËùÓĞµÄÃÅÏñËØµã
+//æ‰¾å‡ºæ‰€æœ‰çš„é—¨åƒç´ ç‚¹
 std::vector<std::pair<int, int>> bresenham_line(int x1, int y1, int x2, int y2);
 
 
-//ËÄÁ¬Í¨¹âÕ¤»¯Ö±Ïß»æÖÆ
+//å››è¿é€šå…‰æ …åŒ–ç›´çº¿ç»˜åˆ¶
 std::vector<p64> bresenham4(int x0, int y0, int x1, int y1);
 
-//ÃÅ¿òµÄ¹æÔò»¯
+//é—¨æ¡†çš„è§„åˆ™åŒ–
 int door_regularization(const Matrix<int>& current_map, std::vector<std::pair<p64, p64>>& src_doors);
 
-//´øÓĞÕ³Á¬´¦ÀíµÄÃÅ¿ò¹æÔò»¯
+//å¸¦æœ‰ç²˜è¿å¤„ç†çš„é—¨æ¡†è§„åˆ™åŒ–
 int door_regularization_skid(Matrix<int>& current_map, std::vector<std::pair<p64, p64>>& src_doors);
 
-//ÃÅ¿ò×Öµä¹¹Ôì
+//é—¨æ¡†å­—å…¸æ„é€ 
 std::map<p64, Door> doorVector2Map(std::vector<std::pair<p64, p64>>& doors);
 
-//ÃÅ¿ò¸ÉÉæ×é¼ş£¬Éî¶ÈÓÅÏÈËÑË÷
+//é—¨æ¡†å¹²æ¶‰ç»„ä»¶ï¼Œæ·±åº¦ä¼˜å…ˆæœç´¢
 void doorDFS(MatrixInt& matrix, std::vector<std::vector<bool>>& visited, int a, int b, int target, Door& door);
 
-//ÃÅ¿ò¸ÉÉæ×é¼ş£¬¸ÉÉæºóÃÅ¿ò×ÖµäÖØ¹¹
+//é—¨æ¡†å¹²æ¶‰ç»„ä»¶ï¼Œå¹²æ¶‰åé—¨æ¡†å­—å…¸é‡æ„
 std::map<p64, Door> findDoorFrames(MatrixInt& matrix);
 
-//ÃÅ¿ò¸ÉÉæ£¬¸´ºÏidÃÅ¿ò×ÖµäÖØ¹¹
+//é—¨æ¡†å¹²æ¶‰ï¼Œå¤åˆidé—¨æ¡†å­—å…¸é‡æ„
 void door_frame_interaction(MatrixInt& src, std::map<p64, Door>& doorMap);
 
-//È¥³ıÎŞ¹ØµÄÃÅ
+//å»é™¤æ— å…³çš„é—¨
 int filter_unassociated_doors(std::map<int, Room>& rooms, std::map<p64, Door>& doorMap);
 
-//¶à±ßĞÎÄâºÏËùÓÃµÄ¹Û²âº¯Êı
+//å¤šè¾¹å½¢æ‹Ÿåˆæ‰€ç”¨çš„è§‚æµ‹å‡½æ•°
 int show_cv_points(const Matrix<cv::Point>& pointSets, int h, int w, const std::string& windowName);
 
 
-//·¿¼ä·Ö¸îº¯Êı
+//æˆ¿é—´åˆ†å‰²å‡½æ•°
 std::pair<std::vector<std::vector<int>>, std::vector<Room>> segment_rooms(const std::vector<std::vector<int>>& matrix, const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels);
 std::pair<MatrixInt, std::map<int, Room>> segment_rooms(MatrixInt& src, std::map<p64, Door>& doorMap, MatrixInt& bgmask);
 
-//×Ô¶¨ÒåÅòÕÍº¯Êı
+//è‡ªå®šä¹‰è†¨èƒ€å‡½æ•°
 std::vector<std::vector<int>> customize_dilate(const std::vector<std::vector<int>>& binaryMatrix, const std::vector<std::vector<int>>& kernel);
 
-//×Ô¶¨Òå¸¯Ê´º¯Êı
+//è‡ªå®šä¹‰è…èš€å‡½æ•°
 std::vector<std::vector<int>> customize_erode(const std::vector<std::vector<int>>& binaryMatrix, const std::vector<std::vector<int>>& kernel);
 
-//×Ô¶¨Òå¿ªÔËËãº¯Êı
+//è‡ªå®šä¹‰å¼€è¿ç®—å‡½æ•°
 std::vector<std::vector<int>> customize_opening(const std::vector<std::vector<int>>& binaryMatrix, const std::vector<std::vector<int>>& kernel);
 
-//×Ô¶¨Òå±ÕÔËËãº¯Êı
+//è‡ªå®šä¹‰é—­è¿ç®—å‡½æ•°
 std::vector<std::vector<int>> customize_closing(const std::vector<std::vector<int>>& binaryMatrix, const std::vector<std::vector<int>>& kernel);
 
-//½«ÏñËØµãÁĞ±í×ª»¯Îª01¾ØÕó
+//å°†åƒç´ ç‚¹åˆ—è¡¨è½¬åŒ–ä¸º01çŸ©é˜µ
 std::vector<std::vector<int>> pixels_to_matrix(const std::vector<std::pair<int, int>>& pixels, int height, int width);
 
-//·¿¼äÁ¬Í¨ĞÔÅĞ¶Ïº¯Êı
+//æˆ¿é—´è¿é€šæ€§åˆ¤æ–­å‡½æ•°
 //void find_connected_rooms(const std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>& rooms, const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels);
 void find_connected_rooms(std::vector<Room>& rooms, const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels);
 void find_connected_rooms(std::map<int, Room>& rooms, const std::map<p64, Door>& doorMap);
 
-//°¼½ÇÅòÕÍº¯Êı
+//å‡¹è§’è†¨èƒ€å‡½æ•°
 std::pair<std::vector<std::vector<int>>, std::vector<Room>> expand_rooms(const std::vector<std::vector<int>>& segmented_matrix, const std::vector<Room>& rooms);
 std::pair<Matrix<int>, std::map<int, Room>> expand_rooms(const Matrix<int>& segmented_matrix, const std::map<int, Room>& rooms);
 
-//¼ò»¯µÄ»§ĞÍÍ¼Éú³Éº¯Êı£¬¼òµ¥ÅòÕÍ
+//ç®€åŒ–çš„æˆ·å‹å›¾ç”Ÿæˆå‡½æ•°ï¼Œç®€å•è†¨èƒ€
 std::pair<Matrix<int>, std::map<int, Room>> expand_rooms_simple(const Matrix<int>& segmented_matrix, const std::map<int, Room>& rooms);
 
-//°¼½ÇÅòÕÍ£¬Ê¹ÓÃ¶ÓÁĞË¼Â·
+//å‡¹è§’è†¨èƒ€ï¼Œä½¿ç”¨é˜Ÿåˆ—æ€è·¯
 std::pair<Matrix<int>, std::map<int, Room>> expand_rooms_queue(const Matrix<int>& segmented_matrix, const std::map<int, Room>& rooms);
 
-//³ÉÆ·µØÍ¼»æÖÆ
+//æˆå“åœ°å›¾ç»˜åˆ¶
 void draw_map(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>& rooms, std::vector<Room>& expanded_rooms, std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& door_pixels);
 
-//¹Ç¼ÜÏ¸»¯Ëã·¨¾ßÌåÊµÏÖ
+//éª¨æ¶ç»†åŒ–ç®—æ³•å…·ä½“å®ç°
 void thinningIteration(std::vector<std::vector<int>>& img, int iter);
 
-//Zhange-Suen¹Ç¼Ü»¯Ëã·¨
+//Zhange-Suenéª¨æ¶åŒ–ç®—æ³•
 void zhangSuenThinning(std::vector<std::vector<int>>& img);
 
-//È¥³ı¹Ç¼ÜÖĞµÄµ¥ÏñËØ·ÖÖ§
+//å»é™¤éª¨æ¶ä¸­çš„å•åƒç´ åˆ†æ”¯
 void removeBranches(std::vector<std::vector<int>>& img);
 
-//ÌáÈ¡½»µã²¢ÖÃÎª±³¾°
+//æå–äº¤ç‚¹å¹¶ç½®ä¸ºèƒŒæ™¯
 std::vector<Line> extractIntersections(std::vector<std::vector<int>>& img);
 
-//ÌáÈ¡Õı½»Ïß¶Î£¬²¢½«ÌáÈ¡¹ıµÄÏñËØµãÖÃÎª0
+//æå–æ­£äº¤çº¿æ®µï¼Œå¹¶å°†æå–è¿‡çš„åƒç´ ç‚¹ç½®ä¸º0
 void extractOrthogonalLines(std::vector<std::vector<int>>& img, std::vector<Line>& lines);
 
-//ÌáÈ¡·ÇÏßĞÔÏßÌõ£¬²¢½«ÌáÈ¡¹ıµÄÏñËØµãÖÃÎª0
+//æå–éçº¿æ€§çº¿æ¡ï¼Œå¹¶å°†æå–è¿‡çš„åƒç´ ç‚¹ç½®ä¸º0
 void findNonLinearLines(std::vector<std::vector<int>>& img, std::vector<Line>& lines);
 
-//»ñÈ¡·½Ïò
+//è·å–æ–¹å‘
 int getDirection(std::pair<int, int> a, std::pair<int, int> b);
 
-//Ñ°ÕÒmaskÏŞÖÆÏÂÁ½¶ËµãÖ®¼äµÄ×îÉÙ×ªÕÛÏß¶Î
+//å¯»æ‰¾maské™åˆ¶ä¸‹ä¸¤ç«¯ç‚¹ä¹‹é—´çš„æœ€å°‘è½¬æŠ˜çº¿æ®µ
 std::vector<std::pair<int, int>> getLeastTurnPath(const std::pair<int, int>& start, const std::pair<int, int>& end, const std::vector<std::vector<int>>& mask);
 
-//»§ĞÍÍ¼ÂÖÀªµÄ²ğ·Ö¡¢ÕÒÖ±ÓëÖØ×é
+//æˆ·å‹å›¾è½®å»“çš„æ‹†åˆ†ã€æ‰¾ç›´ä¸é‡ç»„
 std::vector<std::vector<int>> floor_plan_outline_Orthogonalization(std::vector<std::vector<int>>& img, const std::vector<std::vector<int>>& segmented_matrix);
 
-//»§ĞÍÍ¼ÂÖÀªµÄ°ËÁ¬Í¨Á¬½Ó´¦²¹È«
+//æˆ·å‹å›¾è½®å»“çš„å…«è¿é€šè¿æ¥å¤„è¡¥å…¨
 void completion_link(std::vector<std::vector<int>>& floor_plan_matrix);
 
-//ÅĞ¶Ïµ¥¸öÏñËØµãÓëµ¥¸öÃÅÎ»ÖÃ¹ØÏµµÄº¯Êı
+//åˆ¤æ–­å•ä¸ªåƒç´ ç‚¹ä¸å•ä¸ªé—¨ä½ç½®å…³ç³»çš„å‡½æ•°
 std::pair<double, bool> distanceToSegment(const std::pair<int, int>& point, const std::pair<int, int>& segA, const std::pair<int, int>& segB);
 
-//¹æÕû·¿¼äÉú³ÉÖĞ£¬ÅĞ¶ÏÏñËØµãÊÇ·ñÓ¦¸Ã±»¸¯Ê´
+//è§„æ•´æˆ¿é—´ç”Ÿæˆä¸­ï¼Œåˆ¤æ–­åƒç´ ç‚¹æ˜¯å¦åº”è¯¥è¢«è…èš€
 bool should_not_be_eroded(const std::pair<int, int>& point, const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& doors, double threshold);
 bool should_not_be_eroded(const p64& point, const std::map<p64, Door>& doorMap, double threshold);
 
-//¸¯Ê´ºó¹æÕû·¿¼äµÄid±êÃ÷¡¢À©É¢
+//è…èš€åè§„æ•´æˆ¿é—´çš„idæ ‡æ˜ã€æ‰©æ•£
 void tidyRoomDFS(int& x, int& y, int& h, int& w, std::vector<std::vector<int>>& tidy_room, int& id);
 
-//»§ĞÍÍ¼ÂÖÀª¸¯Ê´°æ£¬¹æÕû·¿¼äÉú³É¼¯³Éº¯Êı
+//æˆ·å‹å›¾è½®å»“è…èš€ç‰ˆï¼Œè§„æ•´æˆ¿é—´ç”Ÿæˆé›†æˆå‡½æ•°
 std::vector<std::vector<int>> tidy_room_erode(std::vector<std::vector<int>>& segmented_matrix,
                                               std::vector<std::vector<int>>& floor_plan,
                                               const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& doors_pixels);
 
-//Ô­·¿¼ä¾ØÕóÅòÕÍ°æ£¬¹æÕû·¿¼äÉú³Éº¯Êı
+//åŸæˆ¿é—´çŸ©é˜µè†¨èƒ€ç‰ˆï¼Œè§„æ•´æˆ¿é—´ç”Ÿæˆå‡½æ•°
 std::vector<std::vector<int>> tidy_room_dilate(std::vector<std::vector<int>>& room_matrix, std::vector<std::vector<int>>& floor_plan_matrix, int rounds);
 
-//µ¥Á¬Í¨ÇøÓòµÄ¶à±ßĞÎÄâºÏ
+//å•è¿é€šåŒºåŸŸçš„å¤šè¾¹å½¢æ‹Ÿåˆ
 void polygon_fitting(std::vector<std::vector<int>>& room_matrix, double epsilon);
 
-//¹æÕû·¿¼äµÄÄâºÏÉú³É
+//è§„æ•´æˆ¿é—´çš„æ‹Ÿåˆç”Ÿæˆ
 std::vector<std::vector<int>> tidy_room_approx(std::vector<std::vector<int>>& segmented_matrix, std::vector<Room>& rooms);
 
-//È¥³ı¶şÖµÍ¼Ïñ±ßÔµµÄÍ»³ö²¿£¬¶Ô¿í¶ÈĞ¡ÓÚãĞÖµµÄÕı½»·½ÏòÉÏµÄ²¿·ÖÓèÒÔÉ¾³ı
+//å»é™¤äºŒå€¼å›¾åƒè¾¹ç¼˜çš„çªå‡ºéƒ¨ï¼Œå¯¹å®½åº¦å°äºé˜ˆå€¼çš„æ­£äº¤æ–¹å‘ä¸Šçš„éƒ¨åˆ†äºˆä»¥åˆ é™¤
 void delete_jut(std::vector<std::vector<int>>& src, std::vector<std::vector<int>>& dst, int uthreshold, int vthreshold);
 
-//Ìî²¹¶şÖµÍ¼Ïñ±ßÔµµÄ°¼Ïİ£¬¶Ô¿í¶ÈĞ¡ÓÚãĞÖµµÄÕı½»·½ÏòÉÏµÄ¿ÕÈ±ÓèÒÔÌî²¹
+//å¡«è¡¥äºŒå€¼å›¾åƒè¾¹ç¼˜çš„å‡¹é™·ï¼Œå¯¹å®½åº¦å°äºé˜ˆå€¼çš„æ­£äº¤æ–¹å‘ä¸Šçš„ç©ºç¼ºäºˆä»¥å¡«è¡¥
 void fill_hollow(std::vector<std::vector<int>>& src, std::vector<std::vector<int>>& dst, int uthreshold, int vthreshold);
 
-//×Ô¶¨Òå¾ùÖµÂË²¨£¬¶şÖµÍ¼Ïñ
+//è‡ªå®šä¹‰å‡å€¼æ»¤æ³¢ï¼ŒäºŒå€¼å›¾åƒ
 void customize_blur(std::vector<std::vector<int>>& src, std::vector<std::vector<int>>& dst, int windowSize, int threshold);
 
-//È«·¿¼ä¶şÖµÍ¼Ïñ´¦Àíº¯Êı
+//å…¨æˆ¿é—´äºŒå€¼å›¾åƒå¤„ç†å‡½æ•°
 void tidy_room_binary(std::vector<std::vector<int>>& src, std::vector<Room>& rooms);
 
 
 /*
-@brief ¹æÕû·¿¼äÉú³É£¬Ìõ¼şĞÎÌ¬Ñ§±ä»»
+@brief è§„æ•´æˆ¿é—´ç”Ÿæˆï¼Œæ¡ä»¶å½¢æ€å­¦å˜æ¢
 */
 void tidy_room_Conditional_Morphological_Transformation(std::vector<std::vector<int>>& src,
                                                         std::vector<std::vector<int>>& mask,
@@ -291,18 +291,18 @@ void tidy_room_Conditional_Morphological_Transformation(Matrix<int>& src,
     const std::map<p64, Door>& doorMap);
 
 
-//Ìõ¼ş¸¯Ê´£¬Ö»¸¯Ê´¾­µä¾â³İ±ßÉÏµÄµ¥¸öÏñËØÍ¹Æğ
+//æ¡ä»¶è…èš€ï¼Œåªè…èš€ç»å…¸é”¯é½¿è¾¹ä¸Šçš„å•ä¸ªåƒç´ å‡¸èµ·
 void tidy_room_Conditional_Erosion_Transformation(std::vector<std::vector<int>>& src,
                                                   std::vector<std::vector<int>>& dst,
                                                   const std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>>& doors_pixels);
 
-//Ìõ¼şÅòÕÍ£¬Ö÷ÒªÊÇÌî²¹µ¥ÅÅÏñËØÍ¹³ö
+//æ¡ä»¶è†¨èƒ€ï¼Œä¸»è¦æ˜¯å¡«è¡¥å•æ’åƒç´ å‡¸å‡º
 void tidy_room_Conditional_Dilation_Transformation(std::vector<std::vector<int>>& src,
                                                    std::vector<std::vector<int>>& dst,
                                                    std::vector<std::vector<int>>& mask);
 
 /*
-@brief »§ĞÍÍ¼×ÜÌåÓÅ»¯Ä£¿éº¯Êı
+@brief æˆ·å‹å›¾æ€»ä½“ä¼˜åŒ–æ¨¡å—å‡½æ•°
 */
 void floor_plan_optimizer(std::vector<std::vector<int>>& expanded_matrix,
     std::vector<std::vector<int>>& tidy_room,
@@ -318,27 +318,27 @@ int floor_plan_optimizer(Matrix<int>& expanded_matrix,
     std::map<int, Room>& rooms,
     const std::map<p64, Door>& doorMap);
 
-//¼òµ¥µÄÕı½»¶à±ßĞÎ½üËÆº¯Êı£¬Ö÷ÒªÓÃÓÚÈ·¶¨»§ĞÍÍ¼±äĞÎ±ß½ç
+//ç®€å•çš„æ­£äº¤å¤šè¾¹å½¢è¿‘ä¼¼å‡½æ•°ï¼Œä¸»è¦ç”¨äºç¡®å®šæˆ·å‹å›¾å˜å½¢è¾¹ç•Œ
 std::vector<std::vector<int>> orthogonal_polygon_fitting(const std::vector<std::vector<int>>& floor_plan_matrix);
 
-//µãÔÚÖ±ÏßÉÏ»¹ÊÇÖ±ÏßÏÂµÄÏà¶ÔÎ»ÖÃÅĞ¶Ïº¯Êı£¬ÔÚÉÏÊä³ötrue
+//ç‚¹åœ¨ç›´çº¿ä¸Šè¿˜æ˜¯ç›´çº¿ä¸‹çš„ç›¸å¯¹ä½ç½®åˆ¤æ–­å‡½æ•°ï¼Œåœ¨ä¸Šè¾“å‡ºtrue
 bool isAboveLine(const cv::Point& point_to_check, const cv::Point& line_point_1, const cv::Point& line_point_2);
 
-//µ¥Á¬Í¨ÓòÖØĞÄ¼ÆËãº¯Êı
+//å•è¿é€šåŸŸé‡å¿ƒè®¡ç®—å‡½æ•°
 cv::Point find_centroid(const cv::Mat& mat);
 
-//ÓÃÓÅ»¯ºóµÄ»§ĞÍÍ¼ÂÖÀª¾ØÕó·´Ïò¸üĞÂexpanded_roomsÁĞ±í
+//ç”¨ä¼˜åŒ–åçš„æˆ·å‹å›¾è½®å»“çŸ©é˜µåå‘æ›´æ–°expanded_roomsåˆ—è¡¨
 void expanded_room_renew(std::vector<Room>& expanded_rooms, const std::vector<std::vector<int>>& segmented_matrix, const std::vector<std::vector<int>>& floor_plan_optimization_matrix);
 int expanded_room_renew(std::map<int, Room>& expanded_rooms, const Matrix<int>& segmented_matrix, const Matrix<int>& floor_plan_optimization_matrix);
 
-//»§ĞÍÍ¼ÂÖÀªµÄãĞÖµ¶ÔÆë
+//æˆ·å‹å›¾è½®å»“çš„é˜ˆå€¼å¯¹é½
 std::vector<std::vector<int>> floor_plan_alignment(const std::vector<Room>& expanded_rooms, const std::vector<std::vector<int>>& floor_plan_optimization_matrix);
 Matrix<int> floor_plan_alignment(const std::map<int, Room>& expanded_rooms, const Matrix<int>& floor_plan_optimization_matrix);
 
-//×ªÕÛµãÁĞ±í×ªÄÚ²¿µÄµ¥Á¬Í¨Ìî³ä¾ØÕó
+//è½¬æŠ˜ç‚¹åˆ—è¡¨è½¬å†…éƒ¨çš„å•è¿é€šå¡«å……çŸ©é˜µ
 std::vector<std::vector<int>> cvPoint_to_matrix(std::vector<cv::Point>& cnt, size_t h, size_t w);
 
-//ĞÂµÄ×îÖÕÍ¼Ïñ»æÖÆ
+//æ–°çš„æœ€ç»ˆå›¾åƒç»˜åˆ¶
 void draw_final_map(std::vector<std::vector<int>>& segmented_matrix,
     std::vector<std::vector<int>>& expanded_matrix,
     std::vector<std::vector<int>>& tidy_room,
@@ -351,13 +351,13 @@ void draw_final_map(Matrix<int>& segmented_matrix,
     std::map<int, Room>& expanded_rooms,
     std::map<p64, Door>& doorMap);
 
-//¿í¶ÈÎª1µÄ·â±ÕÂÖÀªµÄÄæÊ±ÕëË³Ğò×ªÕÛµãÌáÈ¡
+//å®½åº¦ä¸º1çš„å°é—­è½®å»“çš„é€†æ—¶é’ˆé¡ºåºè½¬æŠ˜ç‚¹æå–
 std::vector<cv::Point> findTurnPoints(std::vector<std::vector<int>>& outline_matrix);
 
-//Ë«·¿¼äÊÖ¶¯ºÏ²¢
+//åŒæˆ¿é—´æ‰‹åŠ¨åˆå¹¶
 int room_merge(int room1, int room2, std::map<int, Room>& rooms, std::map<int, Room>& expanded_rooms, std::map<p64, Door>& doorMap, Matrix<int>& segmented_matrix, Matrix<int>& expanded_matrix);
 
-//µØÍ¼¸üĞÂ
+//åœ°å›¾æ›´æ–°
 int map_renew(Matrix<int>& new_map,
     p64 offset_xy,
     Matrix<int>& segmented_matrix,
@@ -366,19 +366,19 @@ int map_renew(Matrix<int>& new_map,
     std::vector<std::pair<p64, p64>>& doors,
     std::vector<std::pair<p64, p64>>& new_doors);
 
-//ÕıÈ·µÄºó·Ö¸îid·ÖÅä
+//æ­£ç¡®çš„ååˆ†å‰²idåˆ†é…
 int post_segment(Matrix<int>& segmented_matrix, std::map<int, Room>& rooms, std::map<p64, Door>& doorMap, const Matrix<int>& bgmask);
 
-//È¥³ı¹Âµº
+//å»é™¤å­¤å²›
 void keepLargesComponent(Matrix<int>& image);
 
-//Ìî²¹Ãæ»ıĞ¡ÓÚãĞÖµµÄ¶şÖµÍ¼Ïñ¿×¶´
+//å¡«è¡¥é¢ç§¯å°äºé˜ˆå€¼çš„äºŒå€¼å›¾åƒå­”æ´
 int fill_small_holes(Matrix<int>& src, int threshold);
 
-//¸Ä±ä»­²¼´óĞ¡
+//æ”¹å˜ç”»å¸ƒå¤§å°
 int resize_matrix(Matrix<int>& src);
 
-//Ô¤´¦ÀíÊäÈëÊı¾İ
+//é¢„å¤„ç†è¾“å…¥æ•°æ®
 Matrix<int> map_pre_optimization(const char* filename, std::vector<std::pair<p64, p64>>& doors);
 
 

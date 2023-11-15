@@ -7305,8 +7305,8 @@ int gap_enlargement(Matrix<int>& expanded_matrix, std::map<int, Room>& expanded_
 
     }
 
-    //逐级变形十次
-    for (int getime = 0; getime < 10; getime++)
+    //逐级变形一次，直接变10格
+    for (int getime = 0; getime < 1; getime++)
     {
         //单个房间
         for (int fpcn = 0; fpcn < fpc.size(); fpcn++)
@@ -7341,12 +7341,15 @@ int gap_enlargement(Matrix<int>& expanded_matrix, std::map<int, Room>& expanded_
             for (int m = 0; m < length; m++)
             {
                 //此房间的内部填充
-                Matrix<int> inside_mask = cnt_to_matrix(cnt, h, w);
+                //Matrix<int> inside_mask = cnt_to_matrix(cnt, h, w);
 
                 p64 p1 = cnt[m];
                 p64 p2 = cnt[(m + 1) % length];
 
                 if (std::abs(p1.first - p2.first) + std::abs(p1.second - p2.second) == 1) continue;
+
+                //此房间的内部填充
+                Matrix<int> inside_mask = cnt_to_matrix(cnt, h, w);
 
                 //上下
                 if (p1.first == p2.first)
@@ -7355,15 +7358,19 @@ int gap_enlargement(Matrix<int>& expanded_matrix, std::map<int, Room>& expanded_
                     if (p1.first - 1 >= 0 && inside_mask[p1.first - 1][(p1.second + p2.second) / 2] == 0)
                     {
                         int flag = 0;
-                        for (int y = std::min(p1.second, p2.second); y <= std::max(p1.second, p2.second); y++)
+
+                        for (int x = p1.first - 1; x >= p1.first - 10 && x >= 0; x--)
                         {
-                            flag += mask[p1.first - 1][y];
+                            for (int y = std::min(p1.second, p2.second); y <= std::max(p1.second, p2.second); y++)
+                            {
+                                flag += mask[x][y];
+                            }
                         }
 
                         if (flag == 0)
                         {
-                            p64 np1 = std::make_pair(p1.first - 1, p1.second);
-                            p64 np2 = std::make_pair(p2.first - 1, p2.second);
+                            p64 np1 = std::make_pair(p1.first - 10, p1.second);
+                            p64 np2 = std::make_pair(p2.first - 10, p2.second);
                             cnt[m] = np1;
                             cnt[(m + 1) % length] = np2;
                         }
@@ -7371,15 +7378,19 @@ int gap_enlargement(Matrix<int>& expanded_matrix, std::map<int, Room>& expanded_
                     else if (p1.first + 1 < h && inside_mask[p1.first + 1][(p1.second + p2.second) / 2] == 0)
                     {
                         int flag = 0;
-                        for (int y = std::min(p1.second, p2.second); y <= std::max(p1.second, p2.second); y++)
+
+                        for (int x = p1.first + 1; x <= p1.first + 10 && x < h; x++)
                         {
-                            flag += mask[p1.first + 1][y];
+                            for (int y = std::min(p1.second, p2.second); y <= std::max(p1.second, p2.second); y++)
+                            {
+                                flag += mask[x][y];
+                            }
                         }
 
                         if (flag == 0)
                         {
-                            p64 np1 = std::make_pair(p1.first + 1, p1.second);
-                            p64 np2 = std::make_pair(p2.first + 1, p2.second);
+                            p64 np1 = std::make_pair(p1.first + 10, p1.second);
+                            p64 np2 = std::make_pair(p2.first + 10, p2.second);
                             cnt[m] = np1;
                             cnt[(m + 1) % length] = np2;
                         }
@@ -7391,15 +7402,19 @@ int gap_enlargement(Matrix<int>& expanded_matrix, std::map<int, Room>& expanded_
                     if (p1.second - 1 >= 0 && inside_mask[(p1.first + p2.first) / 2][p1.second - 1] == 0)
                     {
                         int flag = 0;
-                        for (int x = std::min(p1.first, p2.first); x <= std::max(p1.first, p2.first); x++)
+
+                        for (int y = p1.second - 1; y >= p1.second - 10 && y >= 0; y--)
                         {
-                            flag += mask[x][p1.second - 1];
+                            for (int x = std::min(p1.first, p2.first); x <= std::max(p1.first, p2.first); x++)
+                            {
+                                flag += mask[x][y];
+                            }
                         }
 
                         if (flag == 0)
                         {
-                            p64 np1 = std::make_pair(p1.first, p1.second - 1);
-                            p64 np2 = std::make_pair(p2.first, p2.second - 1);
+                            p64 np1 = std::make_pair(p1.first, p1.second - 10);
+                            p64 np2 = std::make_pair(p2.first, p2.second - 10);
                             cnt[m] = np1;
                             cnt[(m + 1) % length] = np2;
                         }
@@ -7407,15 +7422,19 @@ int gap_enlargement(Matrix<int>& expanded_matrix, std::map<int, Room>& expanded_
                     else if (p1.second + 1 < w && inside_mask[(p1.first + p2.first) / 2][p1.second + 1] == 0)
                     {
                         int flag = 0;
-                        for (int x = std::min(p1.first, p2.first); x <= std::max(p1.first, p2.first); x++)
+
+                        for (int y = p1.second + 1; y <= p1.second + 10 && y < w; y++)
                         {
-                            flag += mask[x][p1.second + 1];
+                            for (int x = std::min(p1.first, p2.first); x <= std::max(p1.first, p2.first); x++)
+                            {
+                                flag += mask[x][y];
+                            }
                         }
 
                         if (flag == 0)
                         {
-                            p64 np1 = std::make_pair(p1.first, p1.second + 1);
-                            p64 np2 = std::make_pair(p2.first, p2.second + 1);
+                            p64 np1 = std::make_pair(p1.first, p1.second + 10);
+                            p64 np2 = std::make_pair(p2.first, p2.second + 10);
                             cnt[m] = np1;
                             cnt[(m + 1) % length] = np2;
                         }

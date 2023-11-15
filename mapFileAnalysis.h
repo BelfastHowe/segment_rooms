@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #ifndef MAP_FILE_ANALYSIS_H
 #define MAP_FILE_ANALYSIS_H
@@ -9,16 +9,16 @@
 #include <fstream>
 #include <opencv2/opencv.hpp>
 
-// º¯ÊıÉùÃ÷£º¶ÁÈ¡µØÍ¼ÎÄ¼ş²¢×ª»¯Îª01¾ØÕó,¸ßÖÃĞÅ¶È
+// å‡½æ•°å£°æ˜ï¼šè¯»å–åœ°å›¾æ–‡ä»¶å¹¶è½¬åŒ–ä¸º01çŸ©é˜µ,é«˜ç½®ä¿¡åº¦
 std::vector<std::vector<uint8_t>> readMapFile(const char* filename);
 
-//¶ÁÈ¡µØÍ¼ÎÄ¼ş²¢×ª»¯Îª01¾ØÕó,¸ßÖÃĞÅ¶È+µÍÖÃĞÅ¶È
+//è¯»å–åœ°å›¾æ–‡ä»¶å¹¶è½¬åŒ–ä¸º01çŸ©é˜µ,é«˜ç½®ä¿¡åº¦+ä½ç½®ä¿¡åº¦
 std::vector<std::vector<uint8_t>> readMapFile_0x81(const char* filename);
 
-// º¯ÊıÉùÃ÷£º½«01¾ØÕó×ª»¯Îª¶şÖµÍ¼Ïñ²¢´òÓ¡
+// å‡½æ•°å£°æ˜ï¼šå°†01çŸ©é˜µè½¬åŒ–ä¸ºäºŒå€¼å›¾åƒå¹¶æ‰“å°
 void printBinaryMatrix(const std::vector<std::vector<uint8_t>>& binaryMatrix);
 
-//png¶ÁÈ¡
+//pngè¯»å–
 std::vector<std::vector<int>> ConvertImageToMatrix(const std::string& imagePath);
 
 #endif  // MAP_FILE_ANALYSIS_H

@@ -1,18 +1,18 @@
-#include <generate_connected_region.h>
+ï»¿#include <generate_connected_region.h>
 
 
 std::vector<std::vector<int>> generate_connected_region(int length, int width, int desired_area) 
 {
-    // ´´½¨Ò»¸ö¿Õ°×µÄ¾ØÕó
+    // åˆ›å»ºä¸€ä¸ªç©ºç™½çš„çŸ©é˜µ
     std::vector<std::vector<int>> matrix(length, std::vector<int>(width, 0));
     std::vector<std::vector<bool>> visited(length, std::vector<bool>(width, false));
     int connected_area = 0;
 
-    // ¼ÆËã¾ØÕóµÄÖĞĞÄµã×ø±ê
+    // è®¡ç®—çŸ©é˜µçš„ä¸­å¿ƒç‚¹åæ ‡
     int center_x = length / 2;
     int center_y = width / 2;
 
-    // Ëæ»úÑ¡ÔñÒ»¸öÆğÊ¼µã£¬Ê¹Æä¾¡¿ÉÄÜÎ»ÓÚÖĞÑë
+    // éšæœºé€‰æ‹©ä¸€ä¸ªèµ·å§‹ç‚¹ï¼Œä½¿å…¶å°½å¯èƒ½ä½äºä¸­å¤®
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<int> dist_x(center_x - length / 4, center_x + length / 4);
@@ -38,7 +38,7 @@ std::vector<std::vector<int>> generate_connected_region(int length, int width, i
         matrix[x][y] = 1;
         connected_area++;
 
-        // Ëæ»úÑ¡ÔñÁÚ¾Ó½Úµã
+        // éšæœºé€‰æ‹©é‚»å±…èŠ‚ç‚¹
         std::vector<std::pair<int, int>> neighbors = { {x - 1, y}, {x + 1, y}, {x, y - 1}, {x, y + 1} };
         std::shuffle(neighbors.begin(), neighbors.end(), gen);
 
@@ -52,7 +52,7 @@ std::vector<std::vector<int>> generate_connected_region(int length, int width, i
             }
         }
 
-        // Èç¹ûÒÑ´ïµ½ËùĞèÃæ»ı£¬ÔòÍ£Ö¹À©Õ¹
+        // å¦‚æœå·²è¾¾åˆ°æ‰€éœ€é¢ç§¯ï¼Œåˆ™åœæ­¢æ‰©å±•
         if (connected_area >= desired_area) 
         {
             break;
@@ -86,7 +86,7 @@ void printBinaryImage(const std::vector<std::vector<int>>& matrix, int scale, co
     cv::imshow(windowName, scaledImage);
     //cv::waitKey(0);
 
-    std::string outputPath = "C:\\Users\\13012\\Desktop\\result\\" + std::string(windowName) + ".png"; // ĞŞ¸ÄÎªÄãÏëÒª±£´æµÄÂ·¾¶
+    std::string outputPath = "C:\\Users\\13012\\Desktop\\result\\" + std::string(windowName) + ".png"; // ä¿®æ”¹ä¸ºä½ æƒ³è¦ä¿å­˜çš„è·¯å¾„
     cv::imwrite(outputPath, scaledImage);
 
 }

@@ -1,4 +1,4 @@
-#include <mapFileAnalysis.h>
+ï»¿#include <mapFileAnalysis.h>
 
 
 std::vector<std::vector<uint8_t>> readMapFile(const char* filename)
@@ -9,7 +9,7 @@ std::vector<std::vector<uint8_t>> readMapFile(const char* filename)
         throw std::runtime_error("Failed to open map file");
     }
 
-    // ¶ÁÈ¡µØÍ¼½á¹¹ĞÅÏ¢
+    // è¯»å–åœ°å›¾ç»“æ„ä¿¡æ¯
     int16_t symbol, min_x, min_y, delta_x, delta_y;
     file.read(reinterpret_cast<char*>(&symbol), sizeof(symbol));
     file.read(reinterpret_cast<char*>(&min_x), sizeof(min_x));
@@ -17,20 +17,20 @@ std::vector<std::vector<uint8_t>> readMapFile(const char* filename)
     file.read(reinterpret_cast<char*>(&delta_x), sizeof(delta_x));
     file.read(reinterpret_cast<char*>(&delta_y), sizeof(delta_y));
 
-    // ¼ÆËãµØÍ¼Êı¾İµÄ×Ö½ÚÊı
+    // è®¡ç®—åœ°å›¾æ•°æ®çš„å­—èŠ‚æ•°
     int mapSize = delta_x * delta_y;
 
-    // ¶ÁÈ¡µØÍ¼Êı¾İ
+    // è¯»å–åœ°å›¾æ•°æ®
     std::vector<uint8_t> mapData(mapSize);
     file.read(reinterpret_cast<char*>(mapData.data()), mapSize);
 
-    // ¹Ø±ÕÎÄ¼ş
+    // å…³é—­æ–‡ä»¶
     file.close();
 
-    // ´´½¨¶şÖµ¾ØÕó
+    // åˆ›å»ºäºŒå€¼çŸ©é˜µ
     std::vector<std::vector<uint8_t>> binaryMatrix(delta_x, std::vector<uint8_t>(delta_y, 0));
 
-    // ½âÎöµØÍ¼Êı¾İ²¢Éú³É¶şÖµ¾ØÕó
+    // è§£æåœ°å›¾æ•°æ®å¹¶ç”ŸæˆäºŒå€¼çŸ©é˜µ
     for (int i = 0; i < mapSize; ++i) {
         uint8_t value = mapData[i];
         if ((value & 0xC1) == 0xC1) {
@@ -52,7 +52,7 @@ std::vector<std::vector<uint8_t>> readMapFile_0x81(const char* filename)
         throw std::runtime_error("Failed to open map file");
     }
 
-    // ¶ÁÈ¡µØÍ¼½á¹¹ĞÅÏ¢
+    // è¯»å–åœ°å›¾ç»“æ„ä¿¡æ¯
     int16_t symbol, min_x, min_y, delta_x, delta_y;
     file.read(reinterpret_cast<char*>(&symbol), sizeof(symbol));
     file.read(reinterpret_cast<char*>(&min_x), sizeof(min_x));
@@ -60,20 +60,20 @@ std::vector<std::vector<uint8_t>> readMapFile_0x81(const char* filename)
     file.read(reinterpret_cast<char*>(&delta_x), sizeof(delta_x));
     file.read(reinterpret_cast<char*>(&delta_y), sizeof(delta_y));
 
-    // ¼ÆËãµØÍ¼Êı¾İµÄ×Ö½ÚÊı
+    // è®¡ç®—åœ°å›¾æ•°æ®çš„å­—èŠ‚æ•°
     int mapSize = delta_x * delta_y;
 
-    // ¶ÁÈ¡µØÍ¼Êı¾İ
+    // è¯»å–åœ°å›¾æ•°æ®
     std::vector<uint8_t> mapData(mapSize);
     file.read(reinterpret_cast<char*>(mapData.data()), mapSize);
 
-    // ¹Ø±ÕÎÄ¼ş
+    // å…³é—­æ–‡ä»¶
     file.close();
 
-    // ´´½¨¶şÖµ¾ØÕó
+    // åˆ›å»ºäºŒå€¼çŸ©é˜µ
     std::vector<std::vector<uint8_t>> binaryMatrix(delta_x, std::vector<uint8_t>(delta_y, 0));
 
-    // ½âÎöµØÍ¼Êı¾İ²¢Éú³É¶şÖµ¾ØÕó
+    // è§£æåœ°å›¾æ•°æ®å¹¶ç”ŸæˆäºŒå€¼çŸ©é˜µ
     for (int i = 0; i < mapSize; ++i) {
         uint8_t value = mapData[i];
         if ((value & 0x81) == 0x81) {
@@ -90,16 +90,16 @@ std::vector<std::vector<uint8_t>> readMapFile_0x81(const char* filename)
 void printBinaryMatrix(const std::vector<std::vector<uint8_t>>& binaryMatrix)
 {
 
-    // ´´½¨¶şÖµÍ¼Ïñ
+    // åˆ›å»ºäºŒå€¼å›¾åƒ
     cv::Mat image(binaryMatrix.size(), binaryMatrix[0].size(), CV_8UC1);
     for (int i = 0; i < binaryMatrix.size(); ++i) 
     {
         for (int j = 0; j < binaryMatrix[i].size(); ++j)
         {
-            image.at<uint8_t>(i, j) = binaryMatrix[i][j] * 255;  // ½«01¾ØÕóÖĞµÄ0ºÍ1Ó³Éäµ½Í¼ÏñµÄºÚ°×Öµ
+            image.at<uint8_t>(i, j) = binaryMatrix[i][j] * 255;  // å°†01çŸ©é˜µä¸­çš„0å’Œ1æ˜ å°„åˆ°å›¾åƒçš„é»‘ç™½å€¼
         }
     }
-    // ÏÔÊ¾¶şÖµÍ¼Ïñ
+    // æ˜¾ç¤ºäºŒå€¼å›¾åƒ
     cv::imshow("Binary Image", image);
     //cv::waitKey(0);
    // cv::destroyAllWindows();
@@ -109,10 +109,10 @@ void printBinaryMatrix(const std::vector<std::vector<uint8_t>>& binaryMatrix)
 {
     const char* filename = "D:/files/seg_ori_20230509_073109_647.debug";
 
-    // ¶ÁÈ¡µØÍ¼ÎÄ¼ş²¢×ª»¯Îª01¾ØÕó
+    // è¯»å–åœ°å›¾æ–‡ä»¶å¹¶è½¬åŒ–ä¸º01çŸ©é˜µ
     std::vector<std::vector<uint8_t>> binaryMatrix = readMapFile(filename);
 
-    // ½«01¾ØÕó×ª»¯Îª¶şÖµÍ¼Ïñ²¢´òÓ¡
+    // å°†01çŸ©é˜µè½¬åŒ–ä¸ºäºŒå€¼å›¾åƒå¹¶æ‰“å°
     printBinaryMatrix(binaryMatrix);
 
     return 0;

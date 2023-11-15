@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #ifndef GENERATE_CONNECTED_REGION_H
 #define GENERATE_CONNECTED_REGION_H
@@ -9,10 +9,10 @@
 #include <segment_rooms.h>
 
 
-//Ëæ»úµØÍ¼Éú³Éº¯Êı
+//éšæœºåœ°å›¾ç”Ÿæˆå‡½æ•°
 std::vector<std::vector<int>> generate_connected_region(int length, int width, int desired_area);
 
-//´òÓ¡¶şÖµÍ¼Ïñ
+//æ‰“å°äºŒå€¼å›¾åƒ
 void printBinaryImage(const std::vector<std::vector<int>>& matrix, int scale, const char* windowName);
 
 
