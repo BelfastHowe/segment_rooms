@@ -2,6 +2,9 @@
 #include <generate_connected_region.h>
 #include <sstream>
 
+using namespace cv;
+using namespace std;
+
 Room::Room(int room_id) : room_id(room_id) {}
 
 void Room::add_pixel(std::pair<int, int> pixel) 
@@ -2953,7 +2956,7 @@ std::vector<std::pair<int, int>> getLeastTurnPath(const std::pair<int, int>& sta
     // 四连通偏移量
     std::vector<std::pair<int, int>> offsets = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };
 
-    std::priority_queue<Node> pq;
+    std::priority_queue<Node_rs> pq;
     pq.emplace(start, std::vector<std::pair<int, int>>{start}, 0); // 将起始节点添加到队列中
 
     std::vector<std::vector<bool>> visited(mask.size(), std::vector<bool>(mask[0].size(), false)); // 记录已经访问过的点
@@ -2961,7 +2964,7 @@ std::vector<std::pair<int, int>> getLeastTurnPath(const std::pair<int, int>& sta
 
     while (!pq.empty()) 
     {
-        Node curNode = pq.top();
+        Node_rs curNode = pq.top();
         pq.pop();
 
         std::pair<int, int> curPos = curNode.pos;
@@ -7937,15 +7940,60 @@ int main()
 {
     //test_final_map();
 
-    int map_flag = test_new_map();
+    /*int map_flag = test_new_map();
     if (map_flag != 0)
     {
         std::cerr << "GRS ERROR!" << std::endl;
         throw std::runtime_error("???");
         return map_flag;
-    }
+    }*/
+
+    int h = 100, w = 100;
+
+    Mat mat(h, w, CV_8UC1, Scalar(0));
+
+    std::vector<Point> contours = { Point(1,1),Point(1,98),Point(98,98),Point(98,1) };
+
+    fillPoly(mat, contours, Scalar(128));
+
+    imshow("mat", mat);
+    cv::imwrite("C:\\Users\\13012\\Desktop\\sm_mat.png", mat);
+    waitKey();
 
     return 0;
+
+    //cv::Mat final(256, 256, CV_8UC3, cv::Scalar(255, 255, 255));
+
+    //p64 p1 = { 50,50 };
+    //p64 p2 = { 200,125 };
+
+    //std::vector<p64> path = bresenham4(p1.first, p1.second, p2.first, p2.second);
+
+    //for (const auto& p : path)
+    //{
+    //    //final.at<cv::Vec3b>(p.first, p.second) = cv::Vec3b(255, 0, 0);
+    //}
+
+    //std::vector<p64> path1 = bresenham4(path[11].first, path[11].second, path[201].first, path[201].second);
+    //std::vector<p64> path2 = bresenham4(path[23].first, path[23].second, path[202].first, path[202].second);
+
+    //for (const auto& p : path1)
+    //{
+    //    final.at<cv::Vec3b>(p.first, p.second) = cv::Vec3b(0, 255, 0);
+    //}
+
+    //for (const auto& p : path2)
+    //{
+    //    final.at<cv::Vec3b>(p.first, p.second) = cv::Vec3b(0, 0, 255);
+    //}
+
+    //cv::imshow("final", final);
+    //cv::imwrite("C:\\Users\\13012\\Desktop\\result\\final.png", final);
+    //cv::waitKey();
+
+    //return 0;
+
+    //
 }
 
 

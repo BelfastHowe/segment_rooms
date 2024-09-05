@@ -95,18 +95,18 @@ struct Line //各种线的结构体
         : id(id), direction(direction), points(points), startPoint(startPoint), endPoint(endPoint) {}
 };
 
-struct Node //优化不规则线条时需要用到的节点路径结构体
+struct Node_rs //优化不规则线条时需要用到的节点路径结构体
 {
     std::pair<int, int> pos; // 当前位置
     std::vector<std::pair<int, int>> path; // 从起点到当前位置的路径
     int turns; // 沿途转弯的次数
 
     // 节点构造函数
-    Node(const std::pair<int, int>& pos, const std::vector<std::pair<int, int>>& path, int turns)
+    Node_rs(const std::pair<int, int>& pos, const std::vector<std::pair<int, int>>& path, int turns)
         : pos(pos), path(path), turns(turns) {}
 
     // 优先级队列的比较运算符
-    bool operator<(const Node& rhs) const
+    bool operator<(const Node_rs& rhs) const
     {
         if (turns == rhs.turns)
         {

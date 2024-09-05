@@ -24,6 +24,9 @@
     <ClCompile Include="generate_connected_region.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="json_io.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="segment_rooms.h">
