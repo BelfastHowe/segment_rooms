@@ -1,5 +1,28 @@
 ﻿#include <generate_connected_region.h>
 
+using namespace std;
+
+int imwrite_mdy_private(cv::InputArray input, const string file_name)
+{
+    cv::Mat src = input.getMat().clone();
+
+    auto now = std::chrono::system_clock::now();
+    auto now_c = std::chrono::system_clock::to_time_t(now);
+
+    std::tm now_tm;
+    localtime_s(&now_tm, &now_c);
+
+    std::ostringstream oss;
+    oss << std::put_time(&now_tm, "%Y%m%d_%H%M%S_") << now.time_since_epoch().count() << string("_");
+
+    std::string output_file_name = string("C:\\Users\\Belfast\\OneDrive\\Desktop\\result\\") + oss.str() + file_name + string(".png");
+
+    std::cout << output_file_name << std::endl;
+    cv::imwrite(output_file_name, src);
+    cv::waitKey(1);
+
+    return 0;
+}
 
 std::vector<std::vector<int>> generate_connected_region(int length, int width, int desired_area) 
 {
