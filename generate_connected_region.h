@@ -10,7 +10,7 @@
 #include <iomanip>
 
 //私有打印
-int imwrite_mdy_private(cv::InputArray input, const string file_name);
+int imwrite_mdy_private(cv::InputArray input, const std::string file_name);
 
 //随机地图生成函数
 std::vector<std::vector<int>> generate_connected_region(int length, int width, int desired_area);

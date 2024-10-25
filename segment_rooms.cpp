@@ -7957,7 +7957,7 @@ int main()
     fillPoly(mat, contours, Scalar(128));
 
     imshow("mat", mat);
-    cv::imwrite("C:\\Users\\13012\\Desktop\\sm_mat.png", mat);
+    cv::imwrite("C:\\Users\\Belfast\\OneDrive\\Desktop\\sm_mat.png", mat);
     waitKey();
 
     return 0;
